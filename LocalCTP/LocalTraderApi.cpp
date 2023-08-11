@@ -1,0 +1,1917 @@
+﻿#include "stdafx.h"
+#include "LocalTraderApi.h"
+#include <algorithm>//std::find
+#include <iostream>
+
+#define CHECK_LOGIN(p, memberName) \
+    if(p==nullptr) return -1; \
+    if(!m_logined) return -1; \
+    if(m_userID != p->memberName || m_brokerID != p->BrokerID) return -1;
+
+#define CHECK_LOGIN_USER(p) CHECK_LOGIN(p, UserID)
+
+#define CHECK_LOGIN_INVESTOR(p) CHECK_LOGIN(p, InvestorID)
+
+#define READ_CHAR_ARRAY_MEMBER(m) \
+    { std::getline(i, temp, ','); \
+      strcpy(instr.m, temp.c_str()); }
+
+#define READ_MEMBER(m) \
+    { std::getline(i, temp, ','); \
+      std::istringstream iss(temp); \
+      iss >> instr.m; }
+
+std::istream& operator>>(std::istream& i, CThostFtdcInstrumentField& instr)
+{
+    ///合约代码
+    std::string temp;
+        ///合约代码
+    READ_CHAR_ARRAY_MEMBER(InstrumentID)
+        ///交易所代码
+        READ_MEMBER(ExchangeID)
+        ///合约名称
+        READ_CHAR_ARRAY_MEMBER(InstrumentName)
+        ///合约在交易所的代码
+        READ_CHAR_ARRAY_MEMBER(ExchangeInstID)
+        ///产品代码
+        READ_MEMBER(ProductID)
+        ///产品类型
+        READ_MEMBER(ProductClass)
+        ///交割年份
+        READ_MEMBER(DeliveryYear)
+        ///交割月
+        READ_MEMBER(DeliveryMonth)
+        ///市价单最大下单量
+        READ_MEMBER(MaxMarketOrderVolume)
+        ///市价单最小下单量
+        READ_MEMBER(MinMarketOrderVolume)
+        ///限价单最大下单量
+        READ_MEMBER(MaxLimitOrderVolume)
+        ///限价单最小下单量
+        READ_MEMBER(MinLimitOrderVolume)
+        ///合约数量乘数
+        READ_MEMBER(VolumeMultiple)
+        ///最小变动价位
+        READ_MEMBER(PriceTick)
+        ///创建日
+        READ_MEMBER(CreateDate)
+        ///上市日
+        READ_MEMBER(OpenDate)
+        ///到期日
+        READ_MEMBER(ExpireDate)
+        ///开始交割日
+        READ_MEMBER(StartDelivDate)
+        ///结束交割日
+        READ_MEMBER(EndDelivDate)
+        ///合约生命周期状态
+        READ_MEMBER(InstLifePhase)
+        ///当前是否交易
+        READ_MEMBER(IsTrading)
+        ///持仓类型
+        READ_MEMBER(PositionType)
+        ///持仓日期类型
+        READ_MEMBER(PositionDateType)
+        ///多头保证金率
+        READ_MEMBER(LongMarginRatio)
+        ///空头保证金率
+        READ_MEMBER(ShortMarginRatio)
+        ///是否使用大额单边保证金算法
+        READ_MEMBER(MaxMarginSideAlgorithm)
+        ///基础商品代码
+        READ_MEMBER(UnderlyingInstrID)
+        ///执行价
+        READ_MEMBER(StrikePrice)
+        ///期权类型
+        READ_MEMBER(OptionsType)
+        ///合约基础商品乘数
+        READ_MEMBER(UnderlyingMultiple)
+        ///组合类型
+        READ_MEMBER(CombinationType)
+    return i;
+}
+
+
+std::set<CLocalTraderApi::SP_TRADE_API> CLocalTraderApi::trade_api_set;
+
+
+void CLocalTraderApi::GetSingleContractFromCombinationContract(const std::string& CombinationContractID,
+    std::vector<std::string>& SingleContracts)
+{
+    SingleContracts.clear();
+    std::string::size_type blank_index = CombinationContractID.find(' ');
+    if (blank_index == std::string::npos)//若没有找到空格,则以整个合约作为一个单腿合约.
+    {
+        SingleContracts.push_back(CombinationContractID);
+        return;
+    }
+    std::string::size_type and_index = blank_index;
+    std::string::size_type old_and_index = and_index;
+    while (and_index != std::string::npos && old_and_index + 1 != CombinationContractID.size())
+    {
+        and_index = CombinationContractID.find('&', old_and_index + 1);//若没有再找到'&',则也需要将这最后一腿的合约代码保存
+        const std::string _single_contract = CombinationContractID.substr(old_and_index + 1, and_index - (old_and_index + 1));
+        if (!_single_contract.empty())
+        {
+            SingleContracts.push_back(_single_contract);
+        }
+        old_and_index = and_index;
+    }
+    return;
+}
+
+CLocalTraderApi::CLocalTraderApi(const char *pszFlowPath/* = ""*/)
+	: m_bRunning(true), m_authenticated(false), m_logined(false), m_orderSysID(0), m_tradeID(0)
+    , m_tradingAccount{0}
+    , m_pSpi(nullptr), m_successRspInfo{ 0, "success" }, m_errorRspInfo{ -1, "error!" }
+{
+    m_tradingAccount.PreBalance = 2e7;
+    m_tradingAccount.Balance = 2e7;
+    std::cout << "Welcome to LocalCTP!" << std::endl;
+}
+
+CLocalTraderApi::~CLocalTraderApi()
+{
+	m_bRunning = false;
+}
+
+CThostFtdcRspInfoField* CLocalTraderApi::setErrorMsgAndGetRspInfo(const char* errorMsg /*= "error"*/)
+{
+    strncpy(m_errorRspInfo.ErrorMsg, errorMsg, sizeof(m_errorRspInfo.ErrorMsg));
+    return &m_errorRspInfo;
+}
+
+
+bool CLocalTraderApi::OrderData::isDone() const
+{
+    return rtnOrder.OrderStatus != THOST_FTDC_OST_PartTradedQueueing &&
+        rtnOrder.OrderStatus != THOST_FTDC_OST_NoTradeQueueing &&
+        rtnOrder.OrderStatus != THOST_FTDC_OST_Unknown &&
+        rtnOrder.OrderStatus != THOST_FTDC_OST_NotTouched;
+}
+
+void CLocalTraderApi::OrderData::DealTestReqOrderInsert_Normal(const CThostFtdcInputOrderField& InputOrder)
+{
+    // "未知"状态
+
+    ///经纪公司代码
+    strcpy(rtnOrder.BrokerID, InputOrder.BrokerID);
+    ///投资者代码
+    strcpy(rtnOrder.InvestorID, InputOrder.InvestorID);
+    ///合约代码
+    strcpy(rtnOrder.InstrumentID, InputOrder.InstrumentID);
+    ///报单引用
+    strcpy(rtnOrder.OrderRef, InputOrder.OrderRef);
+    ///用户代码
+    strcpy(rtnOrder.UserID, InputOrder.UserID);
+    ///报单价格条件
+    rtnOrder.OrderPriceType = InputOrder.OrderPriceType;
+    ///买卖方向
+    rtnOrder.Direction = InputOrder.Direction;
+    ///组合开平标志
+    strcpy(rtnOrder.CombOffsetFlag, InputOrder.CombOffsetFlag);
+    ///组合投机套保标志
+    strcpy(rtnOrder.CombHedgeFlag, InputOrder.CombHedgeFlag);
+    ///价格
+    rtnOrder.LimitPrice = InputOrder.LimitPrice;
+    ///数量
+    rtnOrder.VolumeTotalOriginal = InputOrder.VolumeTotalOriginal;
+    ///有效期类型
+    rtnOrder.TimeCondition = InputOrder.TimeCondition;
+    ///GTD日期
+    strcpy(rtnOrder.GTDDate, "");
+    ///成交量类型
+    rtnOrder.VolumeCondition = InputOrder.VolumeCondition;
+    ///最小成交量
+    rtnOrder.MinVolume = InputOrder.MinVolume;
+    ///触发条件
+    rtnOrder.ContingentCondition = InputOrder.ContingentCondition;
+    ///止损价
+    rtnOrder.StopPrice = InputOrder.StopPrice;
+    ///强平原因
+    rtnOrder.ForceCloseReason = InputOrder.ForceCloseReason;
+    ///自动挂起标志
+    rtnOrder.IsAutoSuspend = InputOrder.IsAutoSuspend;
+    ///业务单元
+    strcpy(rtnOrder.BusinessUnit, "");
+    ///请求编号
+    rtnOrder.RequestID = InputOrder.RequestID;
+    ///本地报单编号
+    //也使用报单引用
+    strcpy(rtnOrder.OrderLocalID, InputOrder.OrderRef);
+    ///交易所代码
+    strcpy(rtnOrder.ExchangeID, InputOrder.ExchangeID);
+    ///会员代码
+    strcpy(rtnOrder.ParticipantID, "");
+    ///客户代码
+    strcpy(rtnOrder.ClientID, "");
+    ///合约在交易所的代码
+    strcpy(rtnOrder.ExchangeInstID, InputOrder.InstrumentID);
+    ///交易所交易员代码
+    strcpy(rtnOrder.TraderID, "");
+    ///安装编号
+    rtnOrder.InstallID = 0;
+    ///报单提交状态
+    rtnOrder.OrderSubmitStatus = THOST_FTDC_OSS_InsertSubmitted;
+    ///报单提示序号
+    rtnOrder.NotifySequence = 0;
+    ///交易日
+    strcpy(rtnOrder.TradingDay, api.GetTradingDay());
+    ///结算编号
+    rtnOrder.SettlementID = 0;
+    ///报单编号
+    strcpy(rtnOrder.OrderSysID, "");
+    ///报单来源
+    rtnOrder.OrderSource = THOST_FTDC_OSRC_Participant;
+    ///报单状态
+    rtnOrder.OrderStatus = THOST_FTDC_OST_Unknown;
+    ///报单类型
+    rtnOrder.OrderType = THOST_FTDC_ORDT_Normal;
+    ///今成交数量
+    rtnOrder.VolumeTraded = 0;
+    ///剩余数量
+    rtnOrder.VolumeTotal = rtnOrder.VolumeTotalOriginal;
+    ///报单日期
+    const CLeeDateTime now_time = CLeeDateTime::GetCurrentTime();
+    strcpy(rtnOrder.InsertDate, now_time.Format("%Y%m%d").c_str());
+    ///委托时间
+    strcpy(rtnOrder.InsertTime, now_time.Format("%H:%M:%S").c_str());
+    ///激活时间
+    strcpy(rtnOrder.ActiveTime, "");
+    ///挂起时间
+    strcpy(rtnOrder.SuspendTime, "");
+    ///最后修改时间
+    strcpy(rtnOrder.UpdateTime, "");
+    ///撤销时间
+    strcpy(rtnOrder.CancelTime, "");
+    ///最后修改交易所交易员代码
+    strcpy(rtnOrder.ActiveTraderID, "");
+    ///结算会员编号
+    strcpy(rtnOrder.ClearingPartID, "");
+    ///序号
+    rtnOrder.SequenceNo = 0;
+    ///前置编号
+    rtnOrder.FrontID = 0; // is 0, all the same
+    ///会话编号
+    rtnOrder.SessionID = 0; // is 0, all the same
+    ///用户端产品信息
+    strcpy(rtnOrder.UserProductInfo, "");
+    ///状态信息
+    strcpy(rtnOrder.StatusMsg, getStatusMsgByStatus(rtnOrder.OrderStatus).c_str());
+    ///用户强评标志
+    rtnOrder.UserForceClose = InputOrder.UserForceClose;
+    ///操作用户代码
+    strcpy(rtnOrder.ActiveUserID, "");
+    ///经纪公司报单编号
+    rtnOrder.BrokerOrderSeq = 0;
+    ///相关报单
+    strcpy(rtnOrder.RelativeOrderSysID, "");
+    ///郑商所成交数量
+    rtnOrder.ZCETotalTradedVolume = (strcmp(InputOrder.ExchangeID, "CZCE") == 0 ? rtnOrder.VolumeTraded : 0);
+    ///互换单标志
+    rtnOrder.IsSwapOrder = InputOrder.IsSwapOrder;
+    ///营业部编号
+    strcpy(rtnOrder.BranchID, "");
+    ///投资单元代码
+    strcpy(rtnOrder.InvestUnitID, "");
+    ///资金账号
+    strcpy(rtnOrder.AccountID, InputOrder.AccountID);
+    ///币种代码
+    strcpy(rtnOrder.CurrencyID, "CNY");
+
+    api.getSpi()->OnRtnOrder(&rtnOrder);
+
+    // "未知"-> "未成交" 状态 
+    int OrderSysID = ++api.getOrderSysID();
+    strcpy(rtnOrder.OrderSysID, std::to_string(OrderSysID).c_str());
+    rtnOrder.BrokerOrderSeq = OrderSysID;
+    rtnOrder.OrderSubmitStatus = THOST_FTDC_OSS_Accepted;
+    rtnOrder.OrderStatus = THOST_FTDC_OST_NoTradeQueueing;
+    strcpy(rtnOrder.StatusMsg, getStatusMsgByStatus(rtnOrder.OrderStatus).c_str());
+
+    api.getSpi()->OnRtnOrder(&rtnOrder);
+    return;
+}
+
+void CLocalTraderApi::OrderData::handleTrade(double tradedPrice, int tradedSize)
+{
+    if (tradedSize <= 0 || isDone()) return;
+    ///今成交数量
+    rtnOrder.VolumeTraded += tradedSize;
+    rtnOrder.VolumeTotal -= tradedSize;
+    rtnOrder.ZCETotalTradedVolume = (strcmp(rtnOrder.ExchangeID, "CZCE") == 0 ? rtnOrder.VolumeTraded : 0);
+    rtnOrder.OrderSubmitStatus = THOST_FTDC_OSS_Accepted;
+    if (rtnOrder.VolumeTraded >= rtnOrder.VolumeTotalOriginal)
+    {
+        rtnOrder.OrderStatus = THOST_FTDC_OST_AllTraded;
+    }
+    else
+    {
+        rtnOrder.OrderStatus = THOST_FTDC_OST_PartTradedQueueing;
+    }
+    strncpy(rtnOrder.StatusMsg, getStatusMsgByStatus(rtnOrder.OrderStatus).c_str(), sizeof(rtnOrder.StatusMsg));
+
+
+    std::vector<CThostFtdcTradeField> rtnTradeFromOrder;
+    getRtnTrade(tradedPrice, tradedSize, rtnTradeFromOrder);
+    rtnTrades.insert(rtnTrades.end(), rtnTradeFromOrder.begin(), rtnTradeFromOrder.end());
+
+    for (auto& t : rtnTradeFromOrder)
+    {
+        api.updateByTrade(t);
+        sendRtnTrade(t);
+    }
+    sendRtnOrder();
+    return;
+}
+
+void CLocalTraderApi::OrderData::handleCancel(bool cancelFromClient)
+{
+    if (isDone()) return;
+    rtnOrder.OrderSubmitStatus = THOST_FTDC_OSS_Accepted;
+    rtnOrder.OrderStatus = THOST_FTDC_OST_Canceled;
+    strncpy(rtnOrder.StatusMsg, getStatusMsgByStatus(rtnOrder.OrderStatus).c_str(), sizeof(rtnOrder.StatusMsg));
+
+    const CLeeDateTime now_time = CLeeDateTime::GetCurrentTime();
+    ///成交时间
+    strcpy(rtnOrder.CancelTime, now_time.Format("%H:%M:%S").c_str());
+    if (cancelFromClient)
+    {
+        strcpy(rtnOrder.ActiveUserID, rtnOrder.UserID);
+    }
+
+    api.updateByCancel(rtnOrder);
+    sendRtnOrder();
+}
+
+void CLocalTraderApi::OrderData::getRtnTrade(double trade_price, int tradedSize, std::vector<CThostFtdcTradeField>& Trades)
+{
+    std::vector<std::string> SingleContracts;
+    CLocalTraderApi::GetSingleContractFromCombinationContract(rtnOrder.InstrumentID, SingleContracts);
+    for (size_t _index = 0; _index != SingleContracts.size(); ++_index)
+    {
+        CThostFtdcTradeField Trade = { 0 };
+        ///经纪公司代码
+        strcpy(Trade.BrokerID, rtnOrder.BrokerID);
+        ///投资者代码
+        strcpy(Trade.InvestorID, rtnOrder.InvestorID);
+        ///合约代码
+        strcpy(Trade.InstrumentID, SingleContracts[_index].c_str());
+        ///报单引用
+        strcpy(Trade.OrderRef, rtnOrder.OrderRef);
+        ///用户代码
+        strcpy(Trade.UserID, rtnOrder.UserID);
+        ///交易所代码
+        strcpy(Trade.ExchangeID, rtnOrder.ExchangeID);
+        ///成交编号
+        strcpy(Trade.TradeID, std::to_string(++api.getTradeID()).c_str());
+        if (_index % 2 == 0)//若为第一腿
+        {
+            ///买卖方向
+            Trade.Direction = rtnOrder.Direction;
+            ///价格
+            Trade.Price = trade_price;
+        }
+        else//若为第二腿
+        {
+            ///买卖方向
+            Trade.Direction =
+                (rtnOrder.Direction == THOST_FTDC_D_Buy ? THOST_FTDC_D_Sell : THOST_FTDC_D_Buy);
+            ///价格
+            Trade.Price = 0.0;
+        }
+        ///报单编号
+        strcpy(Trade.OrderSysID, rtnOrder.OrderSysID);
+        ///会员代码
+        strcpy(Trade.ParticipantID, rtnOrder.ParticipantID);
+        ///客户代码
+        strcpy(Trade.ClientID, rtnOrder.ClientID);
+        ///交易角色
+        Trade.TradingRole = THOST_FTDC_ER_Broker;
+        ///合约在交易所的代码
+        strcpy(Trade.ExchangeInstID, Trade.InstrumentID);
+        ///开平标志
+        Trade.OffsetFlag = rtnOrder.CombOffsetFlag[0];
+        ///投机套保标志
+        Trade.HedgeFlag = rtnOrder.CombHedgeFlag[0];
+
+        ///数量
+        Trade.Volume = tradedSize;
+        ///成交时期
+        const CLeeDateTime now_time = CLeeDateTime::GetCurrentTime();
+        strcpy(Trade.TradeDate, now_time.Format("%Y%m%d").c_str());
+        ///成交时间
+        strcpy(Trade.TradeTime, now_time.Format("%H:%M:%S").c_str());
+        ///成交类型(普通成交/组合衍生成交)
+        Trade.TradeType = SingleContracts.size() == 1 ?
+            THOST_FTDC_TRDT_Common : THOST_FTDC_TRDT_CombinationDerived;
+        ///成交价来源
+        Trade.PriceSource = THOST_FTDC_PSRC_LastPrice;
+        ///交易所交易员代码
+        strcpy(Trade.TraderID, rtnOrder.TraderID);
+        ///本地报单编号
+        strcpy(Trade.OrderLocalID, rtnOrder.OrderLocalID);
+        ///结算会员编号
+        strcpy(Trade.ClearingPartID, "");
+        ///业务单元
+        strcpy(Trade.BusinessUnit, rtnOrder.BusinessUnit);
+        ///序号
+        Trade.SequenceNo = rtnOrder.SequenceNo;
+        ///交易日
+        strcpy(Trade.TradingDay, rtnOrder.TradingDay);
+        ///结算编号
+        Trade.SettlementID = rtnOrder.SettlementID;
+        ///经纪公司报单编号
+        Trade.BrokerOrderSeq = rtnOrder.BrokerOrderSeq;
+        ///成交来源
+        Trade.TradeSource = THOST_FTDC_TSRC_NORMAL;
+        ///投资单元代码
+        strcpy(Trade.InvestUnitID, rtnOrder.InvestUnitID);
+
+        Trades.emplace_back(Trade);
+    }
+    return;
+}
+
+void CLocalTraderApi::OrderData::sendRtnOrder()
+{
+    api.getSpi()->OnRtnOrder(&rtnOrder);
+}
+
+void CLocalTraderApi::OrderData::sendRtnTrade(CThostFtdcTradeField& rtnTrade)
+{
+    api.getSpi()->OnRtnTrade(&rtnTrade);
+}
+
+// 收到行情快照的处理
+// 接收到行情快照时，需要更新行情的合约对应的持仓的持仓盈亏，然后更新账户的动态权益等资金数据。
+// 多头持仓的持仓盈亏 = （最新价计算得到的成本 - 持仓成本） * 合约数量乘数 * 持仓数量
+// 空头持仓的持仓盈亏 = （持仓成本 - 最新价计算得到的成本） * 合约数量乘数 * 持仓数量
+void CLocalTraderApi::onSnapshot(const CThostFtdcDepthMarketDataField& mdData)
+{
+    auto it = m_instrData.find(mdData.InstrumentID);
+    if (it == m_instrData.end())
+    {
+        return;
+    }
+    if (it->second.ProductClass == THOST_FTDC_PC_Combination)
+    {
+        return;
+    }
+    double diffPositionProfit(0.0);
+    for (auto dir : { THOST_FTDC_D_Buy, THOST_FTDC_D_Sell })
+    {
+        for (auto dateType : { THOST_FTDC_PSD_Today, THOST_FTDC_PSD_History })
+        {
+            auto posKey = CLocalTraderApi::generatePositionKey(mdData.InstrumentID,
+                dir, dateType);
+            auto itPos = m_positionData.find(posKey);
+            if (itPos != m_positionData.end())
+            {
+                auto& PositionProfit = itPos->second.pos.PositionProfit;
+                double oldPositionProfit = PositionProfit;
+                PositionProfit = (dir == THOST_FTDC_D_Buy ? 1 : -1) *
+                    (mdData.LastPrice * it->second.VolumeMultiple * itPos->second.pos.Position
+                        - itPos->second.pos.PositionCost);
+                diffPositionProfit += PositionProfit - oldPositionProfit;
+            }
+        }
+    }
+    m_tradingAccount.PositionProfit += diffPositionProfit;
+    updatePNL();
+}
+
+
+// 计算PNL(profit and loss, 盈亏)
+void CLocalTraderApi::updatePNL(bool needTotalCalc /*= false*/)
+{
+    if (needTotalCalc)
+    {
+        m_tradingAccount.PositionProfit = 0;
+        m_tradingAccount.CloseProfit = 0;
+        m_tradingAccount.Commission = 0;
+        m_tradingAccount.CurrMargin = 0;
+        m_tradingAccount.FrozenMargin = 0;
+        for (const auto& P : m_positionData)
+        {
+            m_tradingAccount.PositionProfit += P.second.pos.PositionProfit;
+            m_tradingAccount.CloseProfit += P.second.pos.CloseProfit;
+            m_tradingAccount.Commission += P.second.pos.Commission;
+            m_tradingAccount.CurrMargin += P.second.pos.UseMargin;
+            m_tradingAccount.FrozenMargin += P.second.pos.FrozenMargin;
+        }
+    }
+    m_tradingAccount.Balance = m_tradingAccount.PreBalance + m_tradingAccount.Deposit - m_tradingAccount.Withdraw
+        + m_tradingAccount.PositionProfit + m_tradingAccount.CloseProfit - m_tradingAccount.Commission;
+    m_tradingAccount.Available = m_tradingAccount.Balance - m_tradingAccount.CurrMargin - m_tradingAccount.FrozenMargin;
+}
+
+void CLocalTraderApi::updateByCancel(const CThostFtdcOrderField& o)
+{
+    if (THOST_FTDC_OST_Canceled != o.OrderStatus) return;
+
+    auto it = m_instrData.find(o.InstrumentID);
+    if (it == m_instrData.end())
+    {
+        return;
+    }
+    // 开仓报单已撤单,则减少冻结保证金(对应数量是未成交数量)
+    if (isOpen(o.CombOffsetFlag[0]))
+    {
+        std::string instr = o.InstrumentID;
+        auto directionT = o.Direction;
+
+        auto handleOpen = [&]()
+        {
+            auto posKey = generatePositionKey(instr,
+                directionT,
+                THOST_FTDC_PSD_Today);
+            auto itMarginRate = m_instrumentMarginRateData.find(instr);
+            if (itMarginRate == m_instrumentMarginRateData.end())
+            {
+                return;
+            }
+            auto itDepthMarketData = m_mdData.find(instr);
+            if (itDepthMarketData == m_mdData.end())
+            {
+                return;
+            }
+            double frozenMargin = itDepthMarketData->second.PreSettlementPrice *
+                it->second.VolumeMultiple * o.VolumeTotal *
+                (directionT == THOST_FTDC_D_Buy ?
+                    itMarginRate->second.LongMarginRatioByMoney :
+                    itMarginRate->second.ShortMarginRatioByMoney)
+                + o.VolumeTotal *
+                (directionT == THOST_FTDC_D_Buy ?
+                    itMarginRate->second.LongMarginRatioByVolume :
+                    itMarginRate->second.ShortMarginRatioByVolume);
+            {
+                std::lock_guard<std::mutex> posGuard(m_positionMtx);
+                auto itPos = m_positionData.find(posKey);
+                if (itPos == m_positionData.end())
+                {
+                    return;
+                }
+                else
+                {
+                    itPos->second.pos.FrozenMargin = (std::max)(
+                        itPos->second.pos.FrozenMargin - frozenMargin, 0.0);
+
+                }
+            }
+            m_tradingAccount.FrozenMargin = (std::max)(
+                m_tradingAccount.FrozenMargin - frozenMargin, 0.0);
+            updatePNL();
+        };
+
+        if (it->second.ProductClass == THOST_FTDC_PC_Combination)
+        {
+            std::vector<std::string> singleContracts;
+            GetSingleContractFromCombinationContract(it->first, singleContracts);
+
+            for (std::size_t legNo = 0; legNo < singleContracts.size(); ++legNo)
+            {
+                instr = singleContracts[legNo];
+                directionT = (legNo % 2 == 0 ?
+                    o.Direction
+                    : getOppositeDirection(o.Direction));
+
+                handleOpen();
+            }
+        }
+        else
+        {
+            handleOpen();
+        }
+    }
+    else// 平仓报单已撤单,则减少冻结持仓(对应数量是未成交数量)
+    {
+        std::string instr = o.InstrumentID;
+        auto directionT = getOppositeDirection(o.Direction);
+
+        auto handleClose = [&]()
+        {
+            auto posKey = generatePositionKey(instr,
+                directionT,
+                getDateTypeFromOffset(
+                    it->second.ExchangeID, o.CombOffsetFlag[0]));
+            auto itPos = m_positionData.find(posKey);
+            if (itPos == m_positionData.end())
+            {
+                // 如果没找到持仓,则返回,并不插入持仓(因为持仓在开仓报单时已插入).此流程可改进
+                return;
+            }
+            else
+            {
+                int& frozenPositionNum = (itPos->second.pos.PosiDirection == THOST_FTDC_PD_Long ?
+                    itPos->second.pos.ShortFrozen : itPos->second.pos.LongFrozen);
+                frozenPositionNum = (std::max)(
+                    frozenPositionNum - o.VolumeTotal, 0);
+            }
+        };
+
+        if (it->second.ProductClass == THOST_FTDC_PC_Combination)
+        {
+            std::vector<std::string> singleContracts;
+            GetSingleContractFromCombinationContract(it->first, singleContracts);
+
+            for (std::size_t legNo = 0; legNo < singleContracts.size(); ++legNo)
+            {
+                instr = singleContracts[legNo];
+                directionT = (legNo % 2 == 0 ?
+                    getOppositeDirection(o.Direction)
+                    : o.Direction);
+
+                handleClose();
+            }
+        }
+        else
+        {
+            handleClose();
+        }
+    }
+
+}
+
+void CLocalTraderApi::updateByTrade(const CThostFtdcTradeField& t)
+{
+    const auto* pTrade = &t;
+    auto it = m_instrData.find(pTrade->InstrumentID);
+    if (it == m_instrData.end())
+    {
+        return;
+    }
+    auto itCommissionRate = m_instrumentCommissionRateData.find(pTrade->InstrumentID);
+    if (itCommissionRate == m_instrumentCommissionRateData.end())
+    {
+        return;
+    }
+    auto itMarginRate = m_instrumentMarginRateData.find(pTrade->InstrumentID);
+    if (itMarginRate == m_instrumentMarginRateData.end())
+    {
+        return;
+    }
+
+    std::map<std::string, CThostFtdcDepthMarketDataField>::iterator itDepthMarketData;
+    {
+        std::lock_guard<std::mutex> mdGuard(m_mdMtx);
+        itDepthMarketData = m_mdData.find(pTrade->InstrumentID);
+        if (itDepthMarketData == m_mdData.end())
+        {
+            return;
+        }
+    }
+    // 开仓成交时,增加一笔新的持仓明细,减少冻结保证金,更新持仓和资金
+    if (isOpen(pTrade->OffsetFlag))
+    {
+        double frozenMargin = itDepthMarketData->second.PreSettlementPrice *
+            it->second.VolumeMultiple * pTrade->Volume *
+            (pTrade->Direction == THOST_FTDC_D_Buy ?
+                itMarginRate->second.LongMarginRatioByMoney :
+                itMarginRate->second.ShortMarginRatioByMoney)
+            + pTrade->Volume * (pTrade->Direction == THOST_FTDC_D_Buy ?
+                itMarginRate->second.LongMarginRatioByVolume :
+                itMarginRate->second.ShortMarginRatioByVolume);
+        double marginOfTrade = pTrade->Price * it->second.VolumeMultiple *
+            pTrade->Volume *
+            (pTrade->Direction == THOST_FTDC_D_Buy ?
+                itMarginRate->second.LongMarginRatioByMoney :
+                itMarginRate->second.ShortMarginRatioByMoney)
+            + pTrade->Volume * (pTrade->Direction == THOST_FTDC_D_Buy ?
+                itMarginRate->second.LongMarginRatioByVolume :
+                itMarginRate->second.ShortMarginRatioByVolume);
+        double feeOfTrade = pTrade->Price * it->second.VolumeMultiple *
+            pTrade->Volume * itCommissionRate->second.OpenRatioByMoney +
+            pTrade->Volume * itCommissionRate->second.OpenRatioByVolume;
+        auto posKey = generatePositionKey(pTrade->InstrumentID,
+            pTrade->Direction,
+            THOST_FTDC_PSD_Today);
+        {
+            std::lock_guard<std::mutex> posGuard(m_positionMtx);
+            auto itPos = m_positionData.find(posKey);
+            if (itPos == m_positionData.end())
+            {
+                // 如果没找到持仓,则返回,并不插入持仓(因为持仓在开仓报单时已插入).此流程可改进
+                return;
+            }
+            else
+            {
+                itPos->second.addPositionDetail(
+                    PositionData::getPositionDetailFromOpenTrade(*pTrade));// 添加持仓明细到持仓中
+
+                auto& pos = itPos->second.pos;
+                pos.Position += pTrade->Volume;
+                pos.Commission += feeOfTrade;
+                pos.UseMargin += marginOfTrade;
+                pos.FrozenMargin = (std::max)(
+                    pos.FrozenMargin - frozenMargin, 0.0);
+                pos.PositionCost +=
+                    pTrade->Price * pTrade->Volume * itPos->second.volumeMultiple;//更新持仓的持仓成本
+                pos.OpenVolume += pTrade->Volume;
+                pos.OpenAmount +=
+                    pTrade->Volume * pTrade->Price * itPos->second.volumeMultiple;
+                pos.OpenCost +=
+                    pTrade->Volume * pTrade->Price * itPos->second.volumeMultiple;
+            }
+        }
+        m_tradingAccount.Commission += feeOfTrade;
+        m_tradingAccount.CurrMargin += marginOfTrade;
+        m_tradingAccount.FrozenMargin = (std::max)(m_tradingAccount.FrozenMargin - frozenMargin, 0.0);
+        updatePNL();
+    }
+    // 平仓成交时,按"先开先平"的原则更新持仓明细,减少持仓中的冻结持仓,更新持仓和资金.
+    else
+    {
+        auto posKey = generatePositionKey(pTrade->InstrumentID,
+            getOppositeDirection(pTrade->Direction),
+            getDateTypeFromOffset(pTrade->ExchangeID, pTrade->OffsetFlag));
+
+        std::lock_guard<std::mutex> posGuard(m_positionMtx);
+        auto itPos = m_positionData.find(posKey);
+        if (itPos == m_positionData.end())
+        {
+            return;
+        }
+        else
+        {
+            int restVolume(pTrade->Volume);// 成交剩余的数量
+            int closeYesterdayVolume(0);// 此次成交中的平昨数量
+            int closeTodayVolume(0);// 此次成交中的平今数量
+            double closeProfitOfTrade(0);// 此次成交的平仓盈亏
+
+            auto& pos = itPos->second.pos;
+
+            for (auto& p : itPos->second.posDetailData)
+            {
+                if (p.Volume <= 0)
+                    continue;
+                int tradeVolumeInThisPosDetail(0);
+                if (p.Volume >= restVolume)
+                {
+                    tradeVolumeInThisPosDetail = restVolume;
+                    p.Volume -= tradeVolumeInThisPosDetail;
+                    restVolume = 0;
+                }
+                else
+                {
+                    tradeVolumeInThisPosDetail = p.Volume;
+                    restVolume -= tradeVolumeInThisPosDetail;
+                    p.Volume = 0;
+                }
+                p.CloseVolume += tradeVolumeInThisPosDetail;
+                p.CloseAmount +=
+                    tradeVolumeInThisPosDetail * pTrade->Price * itPos->second.volumeMultiple;
+                // 持仓明细的平仓盈亏汇总计算中,昨仓用昨结算价,今仓用开仓价
+                if (strcmp(p.OpenDate, GetTradingDay()) != 0)//昨仓
+                {
+                    closeYesterdayVolume += tradeVolumeInThisPosDetail;
+                    closeProfitOfTrade +=
+                        (pos.PosiDirection == THOST_FTDC_PD_Long ? 1 : -1) *
+                        (pTrade->Price - pos.PreSettlementPrice) *
+                        tradeVolumeInThisPosDetail * itPos->second.volumeMultiple;
+                }
+                else//今仓
+                {
+                    closeTodayVolume += tradeVolumeInThisPosDetail;
+                    closeProfitOfTrade +=
+                        (pos.PosiDirection == THOST_FTDC_PD_Long ? 1 : -1) *
+                        (pTrade->Price - p.OpenPrice) *
+                        tradeVolumeInThisPosDetail * itPos->second.volumeMultiple;
+                }
+                if (restVolume <= 0)
+                {
+                    break;
+                }
+            }
+
+            double feeCloseYesterdayOfTrade = pTrade->Price * it->second.VolumeMultiple *
+                closeYesterdayVolume * itCommissionRate->second.CloseRatioByMoney +
+                closeYesterdayVolume * itCommissionRate->second.CloseRatioByVolume;
+            double feeCloseTodayOfTrade = pTrade->Price * it->second.VolumeMultiple *
+                closeTodayVolume * itCommissionRate->second.CloseTodayRatioByMoney +
+                closeTodayVolume * itCommissionRate->second.CloseTodayRatioByVolume;
+            double feeOfTrade = feeCloseYesterdayOfTrade + feeCloseTodayOfTrade;
+
+            //重新统计持仓中的一些数据
+            pos.Position = 0;// 持仓数量
+            pos.PositionCost = 0;// 持仓成本
+            pos.OpenCost = 0;// 开仓成本
+            for (auto& p : itPos->second.posDetailData)
+            {
+                pos.Position += p.Volume;
+                pos.PositionCost += p.Volume *
+                    (strcmp(p.OpenDate, GetTradingDay())==0 ? p.OpenPrice : pos.PreSettlementPrice)
+                    * itPos->second.volumeMultiple;// 持仓明细的持仓成本汇总计算中,昨仓用昨结算价,今仓用开仓价
+                pos.OpenCost += p.Volume * p.OpenPrice * itPos->second.volumeMultiple;
+            }
+            pos.PositionProfit =
+                (pos.PosiDirection == THOST_FTDC_PD_Long ? 1 : -1)
+                * (pTrade->Price * itPos->second.volumeMultiple * pos.Position
+                    - pos.PositionCost);// 持仓盈亏
+            pos.CloseProfit += closeProfitOfTrade;// 平仓盈亏
+            pos.Commission += feeOfTrade;// 更新持仓的手续费
+            pos.UseMargin =
+                pos.PositionCost *
+                (pos.PosiDirection == THOST_FTDC_PD_Long ?
+                    itMarginRate->second.LongMarginRatioByMoney :
+                    itMarginRate->second.ShortMarginRatioByMoney)
+                + pos.Position *
+                (pos.PosiDirection == THOST_FTDC_PD_Long ?
+                    itMarginRate->second.LongMarginRatioByVolume :
+                    itMarginRate->second.ShortMarginRatioByVolume);// 更新持仓的保证金
+            int& frozenPositionNum = (pos.PosiDirection == THOST_FTDC_PD_Long ?
+                pos.ShortFrozen : pos.LongFrozen);
+            frozenPositionNum = (std::max)(
+                frozenPositionNum - pTrade->Volume, 0);//更新持仓的冻结持仓
+            pos.CloseVolume += pTrade->Volume;//更新持仓的平仓量
+            pos.CloseAmount +=
+                pTrade->Volume * pTrade->Price * itPos->second.volumeMultiple;//更新持仓的平仓金额
+            // 汇总计算资金
+            updatePNL(true);
+        }
+    }
+}
+
+///创建TraderApi
+///@param pszFlowPath 存贮订阅信息文件的目录，默认为当前目录
+///@return 创建出的UserApi
+CThostFtdcTraderApi* CThostFtdcTraderApi::CreateFtdcTraderApi(const char *pszFlowPath/* = ""*/) {
+	auto sp_this = std::make_shared<CLocalTraderApi>(pszFlowPath);
+    CLocalTraderApi::trade_api_set.insert(sp_this);
+	return sp_this.get();
+}
+
+///获取API的版本信息
+///@retrun 获取到的版本号
+const char* CThostFtdcTraderApi::GetApiVersion() { 
+
+	return "LocalCTP V1.0.0 By QiuShui(Aura) QQ1005018695";
+}
+
+///删除接口对象本身
+///@remark 不再使用本接口对象时,调用该函数删除接口对象
+void CLocalTraderApi::Release() {
+	auto sp_this = shared_from_this();
+    CLocalTraderApi::trade_api_set.erase(sp_this);
+}
+
+///初始化
+///@remark 初始化运行环境,只有调用后,接口才开始工作
+void CLocalTraderApi::Init() {
+	// 从当前目录(或环境变量中的目录)的 instrument.csv 中读取合约信息
+    std::ifstream ifs("instrument.csv");
+    if (!ifs.is_open())
+    {
+        return;
+    }
+    std::string singleLine;
+    if (!std::getline(ifs, singleLine))//第一行是表头
+    {
+        return;
+    }
+    while (std::getline(ifs, singleLine))
+    {
+        if (singleLine.empty())
+        {
+            break;
+        }
+        std::istringstream iss(singleLine);
+        CThostFtdcInstrumentField instr = { 0 };
+        iss >> instr;
+        m_instrData[instr.InstrumentID] = instr;
+    }
+    std::cout << "Total instrument count: " << m_instrData.size() << std::endl;
+
+    //临时措施:将所有合约的保证金率和手续费率初始化(保证金率全部为10%,手续费全部为1元每手)
+    auto initializeCommissionRateAndMarginRate = [&]() {
+        CThostFtdcInstrumentMarginRateField MarginRate = { 0 };
+        MarginRate.LongMarginRatioByMoney = 0.1;
+        MarginRate.ShortMarginRatioByMoney = 0.1;
+        CThostFtdcInstrumentCommissionRateField CommissionRate = { 0 };
+        CommissionRate.CloseRatioByVolume = 1;
+        CommissionRate.CloseTodayRatioByVolume = 1;
+        CommissionRate.OpenRatioByVolume = 1;
+
+        for (const auto& instr : m_instrData)
+        {
+            strcpy(MarginRate.ExchangeID, instr.second.ExchangeID);
+            strcpy(MarginRate.InstrumentID, instr.second.InstrumentID);
+            m_instrumentMarginRateData[instr.first] = MarginRate;
+            strcpy(CommissionRate.ExchangeID, instr.second.ExchangeID);
+            strcpy(CommissionRate.InstrumentID, instr.second.InstrumentID);
+            m_instrumentCommissionRateData[instr.first] = CommissionRate;
+        }
+    };
+    initializeCommissionRateAndMarginRate();
+
+    if (m_pSpi == nullptr) return;
+
+    m_pSpi->OnFrontConnected();
+    return;
+}
+
+///等待接口线程结束运行
+///@return 线程退出代码
+int CLocalTraderApi::Join() {
+    // Do nothing
+	return 0;
+}
+
+///获取当前交易日
+///@retrun 获取到的交易日
+///@remark 只有登录成功后,才能得到正确的交易日
+const char* CLocalTraderApi::GetTradingDay() {
+    // use ( now time + 4 hours) as trading date,
+    // it will consider the weekend, but not the holiday.
+    // for example:
+    // 1. 2023-08-07 10:00 -> 2023-08-07 14:00 -> return "20230807"
+    // 2. 2023-08-07 20:00 -> 2023-08-08 02:00 -> return "20230808"
+    // 3. 2023-08-04 20:00(Fri) -> 2023-08-05 02:00(Sat) -> 2023-08-07 02:00(Mon) -> return "20230807"
+    static std::string tradingDay;
+    auto checkTime = CLeeDateTime::now() + CLeeDateTimeSpan(0, 4, 0, 0);
+    if (checkTime.GetDayOfWeek() == 6)
+    {
+        checkTime += CLeeDateTimeSpan(2, 0, 0, 0);
+    }
+    tradingDay = checkTime.Format("%Y%m%d");
+    return tradingDay.c_str();
+}
+
+///注册前置机网络地址
+///@param pszFrontAddress：前置机网络地址。
+///@remark 网络地址的格式为：“protocol://ipaddress:port”，如：”tcp://127.0.0.1:17001”。 
+///@remark “tcp”代表传输协议，“127.0.0.1”代表服务器地址。”17001”代表服务器端口号。
+// 本API不联网, 无需注册到前置机.
+void CLocalTraderApi::RegisterFront(char *pszFrontAddress) { return; }
+
+///注册名字服务器网络地址
+///@param pszNsAddress：名字服务器网络地址。
+///@remark 网络地址的格式为：“protocol://ipaddress:port”，如：”tcp://127.0.0.1:12001”。 
+///@remark “tcp”代表传输协议，“127.0.0.1”代表服务器地址。”12001”代表服务器端口号。
+///@remark RegisterNameServer优先于RegisterFront
+void CLocalTraderApi::RegisterNameServer(char *pszNsAddress) { return; }
+
+///注册名字服务器用户信息
+///@param pFensUserInfo：用户信息。
+// 本接口被魔改, 接收的参数实际需要是一个行情快照的指针(CThostFtdcDepthMarketDataField*, 6.5.1及以后版本的).
+// 使用者需要通过调用此接口, 来给API输入行情用于更新API内部的行情数据.
+void CLocalTraderApi::RegisterFensUserInfo(CThostFtdcFensUserInfoField* pFensUserInfo) {
+    if (pFensUserInfo == nullptr) return;
+    CThostFtdcDepthMarketDataField* md = reinterpret_cast<CThostFtdcDepthMarketDataField*>(pFensUserInfo);
+    std::string instrumentID;
+    if (strlen(md->InstrumentID) == 0)
+    {
+        instrumentID = md->reserve1; // the old InstrumentID in struct before 6.5.1
+    }
+    else
+    {
+        instrumentID = md->InstrumentID; // the new InstrumentID in struct since 6.5.1
+    }
+    {
+        std::lock_guard<std::mutex> mdGuard(m_mdMtx);
+        m_mdData[instrumentID] = *md;
+    }
+    {
+        std::lock_guard<std::mutex> orderGuard(m_orderMtx);
+        for (auto& o : m_orderData)
+        {
+            auto& order = o.second;
+            if (instrumentID != order.rtnOrder.InstrumentID || order.isDone())
+            {
+                continue;
+            }
+            if ((order.rtnOrder.Direction == THOST_FTDC_D_Buy && order.rtnOrder.LimitPrice >= md->AskPrice1 - EPS)
+                || (order.rtnOrder.Direction == THOST_FTDC_D_Sell && order.rtnOrder.LimitPrice <= md->BidPrice1 + EPS))
+            {
+                order.handleTrade(order.rtnOrder.LimitPrice, order.rtnOrder.VolumeTotal);
+            }
+        }
+    }
+
+    onSnapshot(*md);
+}
+
+///注册回调接口
+///@param pSpi 派生自回调接口类的实例
+void CLocalTraderApi::RegisterSpi(CThostFtdcTraderSpi *pSpi) {
+    m_pSpi = pSpi;
+    return;
+}
+
+///订阅私有流。
+///@param nResumeType 私有流重传方式  
+///        THOST_TERT_RESTART:从本交易日开始重传
+///        THOST_TERT_RESUME:从上次收到的续传
+///        THOST_TERT_QUICK:只传送登录后私有流的内容
+///@remark 该方法要在Init方法前调用。若不调用则不会收到私有流的数据。
+void CLocalTraderApi::SubscribePrivateTopic(THOST_TE_RESUME_TYPE nResumeType) { return; }
+
+///订阅公共流。
+///@param nResumeType 公共流重传方式  
+///        THOST_TERT_RESTART:从本交易日开始重传
+///        THOST_TERT_RESUME:从上次收到的续传
+///        THOST_TERT_QUICK:只传送登录后公共流的内容
+///        THOST_TERT_NONE:取消订阅公共流
+///@remark 该方法要在Init方法前调用。若不调用则不会收到公共流的数据。
+void CLocalTraderApi::SubscribePublicTopic(THOST_TE_RESUME_TYPE nResumeType) { return; }
+
+///客户端认证请求
+int CLocalTraderApi::ReqAuthenticate(CThostFtdcReqAuthenticateField *pReqAuthenticateField, int nRequestID) {
+    if (pReqAuthenticateField == nullptr) return -1;
+    CThostFtdcRspAuthenticateField RspAuthenticateField = { 0 };
+    memcpy(&RspAuthenticateField, pReqAuthenticateField, sizeof(CThostFtdcRspAuthenticateField));
+    if (strlen(pReqAuthenticateField->UserID) == 0 ||
+        strlen(pReqAuthenticateField->BrokerID) == 0)
+    {
+        if (m_pSpi == nullptr) return 0;
+        m_pSpi->OnRspAuthenticate(&RspAuthenticateField, setErrorMsgAndGetRspInfo(ErrMsgUserInfoIsEmpty), nRequestID, true);
+        return 0;
+    }
+    if ((!m_userID.empty() && m_userID != pReqAuthenticateField->UserID) ||
+        (!m_brokerID.empty() && m_brokerID != pReqAuthenticateField->BrokerID))
+    {
+        if (m_pSpi == nullptr) return 0;
+        m_pSpi->OnRspAuthenticate(&RspAuthenticateField, setErrorMsgAndGetRspInfo(ErrMsgUserInfoNotSameAsLastTime), nRequestID, true);
+        return 0;
+    }
+
+    m_authenticated = true;
+    m_userID = pReqAuthenticateField->UserID;
+    m_brokerID = pReqAuthenticateField->BrokerID;
+    if (m_pSpi == nullptr) return 0;
+    m_pSpi->OnRspAuthenticate(&RspAuthenticateField, &m_successRspInfo, nRequestID, true);
+    return 0;
+}
+
+///注册用户终端信息，用于中继服务器多连接模式
+///需要在终端认证成功后，用户登录前调用该接口
+int CLocalTraderApi::RegisterUserSystemInfo(CThostFtdcUserSystemInfoField *pUserSystemInfo) { return -1; }
+
+///上报用户终端信息，用于中继服务器操作员登录模式
+///操作员登录后，可以多次调用该接口上报客户信息
+int CLocalTraderApi::SubmitUserSystemInfo(CThostFtdcUserSystemInfoField *pUserSystemInfo) { return -1; }
+
+///用户登录请求
+int CLocalTraderApi::ReqUserLogin(CThostFtdcReqUserLoginField *pReqUserLoginField, int nRequestID) {
+    if (pReqUserLoginField == nullptr)
+    {
+        return -1;
+    }
+    if (!m_authenticated)
+    {
+        if (m_pSpi == nullptr) return 0;
+        CThostFtdcRspUserLoginField RspUserLogin = { 0 };
+        m_pSpi->OnRspUserLogin(&RspUserLogin, setErrorMsgAndGetRspInfo(ErrMsgNotAuth), nRequestID, true);
+        return 0;
+    }
+    if (m_userID != pReqUserLoginField->UserID || m_brokerID != pReqUserLoginField->BrokerID)
+    {
+        if (m_pSpi == nullptr) return 0;
+        CThostFtdcRspUserLoginField RspUserLogin = { 0 };
+        m_pSpi->OnRspUserLogin(&RspUserLogin, setErrorMsgAndGetRspInfo(ErrMsgUserInfoNotSameAsAuth), nRequestID, true);
+        return 0;
+    }
+    m_logined = true;
+    if (m_pSpi == nullptr) return 0;
+    CThostFtdcRspUserLoginField RspUserLogin = { 0 };
+    strncpy(RspUserLogin.UserID, pReqUserLoginField->UserID, sizeof(RspUserLogin.UserID));
+    strncpy(RspUserLogin.BrokerID, pReqUserLoginField->BrokerID, sizeof(RspUserLogin.BrokerID));
+    strncpy(RspUserLogin.TradingDay, GetTradingDay(), sizeof(RspUserLogin.TradingDay));
+    m_pSpi->OnRspUserLogin(&RspUserLogin, &m_successRspInfo, nRequestID, true);
+    return 0;
+}
+
+///登出请求
+//登出后账户数据(含订单,持仓,资金等)仍然保留,仍然可以传入行情数据并更新资金等数据,因此实际不需要登出
+int CLocalTraderApi::ReqUserLogout(CThostFtdcUserLogoutField *pUserLogout, int nRequestID) {
+    CHECK_LOGIN_USER(pUserLogout);
+
+    m_authenticated = false;
+    m_logined = false;
+    if (m_pSpi == nullptr) return 0;
+    CThostFtdcUserLogoutField RspUserLogout = { 0 };
+    strncpy(RspUserLogout.UserID, pUserLogout->UserID, sizeof(RspUserLogout.BrokerID));
+    strncpy(RspUserLogout.BrokerID, pUserLogout->BrokerID, sizeof(RspUserLogout.BrokerID));
+    m_pSpi->OnRspUserLogout(&RspUserLogout, &m_successRspInfo, nRequestID, true);
+#if 0
+    //另一种方案:不允许登出. "上了车还想跑? 车门已焊死!"
+    m_pSpi->OnRspUserLogout(&RspUserLogout, &setErrorMsgAndGetRspInfo("Logout is not supported in this system."), nRequestID, true);
+#endif
+    return 0;
+}
+
+///用户口令更新请求
+int CLocalTraderApi::ReqUserPasswordUpdate(CThostFtdcUserPasswordUpdateField *pUserPasswordUpdate, int nRequestID) { return -1; }
+
+///资金账户口令更新请求
+int CLocalTraderApi::ReqTradingAccountPasswordUpdate(CThostFtdcTradingAccountPasswordUpdateField *pTradingAccountPasswordUpdate, int nRequestID) { return -1; }
+
+///查询用户当前支持的认证模式
+int CLocalTraderApi::ReqUserAuthMethod(CThostFtdcReqUserAuthMethodField *pReqUserAuthMethod, int nRequestID) { return -1; }
+
+///用户发出获取图形验证码请求
+int CLocalTraderApi::ReqGenUserCaptcha(CThostFtdcReqGenUserCaptchaField *pReqGenUserCaptcha, int nRequestID) { return -1; }
+
+///用户发出获取短信验证码请求
+int CLocalTraderApi::ReqGenUserText(CThostFtdcReqGenUserTextField *pReqGenUserText, int nRequestID) { return -1; }
+
+///用户发出带有图片验证码的登陆请求
+int CLocalTraderApi::ReqUserLoginWithCaptcha(CThostFtdcReqUserLoginWithCaptchaField *pReqUserLoginWithCaptcha, int nRequestID) { return -1; }
+
+///用户发出带有短信验证码的登陆请求
+int CLocalTraderApi::ReqUserLoginWithText(CThostFtdcReqUserLoginWithTextField *pReqUserLoginWithText, int nRequestID) { return -1; }
+
+///用户发出带有动态口令的登陆请求
+int CLocalTraderApi::ReqUserLoginWithOTP(CThostFtdcReqUserLoginWithOTPField *pReqUserLoginWithOTP, int nRequestID) { return -1; }
+
+///报单录入请求
+int CLocalTraderApi::ReqOrderInsert(CThostFtdcInputOrderField *pInputOrder, int nRequestID) {
+    CHECK_LOGIN_USER(pInputOrder);
+
+    const auto sendRejectOrder = [&](const char* errMsg) {
+        m_pSpi->OnRspOrderInsert(pInputOrder, setErrorMsgAndGetRspInfo(errMsg), nRequestID, true);
+        m_pSpi->OnErrRtnOrderInsert(pInputOrder, setErrorMsgAndGetRspInfo(errMsg));
+    };
+
+    if (pInputOrder->VolumeTotalOriginal <= 0)
+    {
+        sendRejectOrder(ErrMsg_INVALID_ORDERSIZE);
+        return 0;
+    }
+    if (strlen(pInputOrder->ExchangeID) == 0)
+    {
+        sendRejectOrder(ErrMsg_EXCHANGE_ID_IS_WRONG);
+        return 0;
+    }
+
+    if (pInputOrder->CombHedgeFlag[0] != THOST_FTDC_HF_Speculation)
+    {
+        sendRejectOrder(ErrMsg_BAD_FIELD_ONLY_SPECULATION);
+        return 0;
+    }
+
+    if (pInputOrder->ContingentCondition != THOST_FTDC_CC_Immediately)
+    {
+        sendRejectOrder(ErrMsg_NotSupportContingentCondition);
+        return 0;
+    }
+
+    if (pInputOrder->TimeCondition != THOST_FTDC_TC_GFD &&
+        pInputOrder->TimeCondition != THOST_FTDC_TC_IOC)
+    {
+        sendRejectOrder(ErrMsg_NotSupportTimeCondition);
+        return 0;
+    }
+
+    if (pInputOrder->OrderPriceType != THOST_FTDC_OPT_LimitPrice)
+    {
+        sendRejectOrder(ErrMsg_PRICETYPE_NOTSUPPORT_BYEXCHANGE);
+        return 0;
+    }
+
+    auto itInstr = m_instrData.find(pInputOrder->InstrumentID);
+    if (itInstr == m_instrData.end() || strcmp(itInstr->second.ExchangeID, pInputOrder->ExchangeID) != 0)
+    {
+        sendRejectOrder(ErrMsg_INSTRUMENT_NOT_FOUND);
+        return 0;
+    }
+
+    double dblMulti = pInputOrder->LimitPrice / itInstr->second.PriceTick;
+    int intMulti = static_cast<int>( round(dblMulti) );
+
+    if (abs(dblMulti - intMulti) > EPS)
+    {
+        sendRejectOrder(ErrMsg_BAD_PRICE_VALUE);
+        return 0;
+    }
+
+    std::map<std::string, CThostFtdcDepthMarketDataField>::iterator itMd;
+    {
+        std::lock_guard<std::mutex> mdGuard(m_mdMtx);
+        itMd = m_mdData.find(pInputOrder->InstrumentID);
+        if (itMd == m_mdData.end())
+        {
+            sendRejectOrder(ErrMsg_NoMarketData);
+            return 0;
+        }
+    }
+
+    std::string instr = pInputOrder->InstrumentID;
+    auto directionT = pInputOrder->Direction;
+    const int orderNum = pInputOrder->VolumeTotalOriginal;
+    double totalFrozenMargin = 0;
+
+    auto handleOpen = [&](bool preCheck) -> std::pair<bool, std::string>
+    {
+        // 如果是开仓报单,增加冻结保证金
+        auto posKey = generatePositionKey(instr,
+            directionT,
+            THOST_FTDC_PSD_Today);
+        auto itMarginRate = m_instrumentMarginRateData.find(instr);
+        if (itMarginRate == m_instrumentMarginRateData.end())
+        {
+            return std::make_pair(false, ErrMsg_INSTRUMENT_MARGINRATE_NOT_FOUND + instr);
+        }
+        std::map<std::string, CThostFtdcDepthMarketDataField>::iterator itDepthMarketData;
+        if (itInstr->second.ProductClass == THOST_FTDC_PC_Combination)
+        {
+            std::lock_guard<std::mutex> mdGuard(m_mdMtx);
+            itDepthMarketData = m_mdData.find(instr);
+            if (itDepthMarketData == m_mdData.end())
+            {
+                return std::make_pair(false, ErrMsg_NoMarketData + instr);
+            }
+        }
+        else //如果不是组合合约,则无需再次查找行情了
+        {
+            itDepthMarketData = itMd;
+        }
+        // 冻结保证金和保证金计算使用的价格,不同期货公司不一样.
+        // 可以参见TThostFtdcMarginPriceTypeType类型取值说明.
+        // 可通过查询经纪公司交易参数获得
+        // (请求查询函数ReqQryBrokerTradingParams, 响应函数OnRspQryBrokerTradingParams)
+        // 本DEMO以昨结算价作为计算冻结保证金的基准价格,
+        // 而以昨结算价(对昨仓)和开仓成交价格(对今仓)作为计算持仓保证金时的基准价格
+        double frozenMargin = itDepthMarketData->second.PreSettlementPrice *
+            itInstr->second.VolumeMultiple * orderNum *
+            (directionT == THOST_FTDC_D_Buy ?
+                itMarginRate->second.LongMarginRatioByMoney
+                : itMarginRate->second.ShortMarginRatioByMoney)
+            +
+            orderNum * (directionT == THOST_FTDC_D_Buy ?
+                itMarginRate->second.LongMarginRatioByVolume
+                : itMarginRate->second.ShortMarginRatioByVolume);
+        totalFrozenMargin += frozenMargin;
+
+        {
+            std::lock_guard<std::mutex> posGuard(m_positionMtx);
+            auto itPos = m_positionData.find(posKey);
+            if (itPos == m_positionData.end())
+            {
+                PositionData tempPos;
+                tempPos.volumeMultiple = itInstr->second.VolumeMultiple;
+                strcpy(tempPos.pos.BrokerID, m_brokerID.c_str());
+                strcpy(tempPos.pos.InvestorID, m_userID.c_str());
+                tempPos.pos.HedgeFlag = pInputOrder->CombHedgeFlag[0];
+                strcpy(tempPos.pos.ExchangeID, pInputOrder->ExchangeID);// 交易所代码
+                strcpy(tempPos.pos.InstrumentID, instr.c_str());// 合约代码
+                tempPos.pos.PreSettlementPrice = itDepthMarketData->second.PreSettlementPrice;
+                tempPos.pos.SettlementPrice = itDepthMarketData->second.LastPrice;
+                strcpy(tempPos.pos.TradingDay, GetTradingDay());
+                if (!preCheck)
+                {
+                    tempPos.pos.FrozenMargin = frozenMargin;// (因为开仓未成交而)冻结的保证金
+                }
+                tempPos.pos.PosiDirection = (directionT == THOST_FTDC_D_Buy ? THOST_FTDC_PD_Long : THOST_FTDC_PD_Short);// 持仓方向
+                tempPos.pos.PositionDate = THOST_FTDC_PSD_Today;// 持仓日期类型(今仓)
+                m_positionData.emplace(posKey, tempPos);
+            }
+            else
+            {
+                if (!preCheck)
+                {
+                    itPos->second.pos.FrozenMargin += frozenMargin;
+                }
+            }
+        }
+        if (preCheck)
+        {
+            double newAvailable = m_tradingAccount.Balance - m_tradingAccount.CurrMargin - m_tradingAccount.FrozenMargin
+                - totalFrozenMargin;
+            if (newAvailable < 0)
+            {
+                return std::make_pair(false, ERRMSG_AVAILABLE_NOT_ENOUGH);;
+            }
+        }
+        else
+        {
+            m_tradingAccount.FrozenMargin += frozenMargin;
+            updatePNL();
+        }
+        return std::make_pair(true, std::string());
+    };
+    auto handleClose = [&](bool preCheck) -> std::pair<bool, std::string> {
+        // 如果是平仓报单,则校验可平仓数量和增加冻结持仓数量
+        auto posKey = generatePositionKey(instr,
+            directionT,
+            getDateTypeFromOffset(itInstr->second.ExchangeID, pInputOrder->CombOffsetFlag[0]));
+
+        std::lock_guard<std::mutex> posGuard(m_positionMtx);
+        auto itPos = m_positionData.find(posKey);
+        if (itPos == m_positionData.end())
+        {
+            return std::make_pair(false, ERRMSG_AVAILABLE_POSITION_NOT_ENOUGH + std::string("0"));
+        }
+        else
+        {
+            int& frozenPositionNum = (itPos->second.pos.PosiDirection == THOST_FTDC_PD_Long ?
+                itPos->second.pos.ShortFrozen : itPos->second.pos.LongFrozen);
+            const auto closable = itPos->second.pos.Position - frozenPositionNum;
+            if (closable < orderNum)
+            {
+                return  std::make_pair(false, 
+                    (isSpecialExchange(itInstr->second.ExchangeID) && pInputOrder->CombOffsetFlag[0] == THOST_FTDC_OF_CloseToday) ?
+                        ERRMSG_AVAILABLE_POSITION_NOT_ENOUGH : ERRMSG_AVAILABLE_TODAY_POSITION_NOT_ENOUGH
+                        + std::string(std::to_string(closable)));
+            }
+            if (!preCheck)
+            {
+                frozenPositionNum += orderNum;
+            }
+        }
+        return std::make_pair(true, std::string());
+    };
+
+    auto doRiskCheck = [&](bool preCheck) -> std::pair<bool, std::string>
+    {
+        if (isOpen(pInputOrder->CombOffsetFlag[0]))
+        {
+            if (itInstr->second.ProductClass == THOST_FTDC_PC_Combination)
+            {
+                std::vector<std::string> singleContracts;
+                GetSingleContractFromCombinationContract(itInstr->first, singleContracts);
+
+                for (std::size_t legNo = 0; legNo < singleContracts.size(); ++legNo)
+                {
+                    instr = singleContracts[legNo];
+                    directionT = (legNo % 2 == 0 ? pInputOrder->Direction : getOppositeDirection(pInputOrder->Direction));
+
+                    auto handleOpenRet = handleOpen(preCheck);
+                    if (!handleOpenRet.first)
+                    {
+                        return handleOpenRet;;
+                    }
+                }
+            }
+            else
+            {
+                directionT = pInputOrder->Direction;
+                auto handleOpenRet = handleOpen(preCheck);
+                if (!handleOpenRet.first)
+                {
+                    return handleOpenRet;
+                }
+            }
+        }
+        else
+        {
+            if (itInstr->second.ProductClass == THOST_FTDC_PC_Combination)
+            {
+                std::vector<std::string> singleContracts;
+                GetSingleContractFromCombinationContract(itInstr->first, singleContracts);
+
+                for (std::size_t legNo = 0; legNo < singleContracts.size(); ++legNo)
+                {
+                    instr = singleContracts[legNo];
+                    directionT = (legNo % 2 == 0 ? getOppositeDirection(pInputOrder->Direction) : pInputOrder->Direction);
+
+                    auto handleCloseRet = handleClose(preCheck);
+                    if (!handleCloseRet.first)
+                    {
+                        return handleCloseRet;
+                    }
+                }
+            }
+            else
+            {
+                directionT = getOppositeDirection(pInputOrder->Direction); // 反方向的(准备平仓的)持仓方向
+                auto handleCloseRet = handleClose(preCheck);
+                if (!handleCloseRet.first)
+                {
+                    return handleCloseRet;
+                }
+            }
+        }
+        return std::make_pair(true, std::string());
+
+    };
+
+    auto checkRet = doRiskCheck(true);//风控预先校验
+    if (!checkRet.first)
+    {
+        sendRejectOrder(checkRet.second.c_str());
+        return 0;
+    }
+
+    std::map<int, OrderData>::iterator itOrder;
+    {
+        int OrderRef = atoi(pInputOrder->OrderRef);
+        std::lock_guard<std::mutex> orderGuard(m_orderMtx);
+        if (strlen(pInputOrder->OrderRef) != 0)// check the OrderRef if OrderRef in order is not empty
+        {
+            if (!m_orderData.empty() && OrderRef < (--m_orderData.end())->first)
+            {
+                sendRejectOrder(ErrMsgDuplicateOrder);
+                return 0;
+            }
+        }
+        OrderData x(this, *pInputOrder);
+        bool emplaceSuccess(false);
+        std::tie(itOrder, emplaceSuccess) = m_orderData.emplace(OrderRef, x);
+        if (!emplaceSuccess)
+        {
+            sendRejectOrder(ErrMsgDuplicateOrder);
+            return 0;
+        }
+    }
+
+    checkRet = doRiskCheck(false);//更新风控值
+    /*if (!checkRet.first) //此前已经校验过,不会再为false
+    {
+        sendRejectOrder(checkRet.second.c_str());
+        return 0;
+    }*/
+
+    {
+        if ((pInputOrder->Direction == THOST_FTDC_D_Buy &&
+                pInputOrder->LimitPrice >= itMd->second.AskPrice1 - EPS)
+            || (pInputOrder->Direction == THOST_FTDC_D_Sell &&
+                pInputOrder->LimitPrice <= itMd->second.BidPrice1 + EPS))
+        {
+            itOrder->second.handleTrade(pInputOrder->LimitPrice, orderNum);
+            return 0;
+        }
+        else
+        {
+            // 判断是否是IOC订单
+            // 可能有的交易所不是这样判断,但本系统以这种方式来统一判断处理
+            auto isIOCOrder = [&]() {
+                return pInputOrder->TimeCondition == THOST_FTDC_TC_IOC && pInputOrder->VolumeCondition == THOST_FTDC_VC_CV;
+            };
+            if (isIOCOrder())
+            {
+                itOrder->second.handleCancel(false);
+                return 0;
+            }
+        }
+    }
+
+    
+    return 0;
+}
+
+///预埋单录入请求
+int CLocalTraderApi::ReqParkedOrderInsert(CThostFtdcParkedOrderField *pParkedOrder, int nRequestID) {
+    CHECK_LOGIN_USER(pParkedOrder);
+    return -1;
+}
+
+///预埋撤单录入请求
+int CLocalTraderApi::ReqParkedOrderAction(CThostFtdcParkedOrderActionField *pParkedOrderAction, int nRequestID) {
+    CHECK_LOGIN_USER(pParkedOrderAction);
+    return -1;
+}
+
+///报单操作请求
+int CLocalTraderApi::ReqOrderAction(CThostFtdcInputOrderActionField *pInputOrderAction, int nRequestID) {
+    CHECK_LOGIN_USER(pInputOrderAction);
+
+    if (pInputOrderAction->ActionFlag != THOST_FTDC_AF_Delete)
+    {
+        if (m_pSpi == nullptr) return 0;
+        m_pSpi->OnRspOrderAction(pInputOrderAction, setErrorMsgAndGetRspInfo(ErrMsg_NotSupportModifyOrder), nRequestID, true);
+        return 0;
+    }
+    int OrderRef = atoi(pInputOrderAction->OrderRef);
+    {
+        std::lock_guard<std::mutex> orderGuard(m_orderMtx);
+        auto itOrder = m_orderData.find(OrderRef);
+        // first, we find order by "OrderRef + FrontID + SessionID" (and, the InstrumentID must be valid)
+        if (itOrder != m_orderData.end())
+        {
+            auto& order = itOrder->second;
+            if (order.isDone() ||
+                order.rtnOrder.FrontID != pInputOrderAction->FrontID ||
+                order.rtnOrder.SessionID != pInputOrderAction->SessionID ||
+                strcmp( order.rtnOrder.InstrumentID, pInputOrderAction->InstrumentID) != 0)
+            {
+                if (m_pSpi == nullptr) return 0;
+                m_pSpi->OnRspOrderAction(pInputOrderAction, setErrorMsgAndGetRspInfo(ErrMsg_AlreadyDoneOrder), nRequestID, true);
+                return 0;
+            }
+            else
+            {
+                order.handleCancel();
+                return 0;
+            }
+        }
+        else // second, we find order by "OrderSysID + ExchangeID"
+        {
+            for (auto& orderPair : m_orderData)
+            {
+                auto& order = orderPair.second;
+                if (strcmp(order.rtnOrder.OrderSysID, pInputOrderAction->OrderSysID) == 0 &&
+                    strcmp(order.rtnOrder.ExchangeID, pInputOrderAction->ExchangeID) == 0)
+                {
+                    order.handleCancel();
+                    return 0;
+                }
+
+            }
+        }
+        
+    }
+    if (m_pSpi == nullptr) return 0;
+    m_pSpi->OnRspOrderAction(pInputOrderAction, setErrorMsgAndGetRspInfo(ErrMsg_NotExistOrder), nRequestID, true);
+    return 0;
+}
+
+///查询最大报单数量请求
+int CLocalTraderApi::ReqQryMaxOrderVolume(CThostFtdcQryMaxOrderVolumeField *pQryMaxOrderVolume, int nRequestID) { return -1; }
+
+///投资者结算结果确认
+int CLocalTraderApi::ReqSettlementInfoConfirm(CThostFtdcSettlementInfoConfirmField *pSettlementInfoConfirm, int nRequestID) {
+    CHECK_LOGIN_INVESTOR(pSettlementInfoConfirm);
+    if (m_pSpi == nullptr) return 0;
+    CThostFtdcSettlementInfoConfirmField SettlementInfoConfirm = *pSettlementInfoConfirm;
+    m_pSpi->OnRspSettlementInfoConfirm(&SettlementInfoConfirm, &m_successRspInfo, nRequestID, true);
+    return 0;
+}
+
+///请求删除预埋单
+int CLocalTraderApi::ReqRemoveParkedOrder(CThostFtdcRemoveParkedOrderField *pRemoveParkedOrder, int nRequestID) { return -1; }
+
+///请求删除预埋撤单
+int CLocalTraderApi::ReqRemoveParkedOrderAction(CThostFtdcRemoveParkedOrderActionField *pRemoveParkedOrderAction, int nRequestID) { return -1; }
+
+///执行宣告录入请求
+int CLocalTraderApi::ReqExecOrderInsert(CThostFtdcInputExecOrderField *pInputExecOrder, int nRequestID) { return -1; }
+
+///执行宣告操作请求
+int CLocalTraderApi::ReqExecOrderAction(CThostFtdcInputExecOrderActionField *pInputExecOrderAction, int nRequestID) { return -1; }
+
+///询价录入请求
+int CLocalTraderApi::ReqForQuoteInsert(CThostFtdcInputForQuoteField *pInputForQuote, int nRequestID) { return -1; }
+
+///报价录入请求
+int CLocalTraderApi::ReqQuoteInsert(CThostFtdcInputQuoteField *pInputQuote, int nRequestID) { return -1; }
+
+///报价操作请求
+int CLocalTraderApi::ReqQuoteAction(CThostFtdcInputQuoteActionField *pInputQuoteAction, int nRequestID) { return -1; }
+
+///批量报单操作请求
+int CLocalTraderApi::ReqBatchOrderAction(CThostFtdcInputBatchOrderActionField *pInputBatchOrderAction, int nRequestID) { return -1; }
+
+///期权自对冲录入请求
+int CLocalTraderApi::ReqOptionSelfCloseInsert(CThostFtdcInputOptionSelfCloseField *pInputOptionSelfClose, int nRequestID) { return -1; }
+
+///期权自对冲操作请求
+int CLocalTraderApi::ReqOptionSelfCloseAction(CThostFtdcInputOptionSelfCloseActionField *pInputOptionSelfCloseAction, int nRequestID) { return -1; }
+
+///申请组合录入请求
+int CLocalTraderApi::ReqCombActionInsert(CThostFtdcInputCombActionField *pInputCombAction, int nRequestID) { return -1; }
+
+///请求查询报单
+int CLocalTraderApi::ReqQryOrder(CThostFtdcQryOrderField *pQryOrder, int nRequestID) {
+    CHECK_LOGIN_INVESTOR(pQryOrder);
+    if (m_pSpi == nullptr) return 0;
+    std::vector<CThostFtdcOrderField*> v;
+    {
+        std::lock_guard<std::mutex> orderGuard(m_orderMtx);
+        for (auto& o : m_orderData)
+        {
+            auto& rtnOrder = o.second.rtnOrder;
+            if ((strlen(pQryOrder->ExchangeID) == 0 || strcmp(pQryOrder->ExchangeID, rtnOrder.ExchangeID) == 0) &&
+                (strlen(pQryOrder->OrderSysID) == 0 || strcmp(pQryOrder->OrderSysID, rtnOrder.OrderSysID) == 0) &&
+                (strlen(pQryOrder->InstrumentID) == 0 || strcmp(pQryOrder->InstrumentID, rtnOrder.InstrumentID) == 0))
+            {
+                v.emplace_back(&rtnOrder);
+            }
+        }
+    }
+    for (auto it = v.begin(); it != v.end(); ++it)
+    {
+        m_pSpi->OnRspQryOrder(*it, &m_successRspInfo, nRequestID, (it + 1 == v.end() ? true : false));
+    }
+    if (v.empty())
+    {
+        m_pSpi->OnRspQryOrder(nullptr, &m_successRspInfo, nRequestID, true);
+    }
+    return 0;
+}
+
+///请求查询成交
+int CLocalTraderApi::ReqQryTrade(CThostFtdcQryTradeField *pQryTrade, int nRequestID) {
+    CHECK_LOGIN_INVESTOR(pQryTrade);
+    if (m_pSpi == nullptr) return 0;
+    std::vector<CThostFtdcTradeField*> v;
+    {
+        std::lock_guard<std::mutex> orderGuard(m_orderMtx);
+        for (auto& o : m_orderData)
+        {
+            for (auto& t : o.second.rtnTrades)
+            {
+                if ((strlen(pQryTrade->ExchangeID) == 0 || strcmp(pQryTrade->ExchangeID, t.ExchangeID) == 0) &&
+                    (strlen(pQryTrade->TradeID) == 0 || strcmp(pQryTrade->TradeID, t.TradeID) == 0) &&
+                    (strlen(pQryTrade->InstrumentID) == 0 || strcmp(pQryTrade->InstrumentID, t.InstrumentID) == 0))
+                {
+                    v.emplace_back(&t);
+                }
+            }
+        }
+    }
+    for (auto it = v.begin(); it != v.end(); ++it)
+    {
+        m_pSpi->OnRspQryTrade(*it, &m_successRspInfo, nRequestID, (it + 1 == v.end() ? true : false));
+    }
+    if (v.empty())
+    {
+        m_pSpi->OnRspQryTrade(nullptr, &m_successRspInfo, nRequestID, true);
+    }
+    return 0;
+}
+
+///请求查询投资者持仓
+int CLocalTraderApi::ReqQryInvestorPosition(CThostFtdcQryInvestorPositionField *pQryInvestorPosition, int nRequestID) {
+    CHECK_LOGIN_INVESTOR(pQryInvestorPosition);
+    if (m_pSpi == nullptr) return 0;
+    std::vector<CThostFtdcInvestorPositionField*> v;
+    {
+        std::lock_guard<std::mutex> posGuard(m_positionMtx);
+        for (auto& o : m_positionData)
+        {
+            auto& pos = o.second.pos;
+            if ((strlen(pQryInvestorPosition->ExchangeID) == 0 || strcmp(pQryInvestorPosition->ExchangeID, pos.ExchangeID) == 0) &&
+                (strlen(pQryInvestorPosition->InstrumentID) == 0 || strcmp(pQryInvestorPosition->InstrumentID, pos.InstrumentID) == 0))
+            {
+                v.emplace_back(&pos);
+            }
+        }
+    }
+    for (auto it = v.begin(); it != v.end(); ++it)
+    {
+        m_pSpi->OnRspQryInvestorPosition(*it, &m_successRspInfo, nRequestID, (it + 1 == v.end() ? true : false));
+    }
+    if (v.empty())
+    {
+        m_pSpi->OnRspQryInvestorPosition(nullptr, &m_successRspInfo, nRequestID, true);
+    }
+    return 0;
+}
+
+///请求查询资金账户
+int CLocalTraderApi::ReqQryTradingAccount(CThostFtdcQryTradingAccountField *pQryTradingAccount, int nRequestID) {
+    CHECK_LOGIN_INVESTOR(pQryTradingAccount);
+    if (m_pSpi == nullptr) return 0;
+    strcpy(m_tradingAccount.BrokerID, m_brokerID.c_str());
+    strcpy(m_tradingAccount.AccountID, m_userID.c_str());
+    strcpy(m_tradingAccount.TradingDay, GetTradingDay());
+    m_pSpi->OnRspQryTradingAccount(&m_tradingAccount, &m_successRspInfo, nRequestID, true);
+    return 0;
+}
+
+///请求查询投资者
+int CLocalTraderApi::ReqQryInvestor(CThostFtdcQryInvestorField *pQryInvestor, int nRequestID) {
+    CHECK_LOGIN_INVESTOR(pQryInvestor);
+    if (m_pSpi == nullptr) return 0;
+    CThostFtdcInvestorField Investor = { 0 };
+    strcpy(Investor.InvestorID, pQryInvestor->InvestorID);
+    strcpy(Investor.BrokerID, pQryInvestor->BrokerID);
+    Investor.IdentifiedCardType = THOST_FTDC_ICT_OtherCard;
+    strcpy(Investor.IdentifiedCardNo, "QQ1005018695");
+    Investor.IsActive = 1;
+    m_pSpi->OnRspQryInvestor(&Investor, &m_successRspInfo, nRequestID, true);
+    return 0;
+}
+
+///请求查询交易编码
+int CLocalTraderApi::ReqQryTradingCode(CThostFtdcQryTradingCodeField *pQryTradingCode, int nRequestID) { return -1; }
+
+///请求查询合约保证金率
+int CLocalTraderApi::ReqQryInstrumentMarginRate(CThostFtdcQryInstrumentMarginRateField *pQryInstrumentMarginRate, int nRequestID) { return -1; }
+
+///请求查询合约手续费率
+int CLocalTraderApi::ReqQryInstrumentCommissionRate(CThostFtdcQryInstrumentCommissionRateField *pQryInstrumentCommissionRate, int nRequestID) { return -1; }
+
+///请求查询交易所
+int CLocalTraderApi::ReqQryExchange(CThostFtdcQryExchangeField *pQryExchange, int nRequestID) { return -1; }
+
+///请求查询产品
+int CLocalTraderApi::ReqQryProduct(CThostFtdcQryProductField *pQryProduct, int nRequestID) { return -1; }
+
+///请求查询合约
+int CLocalTraderApi::ReqQryInstrument(CThostFtdcQryInstrumentField *pQryInstrument, int nRequestID) {
+    if (pQryInstrument == nullptr || !m_logined) return -1;
+    if (m_pSpi == nullptr) return 0;
+    std::vector<CThostFtdcInstrumentField*> v;
+    v.reserve(1000); // maybe less than this count ?
+    for (auto& instrPair : m_instrData)
+    {
+        CThostFtdcInstrumentField& instr = instrPair.second;
+        if ((strlen(pQryInstrument->ExchangeID) == 0 || strcmp(pQryInstrument->ExchangeID, instr.ExchangeID) == 0) &&
+            (strlen(pQryInstrument->ProductID) == 0 || strcmp(pQryInstrument->ProductID, instr.ProductID) == 0) &&
+            (strlen(pQryInstrument->InstrumentID) == 0 || strcmp(pQryInstrument->InstrumentID, instr.InstrumentID) == 0))
+        {
+            v.emplace_back(&instr);   
+        }
+    }
+    for (auto it = v.begin(); it != v.end(); ++it)
+    {
+        m_pSpi->OnRspQryInstrument(*it, &m_successRspInfo, nRequestID, (it + 1 == v.end() ? true : false));
+    }
+    if (v.empty())
+    {
+        m_pSpi->OnRspQryInstrument(nullptr, &m_successRspInfo, nRequestID, true);
+    }
+    return 0;
+}
+
+///请求查询行情
+int CLocalTraderApi::ReqQryDepthMarketData(CThostFtdcQryDepthMarketDataField *pQryDepthMarketData, int nRequestID) {
+    if (pQryDepthMarketData == nullptr || !m_logined) return -1;
+    if (m_pSpi == nullptr) return 0;
+    std::vector<CThostFtdcDepthMarketDataField*> v;
+    {
+        std::lock_guard<std::mutex> mdGuard(m_mdMtx);
+        for (auto& p : m_mdData)
+        {
+            auto& md = p.second;
+            if ((strlen(pQryDepthMarketData->ExchangeID) == 0 || strcmp(pQryDepthMarketData->ExchangeID, md.ExchangeID) == 0) &&
+                (strlen(pQryDepthMarketData->InstrumentID) == 0 || strcmp(pQryDepthMarketData->InstrumentID, md.InstrumentID) == 0))
+            {
+                v.emplace_back(&md);
+            }
+        }
+    }
+    for (auto it = v.begin(); it != v.end(); ++it)
+    {
+        m_pSpi->OnRspQryDepthMarketData(*it, &m_successRspInfo, nRequestID, (it + 1 == v.end() ? true : false));
+    }
+    if (v.empty())
+    {
+        m_pSpi->OnRspQryDepthMarketData(nullptr, &m_successRspInfo, nRequestID, true);
+    }
+    return 0;
+}
+
+///请求查询投资者结算结果
+int CLocalTraderApi::ReqQrySettlementInfo(CThostFtdcQrySettlementInfoField *pQrySettlementInfo, int nRequestID) {
+    CHECK_LOGIN_INVESTOR(pQrySettlementInfo);
+    if (m_pSpi == nullptr) return 0;
+    m_pSpi->OnRspQrySettlementInfo(nullptr, &m_successRspInfo, nRequestID, true);
+    return 0;
+}
+
+///请求查询转帐银行
+int CLocalTraderApi::ReqQryTransferBank(CThostFtdcQryTransferBankField *pQryTransferBank, int nRequestID) { return -1; }
+
+///请求查询投资者持仓明细
+int CLocalTraderApi::ReqQryInvestorPositionDetail(CThostFtdcQryInvestorPositionDetailField *pQryInvestorPositionDetail, int nRequestID) {
+    CHECK_LOGIN_INVESTOR(pQryInvestorPositionDetail);
+    if (m_pSpi == nullptr) return 0;
+    std::vector<CThostFtdcInvestorPositionDetailField*> v;
+    {
+        std::lock_guard<std::mutex> posGuard(m_positionMtx);
+        for (auto& o : m_positionData)
+        {
+            for (auto& t : o.second.posDetailData)
+            {
+                if ((strlen(pQryInvestorPositionDetail->ExchangeID) == 0 || strcmp(pQryInvestorPositionDetail->ExchangeID, t.ExchangeID) == 0) &&
+                    (strlen(pQryInvestorPositionDetail->InstrumentID) == 0 || strcmp(pQryInvestorPositionDetail->InstrumentID, t.InstrumentID) == 0))
+                {
+                    v.emplace_back(&t);
+                }
+            }
+        }
+    }
+    for (auto it = v.begin(); it != v.end(); ++it)
+    {
+        m_pSpi->OnRspQryInvestorPositionDetail(*it, &m_successRspInfo, nRequestID, (it + 1 == v.end() ? true : false));
+    }
+    if (v.empty())
+    {
+        m_pSpi->OnRspQryTrade(nullptr, &m_successRspInfo, nRequestID, true);
+    }
+    return 0;
+}
+
+///请求查询客户通知
+int CLocalTraderApi::ReqQryNotice(CThostFtdcQryNoticeField *pQryNotice, int nRequestID) { return -1; }
+
+///请求查询结算信息确认
+int CLocalTraderApi::ReqQrySettlementInfoConfirm(CThostFtdcQrySettlementInfoConfirmField *pQrySettlementInfoConfirm, int nRequestID) {
+    CHECK_LOGIN_INVESTOR(pQrySettlementInfoConfirm);
+    if (m_pSpi == nullptr) return 0;
+    CThostFtdcSettlementInfoConfirmField SettlementInfoConfirm = { 0 };
+    strcpy(SettlementInfoConfirm.BrokerID, pQrySettlementInfoConfirm->BrokerID);
+    strcpy(SettlementInfoConfirm.InvestorID, pQrySettlementInfoConfirm->InvestorID);
+    strcpy(SettlementInfoConfirm.ConfirmDate, GetTradingDay());
+    m_pSpi->OnRspQrySettlementInfoConfirm(&SettlementInfoConfirm, &m_successRspInfo, nRequestID, true);
+    return 0;
+}
+
+///请求查询投资者持仓明细
+int CLocalTraderApi::ReqQryInvestorPositionCombineDetail(CThostFtdcQryInvestorPositionCombineDetailField *pQryInvestorPositionCombineDetail, int nRequestID) { return -1; }
+
+///请求查询保证金监管系统经纪公司资金账户密钥
+int CLocalTraderApi::ReqQryCFMMCTradingAccountKey(CThostFtdcQryCFMMCTradingAccountKeyField *pQryCFMMCTradingAccountKey, int nRequestID) { return -1; }
+
+///请求查询仓单折抵信息
+int CLocalTraderApi::ReqQryEWarrantOffset(CThostFtdcQryEWarrantOffsetField *pQryEWarrantOffset, int nRequestID) { return -1; }
+
+///请求查询投资者品种/跨品种保证金
+int CLocalTraderApi::ReqQryInvestorProductGroupMargin(CThostFtdcQryInvestorProductGroupMarginField *pQryInvestorProductGroupMargin, int nRequestID) { return -1; }
+
+///请求查询交易所保证金率
+int CLocalTraderApi::ReqQryExchangeMarginRate(CThostFtdcQryExchangeMarginRateField *pQryExchangeMarginRate, int nRequestID) { return -1; }
+
+///请求查询交易所调整保证金率
+int CLocalTraderApi::ReqQryExchangeMarginRateAdjust(CThostFtdcQryExchangeMarginRateAdjustField *pQryExchangeMarginRateAdjust, int nRequestID) { return -1; }
+
+///请求查询汇率
+int CLocalTraderApi::ReqQryExchangeRate(CThostFtdcQryExchangeRateField *pQryExchangeRate, int nRequestID) { return -1; }
+
+///请求查询二级代理操作员银期权限
+int CLocalTraderApi::ReqQrySecAgentACIDMap(CThostFtdcQrySecAgentACIDMapField *pQrySecAgentACIDMap, int nRequestID) { return -1; }
+
+///请求查询产品报价汇率
+int CLocalTraderApi::ReqQryProductExchRate(CThostFtdcQryProductExchRateField *pQryProductExchRate, int nRequestID) { return -1; }
+
+///请求查询产品组
+int CLocalTraderApi::ReqQryProductGroup(CThostFtdcQryProductGroupField *pQryProductGroup, int nRequestID) { return -1; }
+
+///请求查询做市商合约手续费率
+int CLocalTraderApi::ReqQryMMInstrumentCommissionRate(CThostFtdcQryMMInstrumentCommissionRateField *pQryMMInstrumentCommissionRate, int nRequestID) { return -1; }
+
+///请求查询做市商期权合约手续费
+int CLocalTraderApi::ReqQryMMOptionInstrCommRate(CThostFtdcQryMMOptionInstrCommRateField *pQryMMOptionInstrCommRate, int nRequestID) { return -1; }
+
+///请求查询报单手续费
+int CLocalTraderApi::ReqQryInstrumentOrderCommRate(CThostFtdcQryInstrumentOrderCommRateField *pQryInstrumentOrderCommRate, int nRequestID) { return -1; }
+
+///请求查询资金账户
+int CLocalTraderApi::ReqQrySecAgentTradingAccount(CThostFtdcQryTradingAccountField *pQryTradingAccount, int nRequestID) { return -1; }
+
+///请求查询二级代理商资金校验模式
+int CLocalTraderApi::ReqQrySecAgentCheckMode(CThostFtdcQrySecAgentCheckModeField *pQrySecAgentCheckMode, int nRequestID) { return -1; }
+
+///请求查询二级代理商信息
+int CLocalTraderApi::ReqQrySecAgentTradeInfo(CThostFtdcQrySecAgentTradeInfoField *pQrySecAgentTradeInfo, int nRequestID) { return -1; }
+
+///请求查询期权交易成本
+int CLocalTraderApi::ReqQryOptionInstrTradeCost(CThostFtdcQryOptionInstrTradeCostField *pQryOptionInstrTradeCost, int nRequestID) { return -1; }
+
+///请求查询期权合约手续费
+int CLocalTraderApi::ReqQryOptionInstrCommRate(CThostFtdcQryOptionInstrCommRateField *pQryOptionInstrCommRate, int nRequestID) { return -1; }
+
+///请求查询执行宣告
+int CLocalTraderApi::ReqQryExecOrder(CThostFtdcQryExecOrderField *pQryExecOrder, int nRequestID) { return -1; }
+
+///请求查询询价
+int CLocalTraderApi::ReqQryForQuote(CThostFtdcQryForQuoteField *pQryForQuote, int nRequestID) { return -1; }
+
+///请求查询报价
+int CLocalTraderApi::ReqQryQuote(CThostFtdcQryQuoteField *pQryQuote, int nRequestID) { return -1; }
+
+///请求查询期权自对冲
+int CLocalTraderApi::ReqQryOptionSelfClose(CThostFtdcQryOptionSelfCloseField *pQryOptionSelfClose, int nRequestID) { return -1; }
+
+///请求查询投资单元
+int CLocalTraderApi::ReqQryInvestUnit(CThostFtdcQryInvestUnitField *pQryInvestUnit, int nRequestID) { return -1; }
+
+///请求查询组合合约安全系数
+int CLocalTraderApi::ReqQryCombInstrumentGuard(CThostFtdcQryCombInstrumentGuardField *pQryCombInstrumentGuard, int nRequestID) { return -1; }
+
+///请求查询申请组合
+int CLocalTraderApi::ReqQryCombAction(CThostFtdcQryCombActionField *pQryCombAction, int nRequestID) { return -1; }
+
+///请求查询转帐流水
+int CLocalTraderApi::ReqQryTransferSerial(CThostFtdcQryTransferSerialField *pQryTransferSerial, int nRequestID) { return -1; }
+
+///请求查询银期签约关系
+int CLocalTraderApi::ReqQryAccountregister(CThostFtdcQryAccountregisterField *pQryAccountregister, int nRequestID) { return -1; }
+
+///请求查询签约银行
+int CLocalTraderApi::ReqQryContractBank(CThostFtdcQryContractBankField *pQryContractBank, int nRequestID) { return -1; }
+
+///请求查询预埋单
+int CLocalTraderApi::ReqQryParkedOrder(CThostFtdcQryParkedOrderField *pQryParkedOrder, int nRequestID) { return -1; }
+
+///请求查询预埋撤单
+int CLocalTraderApi::ReqQryParkedOrderAction(CThostFtdcQryParkedOrderActionField *pQryParkedOrderAction, int nRequestID) { return -1; }
+
+///请求查询交易通知
+int CLocalTraderApi::ReqQryTradingNotice(CThostFtdcQryTradingNoticeField *pQryTradingNotice, int nRequestID) { return -1; }
+
+///请求查询经纪公司交易参数
+int CLocalTraderApi::ReqQryBrokerTradingParams(CThostFtdcQryBrokerTradingParamsField *pQryBrokerTradingParams, int nRequestID) { return -1; }
+
+///请求查询经纪公司交易算法
+int CLocalTraderApi::ReqQryBrokerTradingAlgos(CThostFtdcQryBrokerTradingAlgosField *pQryBrokerTradingAlgos, int nRequestID) { return -1; }
+
+///请求查询监控中心用户令牌
+int CLocalTraderApi::ReqQueryCFMMCTradingAccountToken(CThostFtdcQueryCFMMCTradingAccountTokenField *pQueryCFMMCTradingAccountToken, int nRequestID) { return -1; }
+
+///期货发起银行资金转期货请求
+int CLocalTraderApi::ReqFromBankToFutureByFuture(CThostFtdcReqTransferField *pReqTransfer, int nRequestID) { return -1; }
+
+///期货发起期货资金转银行请求
+int CLocalTraderApi::ReqFromFutureToBankByFuture(CThostFtdcReqTransferField *pReqTransfer, int nRequestID) { return -1; }
+
+///期货发起查询银行余额请求
+int CLocalTraderApi::ReqQueryBankAccountMoneyByFuture(CThostFtdcReqQueryAccountField *pReqQueryAccount, int nRequestID) { return -1; }
+
+///请求查询分类合约
+int CLocalTraderApi::ReqQryClassifiedInstrument(CThostFtdcQryClassifiedInstrumentField *pQryClassifiedInstrument, int nRequestID) { return -1; }
+
+///请求组合优惠比例
+int CLocalTraderApi::ReqQryCombPromotionParam(CThostFtdcQryCombPromotionParamField *pQryCombPromotionParam, int nRequestID) { return -1; }
