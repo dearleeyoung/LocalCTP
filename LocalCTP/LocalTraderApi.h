@@ -160,6 +160,8 @@ private:
     std::map<std::string, CThostFtdcInstrumentCommissionRateField> m_instrumentCommissionRateData;// 合约手续费数据. key:合约代码.
     CThostFtdcTradingAccountField m_tradingAccount;// 资金数据
     std::map<std::string, OrderData> m_contionalOrders;// 条件报单数据. key:条件单报单编号(OrderSysID)
+    std::map<std::string, CThostFtdcExchangeField> m_exchanges;// 交易所数据. key:交易所代码
+    std::map<std::string, CThostFtdcProductField> m_products;// 品种数据. key:品种代码
 	CThostFtdcTraderSpi* m_pSpi;//回调接口类的指针
 
     CThostFtdcRspInfoField m_successRspInfo;

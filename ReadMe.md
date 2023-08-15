@@ -99,6 +99,8 @@ Linux:
 1. `ReqQrySettlementInfo`
 1. `ReqQrySettlementInfoConfirm`
 1. `ReqQryClassifiedInstrument`
+1. `ReqQryExchange`
+1. `ReqQryProduct`
 
 ### 部分接口说明:
 1. `Init`: 内部并不会连接网络，会从当前目录(或环境变量中的目录)的 `instrument.csv` 中读取合约信息。格式参见附带的同名文件。

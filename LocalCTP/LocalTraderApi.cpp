@@ -500,6 +500,75 @@ void CLocalTraderApi::Init() {
     }
     std::cout << "Total instrument count: " << m_instrData.size() << std::endl;
 
+    auto initProductsAndExchanges = [&]() {
+        for (const auto& instrPair : m_instrData)
+        {
+            const auto& instr = instrPair.second;
+            if (m_exchanges.find(instr.ExchangeID) == m_exchanges.end())
+            {
+                CThostFtdcExchangeField exchange = { 0 };
+                exchange.ExchangeProperty = THOST_FTDC_EXP_Normal;
+                strcpy(exchange.ExchangeID, instr.ExchangeID);
+                strcpy(exchange.ExchangeName, exchange.ExchangeID);
+                m_exchanges.emplace(exchange.ExchangeID, exchange);
+            }
+
+            if (m_products.find(instr.ProductID) == m_products.end())
+            {
+                auto getRemoveLastNumberStr = [&](std::string s) -> std::string {
+                    //去除字符串末尾的数字. example: 黄金2402 -> 黄金
+                    auto lastNotNumberIndex = s.find_last_not_of("0123456789");
+                    if (lastNotNumberIndex == std::string::npos)
+                    {
+                        return s;
+                    }
+                    return s.substr(0, lastNotNumberIndex + 1);
+                };
+                auto getProductFronInstrument = [&]() -> CThostFtdcProductField {
+                    CThostFtdcProductField p = { 0 };
+                    ///产品名称
+                    strcpy(p.ProductName, getRemoveLastNumberStr(instr.InstrumentName).c_str());
+                    ///交易所代码
+                    strcpy(p.ExchangeID, instr.ExchangeID);
+                    ///产品类型
+                    p.ProductClass = instr.ProductClass;
+                    ///合约数量乘数
+                    p.VolumeMultiple = instr.VolumeMultiple;
+                    ///最小变动价位
+                    p.PriceTick = instr.PriceTick;
+                    ///市价单最大下单量
+                    p.MaxMarketOrderVolume = instr.MaxMarketOrderVolume;
+                    ///市价单最小下单量
+                    p.MinMarketOrderVolume = instr.MinMarketOrderVolume;
+                    ///限价单最大下单量
+                    p.MaxLimitOrderVolume = instr.MaxLimitOrderVolume;
+                    ///限价单最小下单量
+                    p.MinLimitOrderVolume = instr.MinLimitOrderVolume;
+                    ///持仓类型
+                    p.PositionType = instr.PositionType;
+                    ///持仓日期类型
+                    p.PositionDateType = instr.PositionDateType;
+                    ///平仓处理类型
+                    p.CloseDealType = THOST_FTDC_CDT_Normal;
+                    ///交易币种类型
+                    strcpy(p.TradeCurrencyID, "CNY");
+                    ///质押资金可用范围
+                    p.MortgageFundUseRange = THOST_FTDC_MFUR_None;
+                    ///合约基础商品乘数
+                    p.UnderlyingMultiple = instr.UnderlyingMultiple;
+                    ///产品代码
+                    strcpy(p.ProductID, instr.ProductID);
+                    ///交易所产品代码
+                    strcpy(p.ExchangeProductID, p.ProductID);
+                    return p;
+                };
+                
+                m_products.emplace(instr.ProductID, getProductFronInstrument());
+            }
+        }
+    };
+    initProductsAndExchanges();
+
     //临时措施:将所有合约的保证金率和手续费率初始化(保证金率全部为10%,手续费全部为1元每手)
     auto initializeCommissionRateAndMarginRate = [&]() {
         CThostFtdcInstrumentMarginRateField MarginRate = { 0 };
@@ -522,24 +591,6 @@ void CLocalTraderApi::Init() {
     };
     initializeCommissionRateAndMarginRate();
 
-    CThostFtdcDepthMarketDataField md = { 0 };
-    strcpy(md.InstrumentID, "c2401");
-    strcpy(md.ExchangeID, "DCE");
-    md.PreSettlementPrice = md.LastPrice = 2600.0;
-    md.BidPrice1 = 2599.0;
-    md.AskPrice1 = 2601.0;
-    md.BidVolume1 = 1;
-    md.AskVolume1 = 1;
-    strcpy(md.UpdateTime, "14:00:00");
-    strcpy(md.TradingDay, GetTradingDay());
-    strcpy(md.ActionDay, GetTradingDay());
-    RegisterFensUserInfo((CThostFtdcFensUserInfoField*)&md);
-    strcpy(md.InstrumentID, "al2401");
-    strcpy(md.ExchangeID, "SHFE");
-    md.PreSettlementPrice = md.LastPrice = 18000.0;
-    md.BidPrice1 = 17990.0;
-    md.AskPrice1 = 18010.0;
-    RegisterFensUserInfo((CThostFtdcFensUserInfoField*)&md);
     if (m_pSpi == nullptr) return;
 
     m_pSpi->OnFrontConnected();
@@ -1374,10 +1425,53 @@ int CLocalTraderApi::ReqQryInstrumentMarginRate(CThostFtdcQryInstrumentMarginRat
 int CLocalTraderApi::ReqQryInstrumentCommissionRate(CThostFtdcQryInstrumentCommissionRateField *pQryInstrumentCommissionRate, int nRequestID) { return -1; }
 
 ///请求查询交易所
-int CLocalTraderApi::ReqQryExchange(CThostFtdcQryExchangeField *pQryExchange, int nRequestID) { return -1; }
+int CLocalTraderApi::ReqQryExchange(CThostFtdcQryExchangeField *pQryExchange, int nRequestID) {
+    if (pQryExchange == nullptr || !m_logined) return -1;
+    if (m_pSpi == nullptr) return 0;
+    std::vector<CThostFtdcExchangeField*> v;
+    for (auto& e : m_exchanges)
+    {
+        if (strlen(pQryExchange->ExchangeID) == 0 || strcmp(pQryExchange->ExchangeID, e.second.ExchangeID) == 0)
+        {
+            v.emplace_back(&(e.second));
+        }
+    }
+    for (auto it = v.begin(); it != v.end(); ++it)
+    {
+        m_pSpi->OnRspQryExchange(*it, &m_successRspInfo, nRequestID, (it + 1 == v.end() ? true : false));
+    }
+    if (v.empty())
+    {
+        m_pSpi->OnRspQryInstrument(nullptr, &m_successRspInfo, nRequestID, true);
+    }
+    return 0;
+}
 
 ///请求查询产品
-int CLocalTraderApi::ReqQryProduct(CThostFtdcQryProductField *pQryProduct, int nRequestID) { return -1; }
+int CLocalTraderApi::ReqQryProduct(CThostFtdcQryProductField *pQryProduct, int nRequestID) {
+    if (pQryProduct == nullptr || !m_logined) return -1;
+    if (m_pSpi == nullptr) return 0;
+    std::vector<CThostFtdcProductField*> v;
+    for (auto& productPair : m_products)
+    {
+        auto& product = productPair.second;
+        if ((strlen(pQryProduct->ExchangeID) == 0 || strcmp(pQryProduct->ExchangeID, product.ExchangeID) == 0) &&
+            (strlen(pQryProduct->ProductID) == 0 || strcmp(pQryProduct->ProductID, product.ProductID) == 0) &&
+            pQryProduct->ProductClass == product.ProductClass)
+        {
+            v.emplace_back(&product);
+        }
+    }
+    for (auto it = v.begin(); it != v.end(); ++it)
+    {
+        m_pSpi->OnRspQryProduct(*it, &m_successRspInfo, nRequestID, (it + 1 == v.end() ? true : false));
+    }
+    if (v.empty())
+    {
+        m_pSpi->OnRspQryProduct(nullptr, &m_successRspInfo, nRequestID, true);
+    }
+    return 0;
+}
 
 ///请求查询合约
 int CLocalTraderApi::ReqQryInstrument(CThostFtdcQryInstrumentField *pQryInstrument, int nRequestID) {

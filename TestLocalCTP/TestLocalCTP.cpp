@@ -150,6 +150,11 @@ int main()
     strcpy(QryInstrument.ProductID, "IC");
     pApi->ReqQryInstrument(&QryInstrument, 108);
 
+    CThostFtdcQryProductField QryProduct = { 0 };
+    strcpy(QryProduct.ProductID, "jd");
+    QryProduct.ProductClass = THOST_FTDC_PC_Futures;
+    pApi->ReqQryProduct(&QryProduct, 108);
+
     auto InputOrder = generateNewOrderMsg("1000", "SPD MA309&MA401");
     int ret = pApi->ReqOrderInsert(&InputOrder,109);//没有行情数据时,下一单(预期被拒单)
 
