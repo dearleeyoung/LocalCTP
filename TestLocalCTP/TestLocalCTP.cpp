@@ -43,8 +43,14 @@ CThostFtdcInputOrderActionField generateCancelOrderMsg(const char* OrderRef, con
     return InputOrderAction;
 }
 
+CThostFtdcTraderApi* pApi = nullptr;
 class MySpi : public CThostFtdcTraderSpi
 {
+    void OnFrontConnected(){
+        CThostFtdcReqAuthenticateField ReqAuthenticateField = { "9876", "TestUserID", "Test", "TestAuthCode", "TestAppID" };
+
+        pApi->ReqAuthenticate(&ReqAuthenticateField, 100);
+    }
     void OnRspAuthenticate(CThostFtdcRspAuthenticateField* pRspAuthenticateField, CThostFtdcRspInfoField* pRspInfo, int nRequestID, bool bIsLast) {
         std::cout << "收到认证响应! " << " UserID:" << pRspAuthenticateField->UserID
             << " errorID:"<< pRspInfo->ErrorID<<" errorMsg:"<< pRspInfo->ErrorMsg << std::endl;
@@ -111,6 +117,7 @@ class MySpi : public CThostFtdcTraderSpi
     void OnRtnOrder(CThostFtdcOrderField* pOrder) {
         std::cout << "\n收到报单通知! " << " UserID:" << pOrder->UserID
             << " InstrumentID:" << pOrder->InstrumentID
+            << " OrderSysID:" << pOrder->OrderSysID
             << " OrderStatus:" << pOrder->OrderStatus << " StatusMsg:" << pOrder->StatusMsg << std::endl;
     }
     void OnRtnTrade(CThostFtdcTradeField* pTrade) {
@@ -129,16 +136,13 @@ class MySpi : public CThostFtdcTraderSpi
 int main()
 {
     std::cout << "Hello World!" << std::endl;
-    auto* pApi = CThostFtdcTraderApi::CreateFtdcTraderApi();
+    pApi = CThostFtdcTraderApi::CreateFtdcTraderApi();
     std::cout << pApi->GetApiVersion() << std::endl;
     std::cout << pApi->GetTradingDay() << std::endl;
     MySpi spi;
     pApi->RegisterSpi(&spi);
     pApi->Init();//读取 instrument.csv 合约文件
-    CThostFtdcReqAuthenticateField ReqAuthenticateField = { "9876", "TestUserID", "Test", "TestAuthCode", "TestAppID" };
-
-    pApi->ReqAuthenticate(&ReqAuthenticateField, 100);
-
+    
     CThostFtdcReqUserLoginField ReqUserLoginField = { "", "9876", "TestUserID", "TestPassword" };
     pApi->ReqUserLogin(&ReqUserLoginField, 100);
 
@@ -176,8 +180,21 @@ int main()
     auto InputOrderAction = generateCancelOrderMsg("1001", "SPD MA309&MA401");
     ret = pApi->ReqOrderAction(&InputOrderAction, 110);//把这个单子撤掉
 
+    InputOrder = generateNewOrderMsg("1002", "MA309");
+    InputOrder.Direction = THOST_FTDC_D_Buy;
+    InputOrder.CombOffsetFlag[0] = THOST_FTDC_OF_Open;
+    InputOrder.ContingentCondition = THOST_FTDC_CC_LastPriceGreaterThanStopPrice;//下一个条件单
+    InputOrder.StopPrice = 4998;
+    ret = pApi->ReqOrderInsert(&InputOrder, 109);
+    strcpy(md.InstrumentID, "MA309");
+    md.BidPrice1 = 1000;
+    md.AskPrice1 = 1010;
+    md.PreSettlementPrice = 1020;
+    md.LastPrice = 4997; // 4999 > 4998
+    pApi->RegisterFensUserInfo((CThostFtdcFensUserInfoField*)&md);//喂一个行情快照给API(以触发条件单)
+
     CThostFtdcQryOrderField QryOrder = { "9876","TestUserID" };
-    strcpy(QryOrder.ExchangeID, "CZCE");// 有2条CZCE的委托记录,查询返回
+    strcpy(QryOrder.ExchangeID, "CZCE");// 有数条CZCE的委托记录,查询返回
     ret = pApi->ReqQryOrder(&QryOrder, 100);
 
     CThostFtdcQryTradeField QryTrade = { "9876","TestUserID" };

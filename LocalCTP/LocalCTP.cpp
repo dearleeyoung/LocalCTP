@@ -88,7 +88,8 @@ bool CLocalTraderApi::OrderData::isDone() const
         rtnOrder.OrderStatus != THOST_FTDC_OST_NotTouched;
 }
 
-void CLocalTraderApi::OrderData::DealTestReqOrderInsert_Normal(const CThostFtdcInputOrderField& InputOrder)
+void CLocalTraderApi::OrderData::DealTestReqOrderInsert_Normal(const CThostFtdcInputOrderField& InputOrder,
+    const std::string& relativeOrderSysID)
 {
     // "未知"状态
 
@@ -203,7 +204,7 @@ void CLocalTraderApi::OrderData::DealTestReqOrderInsert_Normal(const CThostFtdcI
     ///经纪公司报单编号
     rtnOrder.BrokerOrderSeq = 0;
     ///相关报单
-    strcpy(rtnOrder.RelativeOrderSysID, "");
+    strcpy(rtnOrder.RelativeOrderSysID, relativeOrderSysID.c_str());
     ///郑商所成交数量
     rtnOrder.ZCETotalTradedVolume = (strcmp(InputOrder.ExchangeID, "CZCE") == 0 ? rtnOrder.VolumeTraded : 0);
     ///互换单标志
@@ -219,12 +220,29 @@ void CLocalTraderApi::OrderData::DealTestReqOrderInsert_Normal(const CThostFtdcI
 
     api.getSpi()->OnRtnOrder(&rtnOrder);
 
-    // "未知"-> "未成交" 状态 
     int OrderSysID = ++api.getOrderSysID();
-    strcpy(rtnOrder.OrderSysID, std::to_string(OrderSysID).c_str());
-    rtnOrder.BrokerOrderSeq = OrderSysID;
-    rtnOrder.OrderSubmitStatus = THOST_FTDC_OSS_Accepted;
-    rtnOrder.OrderStatus = THOST_FTDC_OST_NoTradeQueueing;
+    if (isConditionalOrder)
+    {
+        // "未知"-> "未触发" 状态
+        strcpy(rtnOrder.OrderSysID, (CONDITIONAL_ORDER_SYSID_PREFIX + std::to_string(OrderSysID)).c_str());
+        rtnOrder.BrokerOrderSeq = OrderSysID;
+        rtnOrder.OrderSubmitStatus = THOST_FTDC_OSS_Accepted;
+        rtnOrder.OrderStatus = THOST_FTDC_OST_NotTouched;
+
+        // 修改报单数据,以供以后的条件单触发时报单使用
+        strcpy(inputOrder.OrderRef, "");
+        inputOrder.LimitPrice = inputOrder.StopPrice;
+        inputOrder.StopPrice = 0;
+        inputOrder.ContingentCondition = THOST_FTDC_CC_Immediately;
+    }
+    else
+    {
+        // "未知"-> "未成交" 状态 
+        strcpy(rtnOrder.OrderSysID, std::to_string(OrderSysID).c_str());
+        rtnOrder.BrokerOrderSeq = OrderSysID;
+        rtnOrder.OrderSubmitStatus = THOST_FTDC_OSS_Accepted;
+        rtnOrder.OrderStatus = THOST_FTDC_OST_NoTradeQueueing; 
+    }
     strcpy(rtnOrder.StatusMsg, getStatusMsgByStatus(rtnOrder.OrderStatus).c_str());
 
     api.getSpi()->OnRtnOrder(&rtnOrder);

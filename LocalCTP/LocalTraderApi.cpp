@@ -608,7 +608,43 @@ void CLocalTraderApi::RegisterFensUserInfo(CThostFtdcFensUserInfoField* pFensUse
         m_mdData[instrumentID] = *md;
     }
     {
+        for (auto& contionalOrderPair : m_contionalOrders)
+        {
+            auto& contionalOrder = contionalOrderPair.second;
+            if (strcmp(md->InstrumentID, contionalOrder.rtnOrder.InstrumentID) != 0
+                || contionalOrder.rtnOrder.OrderStatus == THOST_FTDC_OST_Touched)
+            {
+                continue;
+            }
+            auto isPriceValid = [](const bool price) {return LT(price, DBL_MAX); };
+            auto matchContion = [&]() -> bool {
+                switch (contionalOrder.rtnOrder.ContingentCondition)
+                {
+                case THOST_FTDC_CC_LastPriceGreaterThanStopPrice:
+                    return isPriceValid(md->LastPrice) && GT(md->LastPrice, contionalOrder.rtnOrder.StopPrice);
+                case THOST_FTDC_CC_LastPriceGreaterEqualStopPrice:
+                    return isPriceValid(md->LastPrice) && GE(md->LastPrice, contionalOrder.rtnOrder.StopPrice);
+                case THOST_FTDC_CC_LastPriceLesserThanStopPrice:
+                    return isPriceValid(md->LastPrice) && LT(md->LastPrice, contionalOrder.rtnOrder.StopPrice);
+                case THOST_FTDC_CC_LastPriceLesserEqualStopPrice:
+                    return isPriceValid(md->LastPrice) && LE(md->LastPrice, contionalOrder.rtnOrder.StopPrice);
+                default:
+                    return false;
+                }
+            };
+            if (!matchContion())
+            {
+                continue;
+            }
+            contionalOrder.rtnOrder.OrderStatus = THOST_FTDC_OST_Touched;
+            strcpy(contionalOrder.rtnOrder.StatusMsg,
+                getStatusMsgByStatus(contionalOrder.rtnOrder.OrderStatus).c_str());
+            contionalOrder.sendRtnOrder();
+            ReqOrderInsertImpl(&contionalOrder.inputOrder, 0, contionalOrder.rtnOrder.OrderSysID);
+        }
+
         std::lock_guard<std::mutex> orderGuard(m_orderMtx);
+        // 此时订单数据中已包含刚才条件单触发后产生的新报单O(∩_∩)O
         for (auto& o : m_orderData)
         {
             auto& order = o.second;
@@ -761,7 +797,11 @@ int CLocalTraderApi::ReqUserLoginWithText(CThostFtdcReqUserLoginWithTextField *p
 int CLocalTraderApi::ReqUserLoginWithOTP(CThostFtdcReqUserLoginWithOTPField *pReqUserLoginWithOTP, int nRequestID) { return -1; }
 
 ///报单录入请求
-int CLocalTraderApi::ReqOrderInsert(CThostFtdcInputOrderField *pInputOrder, int nRequestID) {
+int CLocalTraderApi::ReqOrderInsert(CThostFtdcInputOrderField* pInputOrder, int nRequestID) {
+    return ReqOrderInsertImpl(pInputOrder, nRequestID);
+}
+int CLocalTraderApi::ReqOrderInsertImpl(CThostFtdcInputOrderField * pInputOrder, int nRequestID,
+    std::string relativeOrderSysID /*= std::string()*/) {
     CHECK_LOGIN_USER(pInputOrder);
 
     const auto sendRejectOrder = [&](const char* errMsg) {
@@ -786,7 +826,11 @@ int CLocalTraderApi::ReqOrderInsert(CThostFtdcInputOrderField *pInputOrder, int 
         return 0;
     }
 
-    if (pInputOrder->ContingentCondition != THOST_FTDC_CC_Immediately)
+    if (pInputOrder->ContingentCondition != THOST_FTDC_CC_Immediately &&
+        pInputOrder->ContingentCondition != THOST_FTDC_CC_LastPriceGreaterThanStopPrice &&
+        pInputOrder->ContingentCondition != THOST_FTDC_CC_LastPriceGreaterEqualStopPrice &&
+        pInputOrder->ContingentCondition != THOST_FTDC_CC_LastPriceLesserThanStopPrice &&
+        pInputOrder->ContingentCondition != THOST_FTDC_CC_LastPriceLesserEqualStopPrice)
     {
         sendRejectOrder(ErrMsg_NotSupportContingentCondition);
         return 0;
@@ -830,6 +874,16 @@ int CLocalTraderApi::ReqOrderInsert(CThostFtdcInputOrderField *pInputOrder, int 
             sendRejectOrder(ErrMsg_NoMarketData);
             return 0;
         }
+    }
+
+    if (pInputOrder->ContingentCondition == THOST_FTDC_CC_LastPriceGreaterThanStopPrice ||
+        pInputOrder->ContingentCondition == THOST_FTDC_CC_LastPriceGreaterEqualStopPrice ||
+        pInputOrder->ContingentCondition == THOST_FTDC_CC_LastPriceLesserThanStopPrice ||
+        pInputOrder->ContingentCondition == THOST_FTDC_CC_LastPriceLesserEqualStopPrice)
+    {
+        OrderData x(this, *pInputOrder, true);
+        m_contionalOrders.emplace(x.rtnOrder.OrderSysID, x);
+        return 0;
     }
 
     std::string instr = pInputOrder->InstrumentID;
@@ -945,7 +999,7 @@ int CLocalTraderApi::ReqOrderInsert(CThostFtdcInputOrderField *pInputOrder, int 
             const auto closable = itPos->second.pos.Position - frozenPositionNum;
             if (closable < orderNum)
             {
-                return  std::make_pair(false, 
+                return std::make_pair(false, 
                     (isSpecialExchange(itInstr->second.ExchangeID) && pInputOrder->CombOffsetFlag[0] == THOST_FTDC_OF_CloseToday) ?
                         ERRMSG_AVAILABLE_POSITION_NOT_ENOUGH : ERRMSG_AVAILABLE_TODAY_POSITION_NOT_ENOUGH
                         + std::string(std::to_string(closable)));
@@ -1041,7 +1095,7 @@ int CLocalTraderApi::ReqOrderInsert(CThostFtdcInputOrderField *pInputOrder, int 
                 return 0;
             }
         }
-        OrderData x(this, *pInputOrder);
+        OrderData x(this, *pInputOrder, false, relativeOrderSysID);
         bool emplaceSuccess(false);
         std::tie(itOrder, emplaceSuccess) = m_orderData.emplace(OrderRef, x);
         if (!emplaceSuccess)
@@ -1548,7 +1602,52 @@ int CLocalTraderApi::ReqFromFutureToBankByFuture(CThostFtdcReqTransferField *pRe
 int CLocalTraderApi::ReqQueryBankAccountMoneyByFuture(CThostFtdcReqQueryAccountField *pReqQueryAccount, int nRequestID) { return -1; }
 
 ///请求查询分类合约
-int CLocalTraderApi::ReqQryClassifiedInstrument(CThostFtdcQryClassifiedInstrumentField *pQryClassifiedInstrument, int nRequestID) { return -1; }
+int CLocalTraderApi::ReqQryClassifiedInstrument(CThostFtdcQryClassifiedInstrumentField *pQryClassifiedInstrument, int nRequestID) {
+    if (pQryClassifiedInstrument == nullptr || !m_logined) return -1;
+    if (m_pSpi == nullptr) return 0;
+    std::vector<CThostFtdcInstrumentField*> v;
+    v.reserve(1000); // maybe less than this count ?
+    for (auto& instrPair : m_instrData)
+    {
+        CThostFtdcInstrumentField& instr = instrPair.second;
+        auto matchClassType = [&]() -> bool {
+            switch (pQryClassifiedInstrument->ClassType)
+            {
+            case THOST_FTDC_INS_ALL:
+                return true;
+            case THOST_FTDC_INS_FUTURE:
+                return instr.ProductClass == THOST_FTDC_PC_Futures || instr.ProductClass == THOST_FTDC_PC_Spot ||
+                    instr.ProductClass == THOST_FTDC_PC_EFP || instr.ProductClass == THOST_FTDC_PC_TAS ||
+                    instr.ProductClass == THOST_FTDC_PC_MI;
+            case THOST_FTDC_INS_OPTION:
+                return instr.ProductClass == THOST_FTDC_PC_Options || instr.ProductClass == THOST_FTDC_PC_SpotOption;
+            case THOST_FTDC_INS_COMB:
+                return instr.ProductClass == THOST_FTDC_PC_Combination;
+            default:
+                return false;
+            }
+        };
+        if (!matchClassType())
+        {
+            continue;
+        }
+        if ((strlen(pQryClassifiedInstrument->ExchangeID) == 0 || strcmp(pQryClassifiedInstrument->ExchangeID, instr.ExchangeID) == 0) &&
+            (strlen(pQryClassifiedInstrument->ProductID) == 0 || strcmp(pQryClassifiedInstrument->ProductID, instr.ProductID) == 0) &&
+            (strlen(pQryClassifiedInstrument->InstrumentID) == 0 || strcmp(pQryClassifiedInstrument->InstrumentID, instr.InstrumentID) == 0))
+        {
+            v.emplace_back(&instr);
+        }
+    }
+    for (auto it = v.begin(); it != v.end(); ++it)
+    {
+        m_pSpi->OnRspQryClassifiedInstrument(*it, &m_successRspInfo, nRequestID, (it + 1 == v.end() ? true : false));
+    }
+    if (v.empty())
+    {
+        m_pSpi->OnRspQryClassifiedInstrument(nullptr, &m_successRspInfo, nRequestID, true);
+    }
+    return 0;
+}
 
 ///请求组合优惠比例
 int CLocalTraderApi::ReqQryCombPromotionParam(CThostFtdcQryCombPromotionParamField *pQryCombPromotionParam, int nRequestID) { return -1; }

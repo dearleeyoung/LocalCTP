@@ -19,7 +19,6 @@ public:
     std::atomic<int>& getTradeID() { return m_tradeID; }
 	//储存交易API智能指针的集合
 	static std::set<SP_TRADE_API> trade_api_set;
-    static constexpr double EPS = 1e-8;
     static void GetSingleContractFromCombinationContract(
         const std::string& CombinationContractID, std::vector<std::string>& SingleContracts);
     // 是否是明确区分今仓和昨仓的特殊交易所
@@ -120,16 +119,22 @@ private:
     };
     struct OrderData
     {
-        OrderData(CLocalTraderApi* pApi, const CThostFtdcInputOrderField& InputOrder)
-            : api(*pApi), rtnOrder{ 0 }
+        OrderData(CLocalTraderApi* pApi, const CThostFtdcInputOrderField& _inputOrder,
+            bool _isConditionalOrder = false,
+            const std::string& relativeOrderSysID = std::string())
+            : api(*pApi), inputOrder(_inputOrder)
+            , rtnOrder{ 0 }, isConditionalOrder(_isConditionalOrder)
         {
-            DealTestReqOrderInsert_Normal(InputOrder);
+            DealTestReqOrderInsert_Normal(inputOrder, relativeOrderSysID);
         }
         CLocalTraderApi& api;
+        CThostFtdcInputOrderField inputOrder;
         CThostFtdcOrderField rtnOrder;
         std::vector<CThostFtdcTradeField> rtnTrades;
+        bool isConditionalOrder;
         bool isDone() const;
-        void DealTestReqOrderInsert_Normal(const CThostFtdcInputOrderField& InputOrder);
+        void DealTestReqOrderInsert_Normal(const CThostFtdcInputOrderField& InputOrder,
+            const std::string& relativeOrderSysID);
         void handleTrade(double tradedPrice, int tradedSize);
         void handleCancel(bool cancelFromClient = true);
         void getRtnTrade(double trade_price, int tradedSize, std::vector<CThostFtdcTradeField>& Trades);
@@ -154,6 +159,7 @@ private:
     std::map<std::string, CThostFtdcInstrumentMarginRateField> m_instrumentMarginRateData;// 合约保证金数据. key:合约代码.
     std::map<std::string, CThostFtdcInstrumentCommissionRateField> m_instrumentCommissionRateData;// 合约手续费数据. key:合约代码.
     CThostFtdcTradingAccountField m_tradingAccount;// 资金数据
+    std::map<std::string, OrderData> m_contionalOrders;// 条件报单数据. key:条件单报单编号(OrderSysID)
 	CThostFtdcTraderSpi* m_pSpi;//回调接口类的指针
 
     CThostFtdcRspInfoField m_successRspInfo;
@@ -163,6 +169,8 @@ private:
     void updatePNL(bool needTotalCalc = false);
     void updateByCancel(const CThostFtdcOrderField& o);
     void updateByTrade(const CThostFtdcTradeField& t);
+    int ReqOrderInsertImpl(CThostFtdcInputOrderField* pInputOrder, int nRequestID,
+        std::string relativeOrderSysID = std::string());
 
 public:
 

@@ -13,7 +13,7 @@
 1. 支持全市场的期货/套利组合合约/期权的交易
 1. 本地部署, 稳定运行, 策略安全得到彻底保障
 1. 支持`windows`/`linux`等多个平台, `MAC`也即将支持
-1. 支持FAK/FOK订单, 即将支持条件单.
+1. 支持FAK/FOK订单, 支持条件单.
 1. 成交撮合逻辑同SimNow，通过是否满足行情中的对手价来判断是否成交。
 1. 可以通过特定API接口来获取外部传入的行情快照，以更新账户的订单和资金等数据
 * 可以投喂给它实时行情以实现 实时仿真交易
@@ -98,6 +98,7 @@ Linux:
 1. `ReqQryInvestorPositionDetail`
 1. `ReqQrySettlementInfo`
 1. `ReqQrySettlementInfoConfirm`
+1. `ReqQryClassifiedInstrument`
 
 ### 部分接口说明:
 1. `Init`: 内部并不会连接网络，会从当前目录(或环境变量中的目录)的 `instrument.csv` 中读取合约信息。格式参见附带的同名文件。
@@ -106,6 +107,7 @@ Linux:
 1. `RegisterFront`: 会直接返回，并不会连接到参数中的地址。
 1. `RegisterFensUserInfo`: 【重要】被修改为接收行情快照的接口。内部会将参数转化为 `CThostFtdcDepthMarketDataField*` 类型并处理以更新行情数据，请在外部收到行情快照时调用此接口，使用方法可参考DEMO。
 1. `ReqAuthenticate/ReqUserLogin/ReqUserLogout`: 都不会校验参数，即都会直接认证/登录/登出成功。
+1. `ReqOrderInsert`: 现在已支持条件单(支持四种价格条件TThostFtdcContingentConditionType,即用最新价LastPrice和条件价StopPrice的四种比较类型)
 1. `ReqOrderAction`: 支持两种撤单方式:
     * ` OrderRef+FrontID+SessionID( 还需填IntrumentID )`
     * ` OrderSysID+ExchangeID`
