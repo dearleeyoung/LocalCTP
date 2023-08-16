@@ -1,0 +1,8 @@
+# this is .gitignore file.
+*.o
+*.pdb
+*.exp
+*.log
+
+# Debug folder
+Debug
