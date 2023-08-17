@@ -3,7 +3,7 @@
 
 #define READ_CHAR_ARRAY_MEMBER(m) \
     { std::getline(i, temp, ','); \
-      strcpy(instr.m, temp.c_str()); }
+      strncpy(instr.m, temp.c_str(), sizeof(instr.m)); }
 
 #define READ_MEMBER(m) \
     { std::getline(i, temp, ','); \
@@ -94,23 +94,23 @@ void CLocalTraderApi::OrderData::DealTestReqOrderInsert_Normal(const CThostFtdcI
     // "未知"状态
 
     ///经纪公司代码
-    strcpy(rtnOrder.BrokerID, InputOrder.BrokerID);
+    strncpy(rtnOrder.BrokerID, InputOrder.BrokerID, sizeof(rtnOrder.BrokerID));
     ///投资者代码
-    strcpy(rtnOrder.InvestorID, InputOrder.InvestorID);
+    strncpy(rtnOrder.InvestorID, InputOrder.InvestorID, sizeof(rtnOrder.InvestorID));
     ///合约代码
-    strcpy(rtnOrder.InstrumentID, InputOrder.InstrumentID);
+    strncpy(rtnOrder.InstrumentID, InputOrder.InstrumentID, sizeof(rtnOrder.InstrumentID));
     ///报单引用
-    strcpy(rtnOrder.OrderRef, InputOrder.OrderRef);
+    strncpy(rtnOrder.OrderRef, InputOrder.OrderRef, sizeof(rtnOrder.OrderRef));
     ///用户代码
-    strcpy(rtnOrder.UserID, InputOrder.UserID);
+    strncpy(rtnOrder.UserID, InputOrder.UserID, sizeof(rtnOrder.UserID));
     ///报单价格条件
     rtnOrder.OrderPriceType = InputOrder.OrderPriceType;
     ///买卖方向
     rtnOrder.Direction = InputOrder.Direction;
     ///组合开平标志
-    strcpy(rtnOrder.CombOffsetFlag, InputOrder.CombOffsetFlag);
+    strncpy(rtnOrder.CombOffsetFlag, InputOrder.CombOffsetFlag, sizeof(rtnOrder.CombOffsetFlag));
     ///组合投机套保标志
-    strcpy(rtnOrder.CombHedgeFlag, InputOrder.CombHedgeFlag);
+    strncpy(rtnOrder.CombHedgeFlag, InputOrder.CombHedgeFlag, sizeof(rtnOrder.CombHedgeFlag));
     ///价格
     rtnOrder.LimitPrice = InputOrder.LimitPrice;
     ///数量
@@ -118,7 +118,7 @@ void CLocalTraderApi::OrderData::DealTestReqOrderInsert_Normal(const CThostFtdcI
     ///有效期类型
     rtnOrder.TimeCondition = InputOrder.TimeCondition;
     ///GTD日期
-    strcpy(rtnOrder.GTDDate, "");
+    strncpy(rtnOrder.GTDDate, "", sizeof(rtnOrder.GTDDate));
     ///成交量类型
     rtnOrder.VolumeCondition = InputOrder.VolumeCondition;
     ///最小成交量
@@ -132,22 +132,22 @@ void CLocalTraderApi::OrderData::DealTestReqOrderInsert_Normal(const CThostFtdcI
     ///自动挂起标志
     rtnOrder.IsAutoSuspend = InputOrder.IsAutoSuspend;
     ///业务单元
-    strcpy(rtnOrder.BusinessUnit, "");
+    strncpy(rtnOrder.BusinessUnit, "", sizeof(rtnOrder.BusinessUnit));
     ///请求编号
     rtnOrder.RequestID = InputOrder.RequestID;
     ///本地报单编号
     //也使用报单引用
-    strcpy(rtnOrder.OrderLocalID, InputOrder.OrderRef);
+    strncpy(rtnOrder.OrderLocalID, InputOrder.OrderRef, sizeof(rtnOrder.OrderLocalID));
     ///交易所代码
-    strcpy(rtnOrder.ExchangeID, InputOrder.ExchangeID);
+    strncpy(rtnOrder.ExchangeID, InputOrder.ExchangeID, sizeof(rtnOrder.ExchangeID));
     ///会员代码
-    strcpy(rtnOrder.ParticipantID, "");
+    strncpy(rtnOrder.ParticipantID, "", sizeof(rtnOrder.ParticipantID));
     ///客户代码
-    strcpy(rtnOrder.ClientID, "");
+    strncpy(rtnOrder.ClientID, "", sizeof(rtnOrder.ClientID));
     ///合约在交易所的代码
-    strcpy(rtnOrder.ExchangeInstID, InputOrder.InstrumentID);
+    strncpy(rtnOrder.ExchangeInstID, InputOrder.InstrumentID, sizeof(rtnOrder.ExchangeInstID));
     ///交易所交易员代码
-    strcpy(rtnOrder.TraderID, "");
+    strncpy(rtnOrder.TraderID, "", sizeof(rtnOrder.TraderID));
     ///安装编号
     rtnOrder.InstallID = 0;
     ///报单提交状态
@@ -155,11 +155,11 @@ void CLocalTraderApi::OrderData::DealTestReqOrderInsert_Normal(const CThostFtdcI
     ///报单提示序号
     rtnOrder.NotifySequence = 0;
     ///交易日
-    strcpy(rtnOrder.TradingDay, api.GetTradingDay());
+    strncpy(rtnOrder.TradingDay, api.GetTradingDay(), sizeof(rtnOrder.TradingDay));
     ///结算编号
     rtnOrder.SettlementID = 0;
     ///报单编号
-    strcpy(rtnOrder.OrderSysID, "");
+    strncpy(rtnOrder.OrderSysID, "", sizeof(rtnOrder.OrderSysID));
     ///报单来源
     rtnOrder.OrderSource = THOST_FTDC_OSRC_Participant;
     ///报单状态
@@ -172,21 +172,21 @@ void CLocalTraderApi::OrderData::DealTestReqOrderInsert_Normal(const CThostFtdcI
     rtnOrder.VolumeTotal = rtnOrder.VolumeTotalOriginal;
     ///报单日期
     const CLeeDateTime now_time = CLeeDateTime::GetCurrentTime();
-    strcpy(rtnOrder.InsertDate, now_time.Format("%Y%m%d").c_str());
+    strncpy(rtnOrder.InsertDate, now_time.Format("%Y%m%d").c_str(), sizeof(rtnOrder.InsertDate));
     ///委托时间
-    strcpy(rtnOrder.InsertTime, now_time.Format("%H:%M:%S").c_str());
+    strncpy(rtnOrder.InsertTime, now_time.Format("%H:%M:%S").c_str(), sizeof(rtnOrder.InsertTime));
     ///激活时间
-    strcpy(rtnOrder.ActiveTime, "");
+    strncpy(rtnOrder.ActiveTime, "", sizeof(rtnOrder.ActiveTime));
     ///挂起时间
-    strcpy(rtnOrder.SuspendTime, "");
+    strncpy(rtnOrder.SuspendTime, "", sizeof(rtnOrder.SuspendTime));
     ///最后修改时间
-    strcpy(rtnOrder.UpdateTime, "");
+    strncpy(rtnOrder.UpdateTime, "", sizeof(rtnOrder.UpdateTime));
     ///撤销时间
-    strcpy(rtnOrder.CancelTime, "");
+    strncpy(rtnOrder.CancelTime, "", sizeof(rtnOrder.CancelTime));
     ///最后修改交易所交易员代码
-    strcpy(rtnOrder.ActiveTraderID, "");
+    strncpy(rtnOrder.ActiveTraderID, "", sizeof(rtnOrder.ActiveTraderID));
     ///结算会员编号
-    strcpy(rtnOrder.ClearingPartID, "");
+    strncpy(rtnOrder.ClearingPartID, "", sizeof(rtnOrder.ClearingPartID));
     ///序号
     rtnOrder.SequenceNo = 0;
     ///前置编号
@@ -194,29 +194,29 @@ void CLocalTraderApi::OrderData::DealTestReqOrderInsert_Normal(const CThostFtdcI
     ///会话编号
     rtnOrder.SessionID = api.getSessionID();
     ///用户端产品信息
-    strcpy(rtnOrder.UserProductInfo, "");
+    strncpy(rtnOrder.UserProductInfo, "", sizeof(rtnOrder.UserProductInfo));
     ///状态信息
-    strcpy(rtnOrder.StatusMsg, getStatusMsgByStatus(rtnOrder.OrderStatus).c_str());
+    strncpy(rtnOrder.StatusMsg, getStatusMsgByStatus(rtnOrder.OrderStatus).c_str(), sizeof(rtnOrder.StatusMsg));
     ///用户强评标志
     rtnOrder.UserForceClose = InputOrder.UserForceClose;
     ///操作用户代码
-    strcpy(rtnOrder.ActiveUserID, "");
+    strncpy(rtnOrder.ActiveUserID, "", sizeof(rtnOrder.ActiveUserID));
     ///经纪公司报单编号
     rtnOrder.BrokerOrderSeq = 0;
     ///相关报单
-    strcpy(rtnOrder.RelativeOrderSysID, relativeOrderSysID.c_str());
+    strncpy(rtnOrder.RelativeOrderSysID, relativeOrderSysID.c_str(), sizeof(rtnOrder.RelativeOrderSysID));
     ///郑商所成交数量
     rtnOrder.ZCETotalTradedVolume = (strcmp(InputOrder.ExchangeID, "CZCE") == 0 ? rtnOrder.VolumeTraded : 0);
     ///互换单标志
     rtnOrder.IsSwapOrder = InputOrder.IsSwapOrder;
     ///营业部编号
-    strcpy(rtnOrder.BranchID, "");
+    strncpy(rtnOrder.BranchID, "", sizeof(rtnOrder.BranchID));
     ///投资单元代码
-    strcpy(rtnOrder.InvestUnitID, "");
+    strncpy(rtnOrder.InvestUnitID, InputOrder.InvestUnitID, sizeof(rtnOrder.InvestUnitID));
     ///资金账号
-    strcpy(rtnOrder.AccountID, InputOrder.AccountID);
+    strncpy(rtnOrder.AccountID, InputOrder.AccountID, sizeof(rtnOrder.AccountID));
     ///币种代码
-    strcpy(rtnOrder.CurrencyID, "CNY");
+    strncpy(rtnOrder.CurrencyID, "CNY", sizeof(rtnOrder.CurrencyID));
 
     api.getSpi()->OnRtnOrder(&rtnOrder);
 
@@ -224,13 +224,15 @@ void CLocalTraderApi::OrderData::DealTestReqOrderInsert_Normal(const CThostFtdcI
     if (isConditionalOrder)
     {
         // "未知"-> "未触发" 状态
-        strcpy(rtnOrder.OrderSysID, (CONDITIONAL_ORDER_SYSID_PREFIX + std::to_string(OrderSysID)).c_str());
+        strncpy(rtnOrder.OrderSysID,
+            (CONDITIONAL_ORDER_SYSID_PREFIX + std::to_string(OrderSysID)).c_str(),
+            sizeof(rtnOrder.OrderSysID));
         rtnOrder.BrokerOrderSeq = OrderSysID;
         rtnOrder.OrderSubmitStatus = THOST_FTDC_OSS_Accepted;
         rtnOrder.OrderStatus = THOST_FTDC_OST_NotTouched;
 
         // 修改报单数据,以供以后的条件单触发时报单使用
-        strcpy(inputOrder.OrderRef, "");
+        strncpy(inputOrder.OrderRef, "", sizeof(rtnOrder.OrderRef));
         inputOrder.LimitPrice = inputOrder.StopPrice;
         inputOrder.StopPrice = 0;
         inputOrder.ContingentCondition = THOST_FTDC_CC_Immediately;
@@ -238,12 +240,14 @@ void CLocalTraderApi::OrderData::DealTestReqOrderInsert_Normal(const CThostFtdcI
     else
     {
         // "未知"-> "未成交" 状态 
-        strcpy(rtnOrder.OrderSysID, std::to_string(OrderSysID).c_str());
+        strncpy(rtnOrder.OrderSysID, std::to_string(OrderSysID).c_str(),
+            sizeof(rtnOrder.OrderSysID));
         rtnOrder.BrokerOrderSeq = OrderSysID;
         rtnOrder.OrderSubmitStatus = THOST_FTDC_OSS_Accepted;
         rtnOrder.OrderStatus = THOST_FTDC_OST_NoTradeQueueing; 
     }
-    strcpy(rtnOrder.StatusMsg, getStatusMsgByStatus(rtnOrder.OrderStatus).c_str());
+    strncpy(rtnOrder.StatusMsg, getStatusMsgByStatus(rtnOrder.OrderStatus).c_str(),
+        sizeof(rtnOrder.StatusMsg));
 
     api.getSpi()->OnRtnOrder(&rtnOrder);
     return;
@@ -265,7 +269,8 @@ void CLocalTraderApi::OrderData::handleTrade(double tradedPrice, int tradedSize)
     {
         rtnOrder.OrderStatus = THOST_FTDC_OST_PartTradedQueueing;
     }
-    strncpy(rtnOrder.StatusMsg, getStatusMsgByStatus(rtnOrder.OrderStatus).c_str(), sizeof(rtnOrder.StatusMsg));
+    strncpy(rtnOrder.StatusMsg, getStatusMsgByStatus(rtnOrder.OrderStatus).c_str(),
+        sizeof(rtnOrder.StatusMsg));
 
 
     std::vector<CThostFtdcTradeField> rtnTradeFromOrder;
@@ -286,14 +291,16 @@ void CLocalTraderApi::OrderData::handleCancel(bool cancelFromClient)
     if (isDone()) return;
     rtnOrder.OrderSubmitStatus = THOST_FTDC_OSS_Accepted;
     rtnOrder.OrderStatus = THOST_FTDC_OST_Canceled;
-    strncpy(rtnOrder.StatusMsg, getStatusMsgByStatus(rtnOrder.OrderStatus).c_str(), sizeof(rtnOrder.StatusMsg));
+    strncpy(rtnOrder.StatusMsg, getStatusMsgByStatus(rtnOrder.OrderStatus).c_str(),
+        sizeof(rtnOrder.StatusMsg));
 
     const CLeeDateTime now_time = CLeeDateTime::GetCurrentTime();
     ///成交时间
-    strcpy(rtnOrder.CancelTime, now_time.Format("%H:%M:%S").c_str());
+    strncpy(rtnOrder.CancelTime, now_time.Format("%H:%M:%S").c_str(),
+        sizeof(rtnOrder.CancelTime));
     if (cancelFromClient)
     {
-        strcpy(rtnOrder.ActiveUserID, rtnOrder.UserID);
+        strncpy(rtnOrder.ActiveUserID, rtnOrder.UserID, sizeof(rtnOrder.ActiveUserID));
     }
 
     api.updateByCancel(rtnOrder);
@@ -308,19 +315,19 @@ void CLocalTraderApi::OrderData::getRtnTrade(double trade_price, int tradedSize,
     {
         CThostFtdcTradeField Trade = { 0 };
         ///经纪公司代码
-        strcpy(Trade.BrokerID, rtnOrder.BrokerID);
+        strncpy(Trade.BrokerID, rtnOrder.BrokerID, sizeof(Trade.BrokerID));
         ///投资者代码
-        strcpy(Trade.InvestorID, rtnOrder.InvestorID);
+        strncpy(Trade.InvestorID, rtnOrder.InvestorID, sizeof(Trade.InvestorID));
         ///合约代码
-        strcpy(Trade.InstrumentID, SingleContracts[_index].c_str());
+        strncpy(Trade.InstrumentID, SingleContracts[_index].c_str(), sizeof(Trade.InstrumentID));
         ///报单引用
-        strcpy(Trade.OrderRef, rtnOrder.OrderRef);
+        strncpy(Trade.OrderRef, rtnOrder.OrderRef, sizeof(Trade.OrderRef));
         ///用户代码
-        strcpy(Trade.UserID, rtnOrder.UserID);
+        strncpy(Trade.UserID, rtnOrder.UserID, sizeof(Trade.UserID));
         ///交易所代码
-        strcpy(Trade.ExchangeID, rtnOrder.ExchangeID);
+        strncpy(Trade.ExchangeID, rtnOrder.ExchangeID, sizeof(Trade.ExchangeID));
         ///成交编号
-        strcpy(Trade.TradeID, std::to_string(++api.getTradeID()).c_str());
+        strncpy(Trade.TradeID, std::to_string(++api.getTradeID()).c_str(), sizeof(Trade.TradeID));
         if (_index % 2 == 0)//若为第一腿
         {
             ///买卖方向
@@ -337,15 +344,15 @@ void CLocalTraderApi::OrderData::getRtnTrade(double trade_price, int tradedSize,
             Trade.Price = 0.0;
         }
         ///报单编号
-        strcpy(Trade.OrderSysID, rtnOrder.OrderSysID);
+        strncpy(Trade.OrderSysID, rtnOrder.OrderSysID, sizeof(Trade.OrderSysID));
         ///会员代码
-        strcpy(Trade.ParticipantID, rtnOrder.ParticipantID);
+        strncpy(Trade.ParticipantID, rtnOrder.ParticipantID, sizeof(Trade.ParticipantID));
         ///客户代码
-        strcpy(Trade.ClientID, rtnOrder.ClientID);
+        strncpy(Trade.ClientID, rtnOrder.ClientID, sizeof(Trade.ClientID));
         ///交易角色
         Trade.TradingRole = THOST_FTDC_ER_Broker;
         ///合约在交易所的代码
-        strcpy(Trade.ExchangeInstID, Trade.InstrumentID);
+        strncpy(Trade.ExchangeInstID, Trade.InstrumentID, sizeof(Trade.ExchangeInstID));
         ///开平标志
         Trade.OffsetFlag = rtnOrder.CombOffsetFlag[0];
         ///投机套保标志
@@ -355,26 +362,26 @@ void CLocalTraderApi::OrderData::getRtnTrade(double trade_price, int tradedSize,
         Trade.Volume = tradedSize;
         ///成交时期
         const CLeeDateTime now_time = CLeeDateTime::GetCurrentTime();
-        strcpy(Trade.TradeDate, now_time.Format("%Y%m%d").c_str());
+        strncpy(Trade.TradeDate, now_time.Format("%Y%m%d").c_str(), sizeof(Trade.TradeDate));
         ///成交时间
-        strcpy(Trade.TradeTime, now_time.Format("%H:%M:%S").c_str());
+        strncpy(Trade.TradeTime, now_time.Format("%H:%M:%S").c_str(), sizeof(Trade.TradeTime));
         ///成交类型(普通成交/组合衍生成交)
         Trade.TradeType = SingleContracts.size() == 1 ?
             THOST_FTDC_TRDT_Common : THOST_FTDC_TRDT_CombinationDerived;
         ///成交价来源
         Trade.PriceSource = THOST_FTDC_PSRC_LastPrice;
         ///交易所交易员代码
-        strcpy(Trade.TraderID, rtnOrder.TraderID);
+        strncpy(Trade.TraderID, rtnOrder.TraderID, sizeof(Trade.TraderID));
         ///本地报单编号
-        strcpy(Trade.OrderLocalID, rtnOrder.OrderLocalID);
+        strncpy(Trade.OrderLocalID, rtnOrder.OrderLocalID, sizeof(Trade.OrderLocalID));
         ///结算会员编号
-        strcpy(Trade.ClearingPartID, "");
+        strncpy(Trade.ClearingPartID, "", sizeof(Trade.ClearingPartID));
         ///业务单元
-        strcpy(Trade.BusinessUnit, rtnOrder.BusinessUnit);
+        strncpy(Trade.BusinessUnit, rtnOrder.BusinessUnit, sizeof(Trade.BusinessUnit));
         ///序号
         Trade.SequenceNo = rtnOrder.SequenceNo;
         ///交易日
-        strcpy(Trade.TradingDay, rtnOrder.TradingDay);
+        strncpy(Trade.TradingDay, rtnOrder.TradingDay, sizeof(Trade.TradingDay));
         ///结算编号
         Trade.SettlementID = rtnOrder.SettlementID;
         ///经纪公司报单编号
@@ -382,7 +389,7 @@ void CLocalTraderApi::OrderData::getRtnTrade(double trade_price, int tradedSize,
         ///成交来源
         Trade.TradeSource = THOST_FTDC_TSRC_NORMAL;
         ///投资单元代码
-        strcpy(Trade.InvestUnitID, rtnOrder.InvestUnitID);
+        strncpy(Trade.InvestUnitID, rtnOrder.InvestUnitID, sizeof(Trade.InvestUnitID));
 
         Trades.emplace_back(Trade);
     }

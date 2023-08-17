@@ -520,8 +520,8 @@ void CLocalTraderApi::Init() {
             {
                 CThostFtdcExchangeField exchange = { 0 };
                 exchange.ExchangeProperty = THOST_FTDC_EXP_Normal;
-                strcpy(exchange.ExchangeID, instr.ExchangeID);
-                strcpy(exchange.ExchangeName, exchange.ExchangeID);
+                strncpy(exchange.ExchangeID, instr.ExchangeID, sizeof(exchange.ExchangeID));
+                strncpy(exchange.ExchangeName, exchange.ExchangeID, sizeof(exchange.ExchangeName));
                 m_exchanges.emplace(exchange.ExchangeID, exchange);
             }
 
@@ -539,9 +539,10 @@ void CLocalTraderApi::Init() {
                 auto getProductFronInstrument = [&]() -> CThostFtdcProductField {
                     CThostFtdcProductField p = { 0 };
                     ///产品名称
-                    strcpy(p.ProductName, getRemoveLastNumberStr(instr.InstrumentName).c_str());
+                    strncpy(p.ProductName, getRemoveLastNumberStr(instr.InstrumentName).c_str(),
+                        sizeof(p.ProductName));
                     ///交易所代码
-                    strcpy(p.ExchangeID, instr.ExchangeID);
+                    strncpy(p.ExchangeID, instr.ExchangeID, sizeof(p.ExchangeID));
                     ///产品类型
                     p.ProductClass = instr.ProductClass;
                     ///合约数量乘数
@@ -563,15 +564,15 @@ void CLocalTraderApi::Init() {
                     ///平仓处理类型
                     p.CloseDealType = THOST_FTDC_CDT_Normal;
                     ///交易币种类型
-                    strcpy(p.TradeCurrencyID, "CNY");
+                    strncpy(p.TradeCurrencyID, "CNY", sizeof(p.TradeCurrencyID));
                     ///质押资金可用范围
                     p.MortgageFundUseRange = THOST_FTDC_MFUR_None;
                     ///合约基础商品乘数
                     p.UnderlyingMultiple = instr.UnderlyingMultiple;
                     ///产品代码
-                    strcpy(p.ProductID, instr.ProductID);
+                    strncpy(p.ProductID, instr.ProductID, sizeof(p.ProductID));
                     ///交易所产品代码
-                    strcpy(p.ExchangeProductID, p.ProductID);
+                    strncpy(p.ExchangeProductID, p.ProductID, sizeof(p.ExchangeProductID));
                     return p;
                 };
                 
@@ -593,11 +594,11 @@ void CLocalTraderApi::Init() {
 
         for (const auto& instr : m_instrData)
         {
-            strcpy(MarginRate.ExchangeID, instr.second.ExchangeID);
-            strcpy(MarginRate.InstrumentID, instr.second.InstrumentID);
+            strncpy(MarginRate.ExchangeID, instr.second.ExchangeID, sizeof(MarginRate.ExchangeID));
+            strncpy(MarginRate.InstrumentID, instr.second.InstrumentID, sizeof(MarginRate.InstrumentID));
             m_instrumentMarginRateData[instr.first] = MarginRate;
-            strcpy(CommissionRate.ExchangeID, instr.second.ExchangeID);
-            strcpy(CommissionRate.InstrumentID, instr.second.InstrumentID);
+            strncpy(CommissionRate.ExchangeID, instr.second.ExchangeID, sizeof(CommissionRate.ExchangeID));
+            strncpy(CommissionRate.InstrumentID, instr.second.InstrumentID, sizeof(CommissionRate.InstrumentID));
             m_instrumentCommissionRateData[instr.first] = CommissionRate;
         }
     };
@@ -700,8 +701,9 @@ void CLocalTraderApi::RegisterFensUserInfo(CThostFtdcFensUserInfoField* pFensUse
                 continue;
             }
             contionalOrder.rtnOrder.OrderStatus = THOST_FTDC_OST_Touched;
-            strcpy(contionalOrder.rtnOrder.StatusMsg,
-                getStatusMsgByStatus(contionalOrder.rtnOrder.OrderStatus).c_str());
+            strncpy(contionalOrder.rtnOrder.StatusMsg,
+                getStatusMsgByStatus(contionalOrder.rtnOrder.OrderStatus).c_str(),
+                sizeof(contionalOrder.rtnOrder.StatusMsg));
             contionalOrder.sendRtnOrder();
             ReqOrderInsertImpl(&contionalOrder.inputOrder, 0, contionalOrder.rtnOrder.OrderSysID);
         }
@@ -1021,14 +1023,14 @@ int CLocalTraderApi::ReqOrderInsertImpl(CThostFtdcInputOrderField * pInputOrder,
             {
                 PositionData tempPos;
                 tempPos.volumeMultiple = itInstr->second.VolumeMultiple;
-                strcpy(tempPos.pos.BrokerID, m_brokerID.c_str());
-                strcpy(tempPos.pos.InvestorID, m_userID.c_str());
+                strncpy(tempPos.pos.BrokerID, m_brokerID.c_str(), sizeof(tempPos.pos.BrokerID));
+                strncpy(tempPos.pos.InvestorID, m_userID.c_str(), sizeof(tempPos.pos.InvestorID));
                 tempPos.pos.HedgeFlag = pInputOrder->CombHedgeFlag[0];
-                strcpy(tempPos.pos.ExchangeID, pInputOrder->ExchangeID);// 交易所代码
-                strcpy(tempPos.pos.InstrumentID, instr.c_str());// 合约代码
+                strncpy(tempPos.pos.ExchangeID, pInputOrder->ExchangeID, sizeof(tempPos.pos.ExchangeID));// 交易所代码
+                strncpy(tempPos.pos.InstrumentID, instr.c_str(), sizeof(tempPos.pos.InstrumentID));// 合约代码
                 tempPos.pos.PreSettlementPrice = itDepthMarketData->second.PreSettlementPrice;
                 tempPos.pos.SettlementPrice = itDepthMarketData->second.LastPrice;
-                strcpy(tempPos.pos.TradingDay, GetTradingDay());
+                strncpy(tempPos.pos.TradingDay, GetTradingDay(), sizeof(tempPos.pos.TradingDay));
                 if (!preCheck)
                 {
                     tempPos.pos.FrozenMargin = frozenMargin;// (因为开仓未成交而)冻结的保证金
@@ -1452,9 +1454,9 @@ int CLocalTraderApi::ReqQryInvestorPosition(CThostFtdcQryInvestorPositionField *
 int CLocalTraderApi::ReqQryTradingAccount(CThostFtdcQryTradingAccountField *pQryTradingAccount, int nRequestID) {
     CHECK_LOGIN_INVESTOR(pQryTradingAccount);
     if (m_pSpi == nullptr) return 0;
-    strcpy(m_tradingAccount.BrokerID, m_brokerID.c_str());
-    strcpy(m_tradingAccount.AccountID, m_userID.c_str());
-    strcpy(m_tradingAccount.TradingDay, GetTradingDay());
+    strncpy(m_tradingAccount.BrokerID, m_brokerID.c_str(), sizeof(m_tradingAccount.BrokerID));
+    strncpy(m_tradingAccount.AccountID, m_userID.c_str(), sizeof(m_tradingAccount.AccountID));
+    strncpy(m_tradingAccount.TradingDay, GetTradingDay(), sizeof(m_tradingAccount.TradingDay));
     m_pSpi->OnRspQryTradingAccount(&m_tradingAccount, &m_successRspInfo, nRequestID, true);
     return 0;
 }
@@ -1464,10 +1466,10 @@ int CLocalTraderApi::ReqQryInvestor(CThostFtdcQryInvestorField *pQryInvestor, in
     CHECK_LOGIN_INVESTOR(pQryInvestor);
     if (m_pSpi == nullptr) return 0;
     CThostFtdcInvestorField Investor = { 0 };
-    strcpy(Investor.InvestorID, pQryInvestor->InvestorID);
-    strcpy(Investor.BrokerID, pQryInvestor->BrokerID);
+    strncpy(Investor.InvestorID, pQryInvestor->InvestorID, sizeof(Investor.InvestorID));
+    strncpy(Investor.BrokerID, pQryInvestor->BrokerID, sizeof(Investor.BrokerID));
     Investor.IdentifiedCardType = THOST_FTDC_ICT_OtherCard;
-    strcpy(Investor.IdentifiedCardNo, "QQ1005018695");
+    strncpy(Investor.IdentifiedCardNo, "QQ1005018695", sizeof(Investor.IdentifiedCardNo));
     Investor.IsActive = 1;
     m_pSpi->OnRspQryInvestor(&Investor, &m_successRspInfo, nRequestID, true);
     return 0;
@@ -1679,9 +1681,9 @@ int CLocalTraderApi::ReqQrySettlementInfoConfirm(CThostFtdcQrySettlementInfoConf
     CHECK_LOGIN_INVESTOR(pQrySettlementInfoConfirm);
     if (m_pSpi == nullptr) return 0;
     CThostFtdcSettlementInfoConfirmField SettlementInfoConfirm = { 0 };
-    strcpy(SettlementInfoConfirm.BrokerID, pQrySettlementInfoConfirm->BrokerID);
-    strcpy(SettlementInfoConfirm.InvestorID, pQrySettlementInfoConfirm->InvestorID);
-    strcpy(SettlementInfoConfirm.ConfirmDate, GetTradingDay());
+    strncpy(SettlementInfoConfirm.BrokerID, pQrySettlementInfoConfirm->BrokerID, sizeof(SettlementInfoConfirm.BrokerID));
+    strncpy(SettlementInfoConfirm.InvestorID, pQrySettlementInfoConfirm->InvestorID, sizeof(SettlementInfoConfirm.InvestorID));
+    strncpy(SettlementInfoConfirm.ConfirmDate, GetTradingDay(), sizeof(SettlementInfoConfirm.ConfirmDate));
     m_pSpi->OnRspQrySettlementInfoConfirm(&SettlementInfoConfirm, &m_successRspInfo, nRequestID, true);
     return 0;
 }
