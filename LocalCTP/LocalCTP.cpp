@@ -192,7 +192,7 @@ void CLocalTraderApi::OrderData::DealTestReqOrderInsert_Normal(const CThostFtdcI
     ///前置编号
     rtnOrder.FrontID = 0; // is 0, all the same
     ///会话编号
-    rtnOrder.SessionID = 0; // is 0, all the same
+    rtnOrder.SessionID = api.getSessionID();
     ///用户端产品信息
     strcpy(rtnOrder.UserProductInfo, "");
     ///状态信息

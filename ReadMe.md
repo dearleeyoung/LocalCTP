@@ -115,7 +115,7 @@ Linux:
 1. `ReqOrderInsert`: 支持条件单(支持四种价格条件TThostFtdcContingentConditionType,即用最新价LastPrice和条件价StopPrice的四种比较类型)
 1. `ReqQryInstrumentMarginRate/ReqQryInstrumentCommissionRate`: 会返回所有符合条件的合约的保证金率或手续费率数据,而不像CTP中只能按合约查询并只返回一条
 1. `ReqOrderAction`: 支持两种撤单方式:
-    * ` OrderRef + FrontID + SessionID( 还需填IntrumentID, 本系统中FrontID和Session都为0 )`
+    * ` OrderRef + FrontID + SessionID( 还需填IntrumentID )`
     * ` OrderSysID + ExchangeID`
 
 

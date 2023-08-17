@@ -17,6 +17,7 @@
     (strlen(a->memberName) == 0 || strcmp((a->memberName),(b.memberName)) == 0)
 
 std::set<CLocalTraderApi::SP_TRADE_API> CLocalTraderApi::trade_api_set;
+std::atomic<int> CLocalTraderApi::maxSessionID( 0 );
 
 void CLocalTraderApi::GetSingleContractFromCombinationContract(const std::string& CombinationContractID,
     std::vector<std::string>& SingleContracts)
@@ -46,7 +47,7 @@ void CLocalTraderApi::GetSingleContractFromCombinationContract(const std::string
 
 CLocalTraderApi::CLocalTraderApi(const char *pszFlowPath/* = ""*/)
 	: m_bRunning(true), m_authenticated(false), m_logined(false)
-    , m_orderSysID(0), m_tradeID(0)
+    , m_orderSysID(0), m_tradeID(0), m_sessionID(0)
     , m_tradingAccount{ 0 }, m_pSpi(nullptr)
     , m_successRspInfo{ 0, "success" }, m_errorRspInfo{ -1, "error" }
 {
@@ -817,6 +818,8 @@ int CLocalTraderApi::ReqUserLogin(CThostFtdcReqUserLoginField *pReqUserLoginFiel
     strncpy(RspUserLogin.INETime, RspUserLogin.LoginTime, sizeof(RspUserLogin.INETime));
     strncpy(RspUserLogin.SystemName, "LocalCTP", sizeof(RspUserLogin.SystemName));
     strncpy(RspUserLogin.MaxOrderRef, "1", sizeof(RspUserLogin.MaxOrderRef));
+    m_sessionID = maxSessionID++;
+    RspUserLogin.SessionID = m_sessionID;
     m_pSpi->OnRspUserLogin(&RspUserLogin, &m_successRspInfo, nRequestID, true);
     return 0;
 }
@@ -1259,7 +1262,9 @@ int CLocalTraderApi::ReqOrderAction(CThostFtdcInputOrderActionField *pInputOrder
                 strcmp( order.rtnOrder.InstrumentID, pInputOrderAction->InstrumentID) != 0)
             {
                 if (m_pSpi == nullptr) return 0;
-                m_pSpi->OnRspOrderAction(pInputOrderAction, setErrorMsgAndGetRspInfo(ErrMsg_AlreadyDoneOrder), nRequestID, true);
+                m_pSpi->OnRspOrderAction(pInputOrderAction, setErrorMsgAndGetRspInfo(
+                    order.isDone() ? ErrMsg_AlreadyDoneOrder : ErrMsg_NotExistOrder),
+                    nRequestID, true);
                 return 0;
             }
             else

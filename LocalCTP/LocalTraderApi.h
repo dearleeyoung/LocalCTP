@@ -17,8 +17,10 @@ public:
     CThostFtdcTraderSpi* getSpi() const { return m_pSpi; }
     std::atomic<int>& getOrderSysID() { return m_orderSysID; }
     std::atomic<int>& getTradeID() { return m_tradeID; }
+    int getSessionID() const { return m_sessionID; }
 	// 储存交易API智能指针的集合
 	static std::set<SP_TRADE_API> trade_api_set;
+    static std::atomic<int> maxSessionID;
     // 将组合合约代码拆分为单腿合约的数组. 支持处理多于2个单腿合约的组合合约.
     // input: CombinationContractID: 组合合约代码
     // input & output: SingleContracts: 拆分得到的单腿合约的数组
@@ -127,24 +129,28 @@ private:
         OrderData(CLocalTraderApi* pApi, const CThostFtdcInputOrderField& _inputOrder,
             bool _isConditionalOrder = false,
             const std::string& relativeOrderSysID = std::string())
-            : api(*pApi), inputOrder(_inputOrder)
-            , rtnOrder{ 0 }, isConditionalOrder(_isConditionalOrder)
+            : inputOrder(_inputOrder), rtnOrder{ 0 }
+            , api(*pApi), isConditionalOrder(_isConditionalOrder)
         {
             DealTestReqOrderInsert_Normal(inputOrder, relativeOrderSysID);
         }
-        CLocalTraderApi& api;
+        bool isDone() const;
+        void handleTrade(double tradedPrice, int tradedSize);
+        void handleCancel(bool cancelFromClient = true);
+        void sendRtnOrder();
+
         CThostFtdcInputOrderField inputOrder;
         CThostFtdcOrderField rtnOrder;
         std::vector<CThostFtdcTradeField> rtnTrades;
-        bool isConditionalOrder;
-        bool isDone() const;
+
+    private:
         void DealTestReqOrderInsert_Normal(const CThostFtdcInputOrderField& InputOrder,
             const std::string& relativeOrderSysID);
-        void handleTrade(double tradedPrice, int tradedSize);
-        void handleCancel(bool cancelFromClient = true);
-        void getRtnTrade(double trade_price, int tradedSize, std::vector<CThostFtdcTradeField>& Trades);
-        void sendRtnOrder();
         void sendRtnTrade(CThostFtdcTradeField& rtnTrade);
+        void getRtnTrade(double trade_price, int tradedSize, std::vector<CThostFtdcTradeField>& Trades);
+
+        CLocalTraderApi& api;
+        bool isConditionalOrder;
     };
 
 	std::atomic<bool> m_bRunning;
@@ -154,6 +160,7 @@ private:
     std::atomic<int> m_tradeID;
     std::string m_userID;
     std::string m_brokerID;
+    int m_sessionID;
     std::map<std::string, CThostFtdcInstrumentField> m_instrData; //合约数据
     std::mutex m_mdMtx;
     std::map<std::string, CThostFtdcDepthMarketDataField> m_mdData; //行情数据
