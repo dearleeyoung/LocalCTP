@@ -101,18 +101,22 @@ Linux:
 1. `ReqQryClassifiedInstrument`
 1. `ReqQryExchange`
 1. `ReqQryProduct`
+1. `ReqQryMaxOrderVolume`
+1. `ReqQryInstrumentMarginRate`
+1. `ReqQryInstrumentCommissionRate`
 
 ### 部分接口说明:
 1. `Init`: 内部并不会连接网络，会从当前目录(或环境变量中的目录)的 `instrument.csv` 中读取合约信息。格式参见附带的同名文件。
 1. `Join`: 会直接返回。
 1. `GetTradingDay`: 会尽可能正确地返回交易日，无需登录。能处理夜盘(包括周五夜盘)的情况，但无法识别判断长假假期。
-1. `RegisterFront`: 会直接返回，并不会连接到参数中的地址。
+1. `RegisterFront`: 会直接返回，并不会连接到参数中的地址也不会校验地址合法性。
 1. `RegisterFensUserInfo`: 【重要】被修改为接收行情快照的接口。内部会将参数转化为 `CThostFtdcDepthMarketDataField*` 类型并处理以更新行情数据，请在外部收到行情快照时调用此接口，使用方法可参考DEMO。
 1. `ReqAuthenticate/ReqUserLogin/ReqUserLogout`: 都不会校验参数，即都会直接认证/登录/登出成功。
-1. `ReqOrderInsert`: 现在已支持条件单(支持四种价格条件TThostFtdcContingentConditionType,即用最新价LastPrice和条件价StopPrice的四种比较类型)
+1. `ReqOrderInsert`: 支持条件单(支持四种价格条件TThostFtdcContingentConditionType,即用最新价LastPrice和条件价StopPrice的四种比较类型)
+1. `ReqQryInstrumentMarginRate/ReqQryInstrumentCommissionRate`: 会返回所有符合条件的合约的保证金率或手续费率数据,而不像CTP中只能按合约查询并只返回一条
 1. `ReqOrderAction`: 支持两种撤单方式:
-    * ` OrderRef+FrontID+SessionID( 还需填IntrumentID )`
-    * ` OrderSysID+ExchangeID`
+    * ` OrderRef + FrontID + SessionID( 还需填IntrumentID, 本系统中FrontID和Session都为0 )`
+    * ` OrderSysID + ExchangeID`
 
 
 ### 账户数据说明:

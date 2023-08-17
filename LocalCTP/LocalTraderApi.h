@@ -17,8 +17,13 @@ public:
     CThostFtdcTraderSpi* getSpi() const { return m_pSpi; }
     std::atomic<int>& getOrderSysID() { return m_orderSysID; }
     std::atomic<int>& getTradeID() { return m_tradeID; }
-	//储存交易API智能指针的集合
+	// 储存交易API智能指针的集合
 	static std::set<SP_TRADE_API> trade_api_set;
+    // 将组合合约代码拆分为单腿合约的数组. 支持处理多于2个单腿合约的组合合约.
+    // input: CombinationContractID: 组合合约代码
+    // input & output: SingleContracts: 拆分得到的单腿合约的数组
+    // Example: "SPD MA309&MA401" -> {"MA309", "MA401"}
+    // Example: "SPC a2401&m2401&y2401" -> {"a2401", "m2401", "y2401"}
     static void GetSingleContractFromCombinationContract(
         const std::string& CombinationContractID, std::vector<std::string>& SingleContracts);
     // 是否是明确区分今仓和昨仓的特殊交易所

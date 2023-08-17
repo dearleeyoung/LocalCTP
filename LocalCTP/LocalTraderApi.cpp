@@ -11,9 +11,12 @@
 
 #define CHECK_LOGIN_INVESTOR(p) CHECK_LOGIN(p, InvestorID)
 
+#define CHECK_LOGIN_ACCOUNT(p) CHECK_LOGIN(p, AccountID)
+
+#define COMPARE_MEMBER_MATCH(a, b, memberName) \
+    (strlen(a->memberName) == 0 || strcmp((a->memberName),(b.memberName)) == 0)
 
 std::set<CLocalTraderApi::SP_TRADE_API> CLocalTraderApi::trade_api_set;
-
 
 void CLocalTraderApi::GetSingleContractFromCombinationContract(const std::string& CombinationContractID,
     std::vector<std::string>& SingleContracts)
@@ -30,7 +33,8 @@ void CLocalTraderApi::GetSingleContractFromCombinationContract(const std::string
     while (and_index != std::string::npos && old_and_index + 1 != CombinationContractID.size())
     {
         and_index = CombinationContractID.find('&', old_and_index + 1);//若没有再找到'&',则也需要将这最后一腿的合约代码保存
-        const std::string _single_contract = CombinationContractID.substr(old_and_index + 1, and_index - (old_and_index + 1));
+        const std::string _single_contract = CombinationContractID.substr(
+            old_and_index + 1, and_index - (old_and_index + 1));
         if (!_single_contract.empty())
         {
             SingleContracts.push_back(_single_contract);
@@ -41,13 +45,16 @@ void CLocalTraderApi::GetSingleContractFromCombinationContract(const std::string
 }
 
 CLocalTraderApi::CLocalTraderApi(const char *pszFlowPath/* = ""*/)
-	: m_bRunning(true), m_authenticated(false), m_logined(false), m_orderSysID(0), m_tradeID(0)
-    , m_tradingAccount{0}
-    , m_pSpi(nullptr), m_successRspInfo{ 0, "success" }, m_errorRspInfo{ -1, "error!" }
+	: m_bRunning(true), m_authenticated(false), m_logined(false)
+    , m_orderSysID(0), m_tradeID(0)
+    , m_tradingAccount{ 0 }, m_pSpi(nullptr)
+    , m_successRspInfo{ 0, "success" }, m_errorRspInfo{ -1, "error" }
 {
     m_tradingAccount.PreBalance = 2e7;
     m_tradingAccount.Balance = 2e7;
+#ifdef _DEBUG
     std::cout << "Welcome to LocalCTP!" << std::endl;
+#endif
 }
 
 CLocalTraderApi::~CLocalTraderApi()
@@ -72,6 +79,7 @@ void CLocalTraderApi::onSnapshot(const CThostFtdcDepthMarketDataField& mdData)
     {
         return;
     }
+    // 不根据组合合约的行情快照来更新PNL
     if (it->second.ProductClass == THOST_FTDC_PC_Combination)
     {
         return;
@@ -83,6 +91,7 @@ void CLocalTraderApi::onSnapshot(const CThostFtdcDepthMarketDataField& mdData)
         {
             auto posKey = CLocalTraderApi::generatePositionKey(mdData.InstrumentID,
                 dir, dateType);
+            // 并不更新持仓明细中的PNL
             auto itPos = m_positionData.find(posKey);
             if (itPos != m_positionData.end())
             {
@@ -309,7 +318,7 @@ void CLocalTraderApi::updateByTrade(const CThostFtdcTradeField& t)
             auto itPos = m_positionData.find(posKey);
             if (itPos == m_positionData.end())
             {
-                // 如果没找到持仓,则返回,并不插入持仓(因为持仓在开仓报单时已插入).此流程可改进
+                // 如果没找到持仓,则返回,并不插入持仓(因为持仓在开仓报单时已插入).
                 return;
             }
             else
@@ -498,7 +507,9 @@ void CLocalTraderApi::Init() {
         iss >> instr;
         m_instrData[instr.InstrumentID] = instr;
     }
+#ifdef _DEBUG
     std::cout << "Total instrument count: " << m_instrData.size() << std::endl;
+#endif
 
     auto initProductsAndExchanges = [&]() {
         for (const auto& instrPair : m_instrData)
@@ -703,8 +714,7 @@ void CLocalTraderApi::RegisterFensUserInfo(CThostFtdcFensUserInfoField* pFensUse
             {
                 continue;
             }
-            if ((order.rtnOrder.Direction == THOST_FTDC_D_Buy && order.rtnOrder.LimitPrice >= md->AskPrice1 - EPS)
-                || (order.rtnOrder.Direction == THOST_FTDC_D_Sell && order.rtnOrder.LimitPrice <= md->BidPrice1 + EPS))
+            if (isMatchTrade(order.rtnOrder.Direction, order.rtnOrder.LimitPrice, *md))
             {
                 order.handleTrade(order.rtnOrder.LimitPrice, order.rtnOrder.VolumeTotal);
             }
@@ -780,26 +790,33 @@ int CLocalTraderApi::ReqUserLogin(CThostFtdcReqUserLoginField *pReqUserLoginFiel
     {
         return -1;
     }
+    CThostFtdcRspUserLoginField RspUserLogin = { 0 };
+    strncpy(RspUserLogin.BrokerID, pReqUserLoginField->BrokerID, sizeof(RspUserLogin.BrokerID));
+    strncpy(RspUserLogin.UserID, pReqUserLoginField->UserID, sizeof(RspUserLogin.UserID));
     if (!m_authenticated)
     {
         if (m_pSpi == nullptr) return 0;
-        CThostFtdcRspUserLoginField RspUserLogin = { 0 };
         m_pSpi->OnRspUserLogin(&RspUserLogin, setErrorMsgAndGetRspInfo(ErrMsgNotAuth), nRequestID, true);
         return 0;
     }
     if (m_userID != pReqUserLoginField->UserID || m_brokerID != pReqUserLoginField->BrokerID)
     {
         if (m_pSpi == nullptr) return 0;
-        CThostFtdcRspUserLoginField RspUserLogin = { 0 };
         m_pSpi->OnRspUserLogin(&RspUserLogin, setErrorMsgAndGetRspInfo(ErrMsgUserInfoNotSameAsAuth), nRequestID, true);
         return 0;
     }
     m_logined = true;
     if (m_pSpi == nullptr) return 0;
-    CThostFtdcRspUserLoginField RspUserLogin = { 0 };
-    strncpy(RspUserLogin.UserID, pReqUserLoginField->UserID, sizeof(RspUserLogin.UserID));
-    strncpy(RspUserLogin.BrokerID, pReqUserLoginField->BrokerID, sizeof(RspUserLogin.BrokerID));
     strncpy(RspUserLogin.TradingDay, GetTradingDay(), sizeof(RspUserLogin.TradingDay));
+    strncpy(RspUserLogin.LoginTime, CLeeDateTime::GetCurrentTime().Format("%H:%M:%S").c_str(),
+        sizeof(RspUserLogin.LoginTime));
+    strncpy(RspUserLogin.SHFETime, RspUserLogin.LoginTime, sizeof(RspUserLogin.SHFETime));
+    strncpy(RspUserLogin.DCETime, RspUserLogin.LoginTime, sizeof(RspUserLogin.DCETime));
+    strncpy(RspUserLogin.CZCETime, RspUserLogin.LoginTime, sizeof(RspUserLogin.CZCETime));
+    strncpy(RspUserLogin.FFEXTime, RspUserLogin.LoginTime, sizeof(RspUserLogin.FFEXTime));
+    strncpy(RspUserLogin.INETime, RspUserLogin.LoginTime, sizeof(RspUserLogin.INETime));
+    strncpy(RspUserLogin.SystemName, "LocalCTP", sizeof(RspUserLogin.SystemName));
+    strncpy(RspUserLogin.MaxOrderRef, "1", sizeof(RspUserLogin.MaxOrderRef));
     m_pSpi->OnRspUserLogin(&RspUserLogin, &m_successRspInfo, nRequestID, true);
     return 0;
 }
@@ -818,16 +835,31 @@ int CLocalTraderApi::ReqUserLogout(CThostFtdcUserLogoutField *pUserLogout, int n
     m_pSpi->OnRspUserLogout(&RspUserLogout, &m_successRspInfo, nRequestID, true);
 #if 0
     //另一种方案:不允许登出. "上了车还想跑? 车门已焊死!"
-    m_pSpi->OnRspUserLogout(&RspUserLogout, &setErrorMsgAndGetRspInfo("Logout is not supported in this system."), nRequestID, true);
+    m_pSpi->OnRspUserLogout(&RspUserLogout, &setErrorMsgAndGetRspInfo("Logout is not supported in this system."),
+        nRequestID, true);
 #endif
     return 0;
 }
 
 ///用户口令更新请求
-int CLocalTraderApi::ReqUserPasswordUpdate(CThostFtdcUserPasswordUpdateField *pUserPasswordUpdate, int nRequestID) { return -1; }
+int CLocalTraderApi::ReqUserPasswordUpdate(CThostFtdcUserPasswordUpdateField *pUserPasswordUpdate, int nRequestID) {
+    CHECK_LOGIN_USER(pUserPasswordUpdate);
+    if (m_pSpi == nullptr) return 0;
+    m_pSpi->OnRspUserPasswordUpdate(nullptr,
+        setErrorMsgAndGetRspInfo("Update password is not supported in this system."),
+        nRequestID, true);
+    return 0;
+}
 
 ///资金账户口令更新请求
-int CLocalTraderApi::ReqTradingAccountPasswordUpdate(CThostFtdcTradingAccountPasswordUpdateField *pTradingAccountPasswordUpdate, int nRequestID) { return -1; }
+int CLocalTraderApi::ReqTradingAccountPasswordUpdate(CThostFtdcTradingAccountPasswordUpdateField *pTradingAccountPasswordUpdate, int nRequestID) {
+    CHECK_LOGIN_ACCOUNT(pTradingAccountPasswordUpdate);
+    if (m_pSpi == nullptr) return 0;
+    m_pSpi->OnRspTradingAccountPasswordUpdate(nullptr,
+        setErrorMsgAndGetRspInfo("Update password is not supported in this system."),
+        nRequestID, true);
+    return 0;
+}
 
 ///查询用户当前支持的认证模式
 int CLocalTraderApi::ReqUserAuthMethod(CThostFtdcReqUserAuthMethodField *pReqUserAuthMethod, int nRequestID) { return -1; }
@@ -878,10 +910,7 @@ int CLocalTraderApi::ReqOrderInsertImpl(CThostFtdcInputOrderField * pInputOrder,
     }
 
     if (pInputOrder->ContingentCondition != THOST_FTDC_CC_Immediately &&
-        pInputOrder->ContingentCondition != THOST_FTDC_CC_LastPriceGreaterThanStopPrice &&
-        pInputOrder->ContingentCondition != THOST_FTDC_CC_LastPriceGreaterEqualStopPrice &&
-        pInputOrder->ContingentCondition != THOST_FTDC_CC_LastPriceLesserThanStopPrice &&
-        pInputOrder->ContingentCondition != THOST_FTDC_CC_LastPriceLesserEqualStopPrice)
+        !isConditionalType(pInputOrder->ContingentCondition))
     {
         sendRejectOrder(ErrMsg_NotSupportContingentCondition);
         return 0;
@@ -901,7 +930,8 @@ int CLocalTraderApi::ReqOrderInsertImpl(CThostFtdcInputOrderField * pInputOrder,
     }
 
     auto itInstr = m_instrData.find(pInputOrder->InstrumentID);
-    if (itInstr == m_instrData.end() || strcmp(itInstr->second.ExchangeID, pInputOrder->ExchangeID) != 0)
+    if (itInstr == m_instrData.end() ||
+        strcmp(itInstr->second.ExchangeID, pInputOrder->ExchangeID) != 0)
     {
         sendRejectOrder(ErrMsg_INSTRUMENT_NOT_FOUND);
         return 0;
@@ -910,9 +940,9 @@ int CLocalTraderApi::ReqOrderInsertImpl(CThostFtdcInputOrderField * pInputOrder,
     double dblMulti = pInputOrder->LimitPrice / itInstr->second.PriceTick;
     int intMulti = static_cast<int>( round(dblMulti) );
 
-    if (abs(dblMulti - intMulti) > EPS)
+    if (NEZ(dblMulti - intMulti))
     {
-        sendRejectOrder(ErrMsg_BAD_PRICE_VALUE);
+        sendRejectOrder((ErrMsg_BAD_PRICE_VALUE + std::to_string(itInstr->second.PriceTick)).c_str());
         return 0;
     }
 
@@ -922,15 +952,12 @@ int CLocalTraderApi::ReqOrderInsertImpl(CThostFtdcInputOrderField * pInputOrder,
         itMd = m_mdData.find(pInputOrder->InstrumentID);
         if (itMd == m_mdData.end())
         {
-            sendRejectOrder(ErrMsg_NoMarketData);
+            sendRejectOrder((std::string(ErrMsg_NoMarketData) + pInputOrder->InstrumentID).c_str());
             return 0;
         }
     }
 
-    if (pInputOrder->ContingentCondition == THOST_FTDC_CC_LastPriceGreaterThanStopPrice ||
-        pInputOrder->ContingentCondition == THOST_FTDC_CC_LastPriceGreaterEqualStopPrice ||
-        pInputOrder->ContingentCondition == THOST_FTDC_CC_LastPriceLesserThanStopPrice ||
-        pInputOrder->ContingentCondition == THOST_FTDC_CC_LastPriceLesserEqualStopPrice)
+    if (isConditionalType(pInputOrder->ContingentCondition))
     {
         OrderData x(this, *pInputOrder, true);
         m_contionalOrders.emplace(x.rtnOrder.OrderSysID, x);
@@ -1019,7 +1046,7 @@ int CLocalTraderApi::ReqOrderInsertImpl(CThostFtdcInputOrderField * pInputOrder,
         {
             double newAvailable = m_tradingAccount.Balance - m_tradingAccount.CurrMargin - m_tradingAccount.FrozenMargin
                 - totalFrozenMargin;
-            if (newAvailable < 0)
+            if (LTZ(newAvailable))
             {
                 return std::make_pair(false, ERRMSG_AVAILABLE_NOT_ENOUGH);;
             }
@@ -1041,7 +1068,8 @@ int CLocalTraderApi::ReqOrderInsertImpl(CThostFtdcInputOrderField * pInputOrder,
         auto itPos = m_positionData.find(posKey);
         if (itPos == m_positionData.end())
         {
-            return std::make_pair(false, ERRMSG_AVAILABLE_POSITION_NOT_ENOUGH + std::string("0"));
+            return std::make_pair(false, ERRMSG_AVAILABLE_POSITION_NOT_ENOUGH + std::string("0")
+                + " on " + instr);
         }
         else
         {
@@ -1053,7 +1081,7 @@ int CLocalTraderApi::ReqOrderInsertImpl(CThostFtdcInputOrderField * pInputOrder,
                 return std::make_pair(false, 
                     (isSpecialExchange(itInstr->second.ExchangeID) && pInputOrder->CombOffsetFlag[0] == THOST_FTDC_OF_CloseToday) ?
                         ERRMSG_AVAILABLE_POSITION_NOT_ENOUGH : ERRMSG_AVAILABLE_TODAY_POSITION_NOT_ENOUGH
-                        + std::string(std::to_string(closable)));
+                        + std::to_string(closable) + " on " + instr);
             }
             if (!preCheck)
             {
@@ -1162,12 +1190,8 @@ int CLocalTraderApi::ReqOrderInsertImpl(CThostFtdcInputOrderField * pInputOrder,
         sendRejectOrder(checkRet.second.c_str());
         return 0;
     }*/
-
     {
-        if ((pInputOrder->Direction == THOST_FTDC_D_Buy &&
-                pInputOrder->LimitPrice >= itMd->second.AskPrice1 - EPS)
-            || (pInputOrder->Direction == THOST_FTDC_D_Sell &&
-                pInputOrder->LimitPrice <= itMd->second.BidPrice1 + EPS))
+        if(isMatchTrade(pInputOrder->Direction, pInputOrder->LimitPrice, itMd->second))
         {
             itOrder->second.handleTrade(pInputOrder->LimitPrice, orderNum);
             return 0;
@@ -1194,13 +1218,21 @@ int CLocalTraderApi::ReqOrderInsertImpl(CThostFtdcInputOrderField * pInputOrder,
 ///预埋单录入请求
 int CLocalTraderApi::ReqParkedOrderInsert(CThostFtdcParkedOrderField *pParkedOrder, int nRequestID) {
     CHECK_LOGIN_USER(pParkedOrder);
-    return -1;
+    if (m_pSpi == nullptr) return 0;
+    m_pSpi->OnRspParkedOrderInsert(nullptr,
+        setErrorMsgAndGetRspInfo("Parked order is not supported in this system."),
+        nRequestID, true);
+    return 0;
 }
 
 ///预埋撤单录入请求
 int CLocalTraderApi::ReqParkedOrderAction(CThostFtdcParkedOrderActionField *pParkedOrderAction, int nRequestID) {
     CHECK_LOGIN_USER(pParkedOrderAction);
-    return -1;
+    if (m_pSpi == nullptr) return 0;
+    m_pSpi->OnRspParkedOrderAction(nullptr,
+        setErrorMsgAndGetRspInfo("Parked order is not supported in this system."),
+        nRequestID, true);
+    return 0;
 }
 
 ///报单操作请求
@@ -1258,7 +1290,14 @@ int CLocalTraderApi::ReqOrderAction(CThostFtdcInputOrderActionField *pInputOrder
 }
 
 ///查询最大报单数量请求
-int CLocalTraderApi::ReqQryMaxOrderVolume(CThostFtdcQryMaxOrderVolumeField *pQryMaxOrderVolume, int nRequestID) { return -1; }
+int CLocalTraderApi::ReqQryMaxOrderVolume(CThostFtdcQryMaxOrderVolumeField *pQryMaxOrderVolume, int nRequestID) {
+    CHECK_LOGIN_INVESTOR(pQryMaxOrderVolume);
+    if (m_pSpi == nullptr) return 0;
+    m_pSpi->OnRspQryMaxOrderVolume(nullptr,
+        setErrorMsgAndGetRspInfo("Query MaxOrderVolume is not supported in this system."),
+        nRequestID, true);
+    return 0;
+}
 
 ///投资者结算结果确认
 int CLocalTraderApi::ReqSettlementInfoConfirm(CThostFtdcSettlementInfoConfirmField *pSettlementInfoConfirm, int nRequestID) {
@@ -1270,10 +1309,24 @@ int CLocalTraderApi::ReqSettlementInfoConfirm(CThostFtdcSettlementInfoConfirmFie
 }
 
 ///请求删除预埋单
-int CLocalTraderApi::ReqRemoveParkedOrder(CThostFtdcRemoveParkedOrderField *pRemoveParkedOrder, int nRequestID) { return -1; }
+int CLocalTraderApi::ReqRemoveParkedOrder(CThostFtdcRemoveParkedOrderField *pRemoveParkedOrder, int nRequestID) {
+    CHECK_LOGIN_INVESTOR(pRemoveParkedOrder);
+    if (m_pSpi == nullptr) return 0;
+    m_pSpi->OnRspRemoveParkedOrder(nullptr,
+        setErrorMsgAndGetRspInfo("Parked order is not supported in this system."),
+        nRequestID, true);
+    return 0;
+}
 
 ///请求删除预埋撤单
-int CLocalTraderApi::ReqRemoveParkedOrderAction(CThostFtdcRemoveParkedOrderActionField *pRemoveParkedOrderAction, int nRequestID) { return -1; }
+int CLocalTraderApi::ReqRemoveParkedOrderAction(CThostFtdcRemoveParkedOrderActionField *pRemoveParkedOrderAction, int nRequestID) {
+    CHECK_LOGIN_INVESTOR(pRemoveParkedOrderAction);
+    if (m_pSpi == nullptr) return 0;
+    m_pSpi->OnRspRemoveParkedOrderAction(nullptr,
+        setErrorMsgAndGetRspInfo("Parked order is not supported in this system."),
+        nRequestID, true);
+    return 0;
+}
 
 ///执行宣告录入请求
 int CLocalTraderApi::ReqExecOrderInsert(CThostFtdcInputExecOrderField *pInputExecOrder, int nRequestID) { return -1; }
@@ -1312,9 +1365,9 @@ int CLocalTraderApi::ReqQryOrder(CThostFtdcQryOrderField *pQryOrder, int nReques
         for (auto& o : m_orderData)
         {
             auto& rtnOrder = o.second.rtnOrder;
-            if ((strlen(pQryOrder->ExchangeID) == 0 || strcmp(pQryOrder->ExchangeID, rtnOrder.ExchangeID) == 0) &&
-                (strlen(pQryOrder->OrderSysID) == 0 || strcmp(pQryOrder->OrderSysID, rtnOrder.OrderSysID) == 0) &&
-                (strlen(pQryOrder->InstrumentID) == 0 || strcmp(pQryOrder->InstrumentID, rtnOrder.InstrumentID) == 0))
+            if (COMPARE_MEMBER_MATCH(pQryOrder, rtnOrder, ExchangeID) &&
+                COMPARE_MEMBER_MATCH(pQryOrder, rtnOrder, OrderSysID) &&
+                COMPARE_MEMBER_MATCH(pQryOrder, rtnOrder, InstrumentID))
             {
                 v.emplace_back(&rtnOrder);
             }
@@ -1342,9 +1395,9 @@ int CLocalTraderApi::ReqQryTrade(CThostFtdcQryTradeField *pQryTrade, int nReques
         {
             for (auto& t : o.second.rtnTrades)
             {
-                if ((strlen(pQryTrade->ExchangeID) == 0 || strcmp(pQryTrade->ExchangeID, t.ExchangeID) == 0) &&
-                    (strlen(pQryTrade->TradeID) == 0 || strcmp(pQryTrade->TradeID, t.TradeID) == 0) &&
-                    (strlen(pQryTrade->InstrumentID) == 0 || strcmp(pQryTrade->InstrumentID, t.InstrumentID) == 0))
+                if (COMPARE_MEMBER_MATCH(pQryTrade, t, ExchangeID) &&
+                    COMPARE_MEMBER_MATCH(pQryTrade, t, TradeID) &&
+                    COMPARE_MEMBER_MATCH(pQryTrade, t, InstrumentID))
                 {
                     v.emplace_back(&t);
                 }
@@ -1372,8 +1425,8 @@ int CLocalTraderApi::ReqQryInvestorPosition(CThostFtdcQryInvestorPositionField *
         for (auto& o : m_positionData)
         {
             auto& pos = o.second.pos;
-            if ((strlen(pQryInvestorPosition->ExchangeID) == 0 || strcmp(pQryInvestorPosition->ExchangeID, pos.ExchangeID) == 0) &&
-                (strlen(pQryInvestorPosition->InstrumentID) == 0 || strcmp(pQryInvestorPosition->InstrumentID, pos.InstrumentID) == 0))
+            if (COMPARE_MEMBER_MATCH(pQryInvestorPosition, pos, ExchangeID) &&
+                COMPARE_MEMBER_MATCH(pQryInvestorPosition, pos, InstrumentID))
             {
                 v.emplace_back(&pos);
             }
@@ -1419,10 +1472,54 @@ int CLocalTraderApi::ReqQryInvestor(CThostFtdcQryInvestorField *pQryInvestor, in
 int CLocalTraderApi::ReqQryTradingCode(CThostFtdcQryTradingCodeField *pQryTradingCode, int nRequestID) { return -1; }
 
 ///请求查询合约保证金率
-int CLocalTraderApi::ReqQryInstrumentMarginRate(CThostFtdcQryInstrumentMarginRateField *pQryInstrumentMarginRate, int nRequestID) { return -1; }
+int CLocalTraderApi::ReqQryInstrumentMarginRate(CThostFtdcQryInstrumentMarginRateField *pQryInstrumentMarginRate, int nRequestID) {
+    if (pQryInstrumentMarginRate == nullptr || !m_logined) return -1;
+    if (m_pSpi == nullptr) return 0;
+    std::vector<CThostFtdcInstrumentMarginRateField*> v;
+    for (auto& instrPair : m_instrumentMarginRateData)
+    {
+        auto& marginRate = instrPair.second;
+        if (COMPARE_MEMBER_MATCH(pQryInstrumentMarginRate, marginRate, ExchangeID) &&
+            COMPARE_MEMBER_MATCH(pQryInstrumentMarginRate, marginRate, InstrumentID))            
+        {
+            v.emplace_back(&marginRate);
+        }
+    }
+    for (auto it = v.begin(); it != v.end(); ++it)
+    {
+        m_pSpi->OnRspQryInstrumentMarginRate(*it, &m_successRspInfo, nRequestID, (it + 1 == v.end() ? true : false));
+    }
+    if (v.empty())
+    {
+        m_pSpi->OnRspQryInstrumentMarginRate(nullptr, &m_successRspInfo, nRequestID, true);
+    }
+    return 0;
+}
 
 ///请求查询合约手续费率
-int CLocalTraderApi::ReqQryInstrumentCommissionRate(CThostFtdcQryInstrumentCommissionRateField *pQryInstrumentCommissionRate, int nRequestID) { return -1; }
+int CLocalTraderApi::ReqQryInstrumentCommissionRate(CThostFtdcQryInstrumentCommissionRateField *pQryInstrumentCommissionRate, int nRequestID) {
+    if (pQryInstrumentCommissionRate == nullptr || !m_logined) return -1;
+    if (m_pSpi == nullptr) return 0;
+    std::vector<CThostFtdcInstrumentCommissionRateField*> v;
+    for (auto& instrPair : m_instrumentCommissionRateData)
+    {
+        auto& commissionRate = instrPair.second;
+        if (COMPARE_MEMBER_MATCH(pQryInstrumentCommissionRate, commissionRate, ExchangeID) &&
+            COMPARE_MEMBER_MATCH(pQryInstrumentCommissionRate, commissionRate, InstrumentID))
+        {
+            v.emplace_back(&commissionRate);
+        }
+    }
+    for (auto it = v.begin(); it != v.end(); ++it)
+    {
+        m_pSpi->OnRspQryInstrumentCommissionRate(*it, &m_successRspInfo, nRequestID, (it + 1 == v.end() ? true : false));
+    }
+    if (v.empty())
+    {
+        m_pSpi->OnRspQryInstrumentCommissionRate(nullptr, &m_successRspInfo, nRequestID, true);
+    }
+    return 0;
+}
 
 ///请求查询交易所
 int CLocalTraderApi::ReqQryExchange(CThostFtdcQryExchangeField *pQryExchange, int nRequestID) {
@@ -1431,7 +1528,7 @@ int CLocalTraderApi::ReqQryExchange(CThostFtdcQryExchangeField *pQryExchange, in
     std::vector<CThostFtdcExchangeField*> v;
     for (auto& e : m_exchanges)
     {
-        if (strlen(pQryExchange->ExchangeID) == 0 || strcmp(pQryExchange->ExchangeID, e.second.ExchangeID) == 0)
+        if (COMPARE_MEMBER_MATCH(pQryExchange, e.second, ExchangeID))
         {
             v.emplace_back(&(e.second));
         }
@@ -1455,8 +1552,8 @@ int CLocalTraderApi::ReqQryProduct(CThostFtdcQryProductField *pQryProduct, int n
     for (auto& productPair : m_products)
     {
         auto& product = productPair.second;
-        if ((strlen(pQryProduct->ExchangeID) == 0 || strcmp(pQryProduct->ExchangeID, product.ExchangeID) == 0) &&
-            (strlen(pQryProduct->ProductID) == 0 || strcmp(pQryProduct->ProductID, product.ProductID) == 0) &&
+        if (COMPARE_MEMBER_MATCH(pQryProduct, product, ExchangeID) &&
+            COMPARE_MEMBER_MATCH(pQryProduct, product, ProductID) &&
             pQryProduct->ProductClass == product.ProductClass)
         {
             v.emplace_back(&product);
@@ -1482,9 +1579,9 @@ int CLocalTraderApi::ReqQryInstrument(CThostFtdcQryInstrumentField *pQryInstrume
     for (auto& instrPair : m_instrData)
     {
         CThostFtdcInstrumentField& instr = instrPair.second;
-        if ((strlen(pQryInstrument->ExchangeID) == 0 || strcmp(pQryInstrument->ExchangeID, instr.ExchangeID) == 0) &&
-            (strlen(pQryInstrument->ProductID) == 0 || strcmp(pQryInstrument->ProductID, instr.ProductID) == 0) &&
-            (strlen(pQryInstrument->InstrumentID) == 0 || strcmp(pQryInstrument->InstrumentID, instr.InstrumentID) == 0))
+        if (COMPARE_MEMBER_MATCH(pQryInstrument, instr, ExchangeID) &&
+            COMPARE_MEMBER_MATCH(pQryInstrument, instr, ProductID) &&
+            COMPARE_MEMBER_MATCH(pQryInstrument, instr, InstrumentID))
         {
             v.emplace_back(&instr);   
         }
@@ -1510,8 +1607,8 @@ int CLocalTraderApi::ReqQryDepthMarketData(CThostFtdcQryDepthMarketDataField *pQ
         for (auto& p : m_mdData)
         {
             auto& md = p.second;
-            if ((strlen(pQryDepthMarketData->ExchangeID) == 0 || strcmp(pQryDepthMarketData->ExchangeID, md.ExchangeID) == 0) &&
-                (strlen(pQryDepthMarketData->InstrumentID) == 0 || strcmp(pQryDepthMarketData->InstrumentID, md.InstrumentID) == 0))
+            if (COMPARE_MEMBER_MATCH(pQryDepthMarketData, md, ExchangeID) &&
+                COMPARE_MEMBER_MATCH(pQryDepthMarketData, md, InstrumentID))
             {
                 v.emplace_back(&md);
             }
@@ -1550,8 +1647,8 @@ int CLocalTraderApi::ReqQryInvestorPositionDetail(CThostFtdcQryInvestorPositionD
         {
             for (auto& t : o.second.posDetailData)
             {
-                if ((strlen(pQryInvestorPositionDetail->ExchangeID) == 0 || strcmp(pQryInvestorPositionDetail->ExchangeID, t.ExchangeID) == 0) &&
-                    (strlen(pQryInvestorPositionDetail->InstrumentID) == 0 || strcmp(pQryInvestorPositionDetail->InstrumentID, t.InstrumentID) == 0))
+                if (COMPARE_MEMBER_MATCH(pQryInvestorPositionDetail, t, ExchangeID) &&
+                    COMPARE_MEMBER_MATCH(pQryInvestorPositionDetail, t, InstrumentID))
                 {
                     v.emplace_back(&t);
                 }
@@ -1725,9 +1822,9 @@ int CLocalTraderApi::ReqQryClassifiedInstrument(CThostFtdcQryClassifiedInstrumen
         {
             continue;
         }
-        if ((strlen(pQryClassifiedInstrument->ExchangeID) == 0 || strcmp(pQryClassifiedInstrument->ExchangeID, instr.ExchangeID) == 0) &&
-            (strlen(pQryClassifiedInstrument->ProductID) == 0 || strcmp(pQryClassifiedInstrument->ProductID, instr.ProductID) == 0) &&
-            (strlen(pQryClassifiedInstrument->InstrumentID) == 0 || strcmp(pQryClassifiedInstrument->InstrumentID, instr.InstrumentID) == 0))
+        if (COMPARE_MEMBER_MATCH(pQryClassifiedInstrument, instr, ExchangeID) &&
+            COMPARE_MEMBER_MATCH(pQryClassifiedInstrument, instr, ProductID) &&
+            COMPARE_MEMBER_MATCH(pQryClassifiedInstrument, instr, InstrumentID))
         {
             v.emplace_back(&instr);
         }
