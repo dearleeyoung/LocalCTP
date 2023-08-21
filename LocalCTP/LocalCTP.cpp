@@ -218,7 +218,7 @@ void CLocalTraderApi::OrderData::DealTestReqOrderInsert_Normal(const CThostFtdcI
     ///币种代码
     strncpy(rtnOrder.CurrencyID, "CNY", sizeof(rtnOrder.CurrencyID));
 
-    api.getSpi()->OnRtnOrder(&rtnOrder);
+    sendRtnOrder();
 
     int OrderSysID = ++api.getOrderSysID();
     if (isConditionalOrder)
@@ -249,7 +249,7 @@ void CLocalTraderApi::OrderData::DealTestReqOrderInsert_Normal(const CThostFtdcI
     strncpy(rtnOrder.StatusMsg, getStatusMsgByStatus(rtnOrder.OrderStatus).c_str(),
         sizeof(rtnOrder.StatusMsg));
 
-    api.getSpi()->OnRtnOrder(&rtnOrder);
+    sendRtnOrder();
     return;
 }
 
@@ -398,10 +398,12 @@ void CLocalTraderApi::OrderData::getRtnTrade(double trade_price, int tradedSize,
 
 void CLocalTraderApi::OrderData::sendRtnOrder()
 {
+    api.saveOrderToDb(rtnOrder);
     api.getSpi()->OnRtnOrder(&rtnOrder);
 }
 
 void CLocalTraderApi::OrderData::sendRtnTrade(CThostFtdcTradeField& rtnTrade)
 {
+    api.saveTradeToDb(rtnTrade);
     api.getSpi()->OnRtnTrade(&rtnTrade);
 }

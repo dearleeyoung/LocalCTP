@@ -38,5 +38,17 @@
     <ClCompile Include="LocalTraderApi.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
+    <ClCompile Include="sqlite\shell.c">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="sqlite\sqlite3.c">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="CSqliteHandler.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="CTPSQLWrapper.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

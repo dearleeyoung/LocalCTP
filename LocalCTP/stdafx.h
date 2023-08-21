@@ -28,8 +28,9 @@
 #include <memory>
 #include <algorithm>
 #include <cfloat>
+#include <locale>
+#include <codecvt>
 #include "LeeDateTime.h"
-
 
 // 导出CTP的class需要的宏
 #define ISLIB
@@ -95,4 +96,52 @@ inline bool LEZ(double d, double ep = EPS)
 inline bool LTZ(double d, double ep = EPS)
 {
     return !GEZ(d, ep);
+}
+
+
+// some IDE may complain that the ~codecvt_byname() is protected,
+// so we use a new derived one here.
+template <class InternT, class ExternT, class State>
+class CodecvtByname : public std::codecvt_byname<InternT, ExternT, State>
+{
+public:
+    CodecvtByname(const char* id, size_t refs = 0)
+        : std::codecvt_byname<InternT, ExternT, State>(id, refs)
+    {
+    }
+    CodecvtByname(const std::string& id, size_t refs = 0)
+        : std::codecvt_byname<InternT, ExternT, State>(id, refs)
+    {
+    }
+    ~CodecvtByname() = default;
+};
+
+inline std::string gbk_to_utf8(const std::string& str)
+{
+#ifdef _WIN32
+    const char* GBK_LOCALE_NAME = ".936";// GBK locale name in windows
+#else
+    const char* GBK_LOCALE_NAME = "zh_CN.gb18030";// GBK locale name in linux
+#endif
+    static std::wstring_convert<CodecvtByname<wchar_t, char, mbstate_t>> convert(
+        new CodecvtByname<wchar_t, char, mbstate_t>(GBK_LOCALE_NAME));
+    std::wstring tmp_wstr = convert.from_bytes(str);
+
+    static std::wstring_convert<std::codecvt_utf8<wchar_t>> cv2;
+    return cv2.to_bytes(tmp_wstr);
+}
+
+inline std::string utf8_to_gbk(const std::string& str)
+{
+#ifdef _WIN32
+    const char* GBK_LOCALE_NAME = ".936";// GBK locale name in windows
+#else
+    const char* GBK_LOCALE_NAME = "zh_CN.gb18030";// GBK locale name in linux
+#endif
+    static std::wstring_convert<std::codecvt_utf8<wchar_t> > conv;
+    std::wstring tmp_wstr = conv.from_bytes(str);
+
+    static std::wstring_convert<CodecvtByname<wchar_t, char, mbstate_t>> convert(
+        new CodecvtByname<wchar_t, char, mbstate_t>(GBK_LOCALE_NAME));
+    return convert.to_bytes(tmp_wstr);
 }

@@ -3,6 +3,8 @@
 #include "stdafx.h"
 #include "ThostFtdcTraderApi.h"//CTP交易的头文件
 #include "ctpStatus.h"
+#include "CSqliteHandler.h"
+#include "CTPSQLWrapper.h"
 
 std::istream& operator>>(std::istream& i, CThostFtdcInstrumentField& instr);
 
@@ -21,6 +23,7 @@ public:
 	// 储存交易API智能指针的集合
 	static std::set<SP_TRADE_API> trade_api_set;
     static std::atomic<int> maxSessionID;
+    static CSqliteHandler sqlHandler;
     // 将组合合约代码拆分为单腿合约的数组. 支持处理多于2个单腿合约的组合合约.
     // input: CombinationContractID: 组合合约代码
     // input & output: SingleContracts: 拆分得到的单腿合约的数组
@@ -32,6 +35,14 @@ public:
     static bool isSpecialExchange(const std::string& exchangeID)
     {
         return (exchangeID == "SHFE" || exchangeID == "INE");
+    }
+    static TThostFtdcPosiDirectionType getPositionDirectionFromDirection(TThostFtdcDirectionType dir)
+    {
+        return dir == THOST_FTDC_D_Buy ? THOST_FTDC_PD_Long : THOST_FTDC_PD_Short;
+    }
+    static std::string generatePositionKey(const CThostFtdcInvestorPositionField& pos)
+    {
+        return generatePositionKey(pos.InstrumentID, getPositionDirectionFromDirection(pos.PosiDirection), pos.PositionDate);
     }
     static std::string generatePositionKey(const std::string& instrumentID,
         TThostFtdcDirectionType dir, TThostFtdcPositionDateType dateType)
@@ -183,6 +194,13 @@ private:
     void updatePNL(bool needTotalCalc = false);
     void updateByCancel(const CThostFtdcOrderField& o);
     void updateByTrade(const CThostFtdcTradeField& t);
+    void reloadAccountData();
+    void saveTradingAccountToDb();
+    void savePositionToDb(const PositionData& pos);
+    void savePositionToDb(const CThostFtdcInvestorPositionField& pos);
+    void savePositionDetialToDb(const CThostFtdcInvestorPositionDetailField& pos);
+    void saveOrderToDb(const CThostFtdcOrderField& order);
+    void saveTradeToDb(const CThostFtdcTradeField& trade);
     int ReqOrderInsertImpl(CThostFtdcInputOrderField* pInputOrder, int nRequestID,
         std::string relativeOrderSysID = std::string());
 

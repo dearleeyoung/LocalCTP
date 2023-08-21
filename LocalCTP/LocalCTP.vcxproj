@@ -161,10 +161,14 @@
     <ClInclude Include="stdafx.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="CSqliteHandler.cpp" />
+    <ClCompile Include="CTPSQLWrapper.cpp" />
     <ClCompile Include="dllmain.cpp" />
     <ClCompile Include="LeeDateTime.cpp" />
     <ClCompile Include="LocalCTP.cpp" />
     <ClCompile Include="LocalTraderApi.cpp" />
+    <ClCompile Include="sqlite\shell.c" />
+    <ClCompile Include="sqlite\sqlite3.c" />
     <ClCompile Include="stdafx.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>

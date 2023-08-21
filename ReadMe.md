@@ -1,6 +1,6 @@
 # 欢迎使用  LocalCTP
 
-[B站专栏文章](https://www.bilibili.com/read/cv25645274 "Editor.md")
+[B站专栏文章](https://www.bilibili.com/read/cv25645274) [公众号文章](https://mp.weixin.qq.com/s/-XndrmQ9UGNLz-E1cHZHSA)
 
 `LocalCTP`是一个部署于本地的仿CTP项目。本项目不联网，完全开源，接口完全同CTP，实现了大部分CTP柜台的功能。
 
@@ -58,6 +58,7 @@ Linux:
 注：修改 `current` 指向的版本后，需要重新编译生成dll或so文件。请做好备份。
 切换版本后，可能需要将一些API中的新增的接口的虚函数进行实现，或者移除派生类中此前的继承的(已不存在的)虚函数，同时，可能部分函数或字段名称有改动，请根据实际情况来调整。
 
+一些代码文件通过python脚本(GenScript/ParseCTPHeaders.py)自动生成，切换新版本后，可能需重新生成一次。
 
 ## LocalCTP内部干了啥：
 咱们通过CTP的API去下单，是报单到了CTP服务器，比如SimNow的仿真CTP服务器，或者期货公司的实盘CTP服务器。
@@ -127,6 +128,15 @@ Linux:
 
 持仓和资金，会根据订单、成交和行情数据等来动态更新。
 
-目前版本中，账户数据都不会保存到本地，即退出程序后，账户数据会重置。
+账户数据会自动持久化保存到本地的sqlite3数据库(LocalCTP.db,会自动创建数据库及表,无需手动创建)中. 分为资金,持仓,持仓明细,订单,成交等表.
 
-下个版本中，账户数据会持久化保存到数据库中，敬请期待哦。
+1. 持仓表 - `CThostFtdcInvestorPositionField`
+1. 持仓明细表 - `CThostFtdcInvestorPositionDetailField`
+1. 委托表 - `CThostFtdcOrderField`
+1. 成交表 - `CThostFtdcTradeField`
+1. 资金表 - `CThostFtdcTradingAccountField`
+
+
+如果登录数据库中还不存在的账户,则会添加该账户到表中并初始化为资金为2000万和持仓为空.
+
+Windows中可使用 [DB Browser for SQLite](https://sqlitebrowser.org/) 以查看和修改数据库中的账户数据.

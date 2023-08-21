@@ -154,7 +154,7 @@ string CLeeDateTime::FormatWithMillisecond(const string& format /*= "%Y-%m-%d %H
 	::strftime(tmpbuf, 128, format.c_str(), &_tm);
 
 	char millisecond_buf[5] = { 0 };
-	::sprintf(millisecond_buf, ".%03u", tv.tv_usec / 1000);
+	::sprintf(millisecond_buf, ".%03ld", tv.tv_usec / 1000);
 
 	return string(tmpbuf) + millisecond_buf;
 #endif

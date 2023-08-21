@@ -18,6 +18,7 @@
 
 std::set<CLocalTraderApi::SP_TRADE_API> CLocalTraderApi::trade_api_set;
 std::atomic<int> CLocalTraderApi::maxSessionID( 0 );
+CSqliteHandler CLocalTraderApi::sqlHandler("LocalCTP.db");
 
 void CLocalTraderApi::GetSingleContractFromCombinationContract(const std::string& CombinationContractID,
     std::vector<std::string>& SingleContracts)
@@ -132,6 +133,9 @@ void CLocalTraderApi::updatePNL(bool needTotalCalc /*= false*/)
     m_tradingAccount.Balance = m_tradingAccount.PreBalance + m_tradingAccount.Deposit - m_tradingAccount.Withdraw
         + m_tradingAccount.PositionProfit + m_tradingAccount.CloseProfit - m_tradingAccount.Commission;
     m_tradingAccount.Available = m_tradingAccount.Balance - m_tradingAccount.CurrMargin - m_tradingAccount.FrozenMargin;
+
+    // PNL更新时保存资金数据到数据库中. 可根据需要修改控制保存的时机(如定时保存等).
+    saveTradingAccountToDb();
 }
 
 void CLocalTraderApi::updateByCancel(const CThostFtdcOrderField& o)
@@ -173,9 +177,10 @@ void CLocalTraderApi::updateByCancel(const CThostFtdcOrderField& o)
                 (directionT == THOST_FTDC_D_Buy ?
                     itMarginRate->second.LongMarginRatioByVolume :
                     itMarginRate->second.ShortMarginRatioByVolume);
+            std::map<std::string, PositionData>::iterator itPos;
             {
                 std::lock_guard<std::mutex> posGuard(m_positionMtx);
-                auto itPos = m_positionData.find(posKey);
+                itPos = m_positionData.find(posKey);
                 if (itPos == m_positionData.end())
                 {
                     return;
@@ -187,6 +192,7 @@ void CLocalTraderApi::updateByCancel(const CThostFtdcOrderField& o)
 
                 }
             }
+            savePositionToDb(itPos->second.pos);
             m_tradingAccount.FrozenMargin = (std::max)(
                 m_tradingAccount.FrozenMargin - frozenMargin, 0.0);
             updatePNL();
@@ -223,19 +229,25 @@ void CLocalTraderApi::updateByCancel(const CThostFtdcOrderField& o)
                 directionT,
                 getDateTypeFromOffset(
                     it->second.ExchangeID, o.CombOffsetFlag[0]));
-            auto itPos = m_positionData.find(posKey);
-            if (itPos == m_positionData.end())
+            std::map<std::string, PositionData>::iterator itPos;
             {
-                // 如果没找到持仓,则返回,并不插入持仓(因为持仓在开仓报单时已插入).此流程可改进
-                return;
+                std::lock_guard<std::mutex> posGuard(m_positionMtx);
+                itPos = m_positionData.find(posKey);
+                if (itPos == m_positionData.end())
+                {
+                    // 如果没找到持仓,则返回,并不插入持仓(因为持仓在开仓报单时已插入).此流程可改进
+                    return;
+                }
+                else
+                {
+                    int& frozenPositionNum = (itPos->second.pos.PosiDirection == THOST_FTDC_PD_Long ?
+                        itPos->second.pos.ShortFrozen : itPos->second.pos.LongFrozen);
+                    frozenPositionNum = (std::max)(
+                        frozenPositionNum - o.VolumeTotal, 0);
+
+                }
             }
-            else
-            {
-                int& frozenPositionNum = (itPos->second.pos.PosiDirection == THOST_FTDC_PD_Long ?
-                    itPos->second.pos.ShortFrozen : itPos->second.pos.LongFrozen);
-                frozenPositionNum = (std::max)(
-                    frozenPositionNum - o.VolumeTotal, 0);
-            }
+            savePositionToDb(itPos->second.pos);
         };
 
         if (it->second.ProductClass == THOST_FTDC_PC_Combination)
@@ -264,6 +276,7 @@ void CLocalTraderApi::updateByCancel(const CThostFtdcOrderField& o)
 void CLocalTraderApi::updateByTrade(const CThostFtdcTradeField& t)
 {
     const auto* pTrade = &t;
+
     auto it = m_instrData.find(pTrade->InstrumentID);
     if (it == m_instrData.end())
     {
@@ -324,8 +337,9 @@ void CLocalTraderApi::updateByTrade(const CThostFtdcTradeField& t)
             }
             else
             {
-                itPos->second.addPositionDetail(
-                    PositionData::getPositionDetailFromOpenTrade(*pTrade));// 添加持仓明细到持仓中
+                auto posDetail = PositionData::getPositionDetailFromOpenTrade(*pTrade);
+                itPos->second.addPositionDetail(posDetail);// 添加持仓明细到持仓中
+                savePositionDetialToDb(posDetail);
 
                 auto& pos = itPos->second.pos;
                 pos.Position += pTrade->Volume;
@@ -340,6 +354,7 @@ void CLocalTraderApi::updateByTrade(const CThostFtdcTradeField& t)
                     pTrade->Volume * pTrade->Price * itPos->second.volumeMultiple;
                 pos.OpenCost +=
                     pTrade->Volume * pTrade->Price * itPos->second.volumeMultiple;
+                savePositionToDb(pos);
             }
         }
         m_tradingAccount.Commission += feeOfTrade;
@@ -406,6 +421,7 @@ void CLocalTraderApi::updateByTrade(const CThostFtdcTradeField& t)
                         (pTrade->Price - p.OpenPrice) *
                         tradeVolumeInThisPosDetail * itPos->second.volumeMultiple;
                 }
+                savePositionDetialToDb(p);
                 if (restVolume <= 0)
                 {
                     break;
@@ -454,9 +470,153 @@ void CLocalTraderApi::updateByTrade(const CThostFtdcTradeField& t)
             pos.CloseVolume += pTrade->Volume;//更新持仓的平仓量
             pos.CloseAmount +=
                 pTrade->Volume * pTrade->Price * itPos->second.volumeMultiple;//更新持仓的平仓金额
+            savePositionToDb(pos);
             // 汇总计算资金
             updatePNL(true);
         }
+    }
+}
+
+// 从数据库中重新加载账户数据,但并不读取委托和成交表
+void CLocalTraderApi::reloadAccountData()
+{
+    auto reloadPosition = [&]() {
+        m_positionData.clear();
+        CSqliteHandler::SQL_VALUES posSqlValues;
+        sqlHandler.SelectData(CThostFtdcInvestorPositionFieldWrapper::SELECT_SQL, posSqlValues);
+        CSqliteHandler::SQL_VALUES posDetailSqlValues;
+        sqlHandler.SelectData(CThostFtdcInvestorPositionDetailFieldWrapper::SELECT_SQL, posDetailSqlValues);
+        std::vector<CThostFtdcInvestorPositionDetailField> posDetails;
+        posDetails.reserve(posDetailSqlValues.size());
+        for (const auto& rowData : posDetailSqlValues)
+        {
+            posDetails.emplace_back(CThostFtdcInvestorPositionDetailFieldWrapper(rowData));
+        }
+        for (const auto& rowData : posSqlValues)
+        {
+            CThostFtdcInvestorPositionFieldWrapper wrapper(rowData);
+            if (m_brokerID != wrapper.data.BrokerID ||
+                m_userID != wrapper.data.InvestorID)
+            {
+                continue;
+            }
+            auto itInstr = m_instrData.find(wrapper.data.InstrumentID);
+            if (itInstr == m_instrData.end())
+            {
+                continue;
+            }
+            PositionData posData;
+            posData.pos = wrapper;
+            posData.volumeMultiple = itInstr->second.VolumeMultiple;
+            for (const auto& posDetail : posDetails)
+            {
+                auto posDetailMatchPos = [&]() -> bool {
+                    bool isMatch = posDetail.InstrumentID == posData.pos.InstrumentID &&
+                        posDetail.ExchangeID == posData.pos.ExchangeID &&
+                        posDetail.BrokerID == posData.pos.BrokerID &&
+                        posDetail.InvestorID == posData.pos.InvestorID;
+                    if (!isMatch) return isMatch;
+                    if (isSpecialExchange(posData.pos.ExchangeID))
+                    {
+                        if (posData.pos.PositionDate == THOST_FTDC_PSD_Today)
+                            return strcmp(posDetail.OpenDate, GetTradingDay()) == 0;
+                        else
+                            return strcmp(posDetail.OpenDate, GetTradingDay()) != 0;
+                    }
+                    else
+                    {
+                        return true;
+                    }
+                };
+                if (posDetailMatchPos())
+                {
+                    posData.posDetailData.emplace_back(posDetail);
+                }
+            }
+            posData.sortPositionDetail();
+            m_positionData.emplace(generatePositionKey(posData.pos), posData);
+        }
+    };
+    reloadPosition();
+
+    auto reloadTradingAccount = [&]() -> bool {
+        CSqliteHandler::SQL_VALUES posSqlValues;
+        sqlHandler.SelectData(CThostFtdcTradingAccountFieldWrapper::SELECT_SQL, posSqlValues);
+        for (const auto& rowData : posSqlValues)
+        {
+            CThostFtdcTradingAccountFieldWrapper wrapper(rowData);
+            if (m_brokerID != wrapper.data.BrokerID ||
+                m_userID != wrapper.data.AccountID)
+            {
+                continue;
+            }
+            m_tradingAccount = wrapper;
+            return true;
+        }
+        return false;
+    };
+    if (!reloadTradingAccount())
+    {
+        saveTradingAccountToDb(); // 如果此账户是初次创建,则数据库中还不存在其的记录,因此需保存到数据库中    
+    }
+}
+
+void CLocalTraderApi::saveTradingAccountToDb()
+{
+    const std::string sqlStr = CThostFtdcTradingAccountFieldWrapper(m_tradingAccount).generateInsertSql();
+    bool ret = sqlHandler.Insert(sqlStr);
+    if (!ret)
+    {
+        // check?
+    }
+}
+
+void CLocalTraderApi::savePositionToDb(const PositionData& pos)
+{
+    savePositionToDb(pos.pos);
+    for (const auto& posDetail : pos.posDetailData)
+    {
+        savePositionDetialToDb(posDetail);
+    }
+}
+
+void CLocalTraderApi::savePositionToDb(const CThostFtdcInvestorPositionField& pos)
+{
+    const std::string sqlStr = CThostFtdcInvestorPositionFieldWrapper(pos).generateInsertSql();
+    bool ret = sqlHandler.Insert(sqlStr);
+    if (!ret)
+    {
+        // check?
+    }
+}
+
+void CLocalTraderApi::savePositionDetialToDb(const CThostFtdcInvestorPositionDetailField& pos)
+{
+    const std::string sqlStr = CThostFtdcInvestorPositionDetailFieldWrapper(pos).generateInsertSql();
+    bool ret = sqlHandler.Insert(sqlStr);
+    if (!ret)
+    {
+        // check?
+    }
+}
+
+void CLocalTraderApi::saveOrderToDb(const CThostFtdcOrderField& order)
+{
+    const std::string sqlStr = CThostFtdcOrderFieldWrapper(order).generateInsertSql();
+    bool ret = sqlHandler.Insert(sqlStr);
+    if (!ret)
+    {
+        // check?
+    }
+}
+
+void CLocalTraderApi::saveTradeToDb(const CThostFtdcTradeField& trade)
+{
+    const std::string sqlStr = CThostFtdcTradeFieldWrapper(trade).generateInsertSql();
+    bool ret = sqlHandler.Insert(sqlStr);
+    if (!ret)
+    {
+        // check?
     }
 }
 
@@ -581,6 +741,12 @@ void CLocalTraderApi::Init() {
         }
     };
     initProductsAndExchanges();
+
+    sqlHandler.CreateTable(CThostFtdcInvestorPositionFieldWrapper::CREATE_TABLE_SQL);
+    sqlHandler.CreateTable(CThostFtdcInvestorPositionDetailFieldWrapper::CREATE_TABLE_SQL);
+    sqlHandler.CreateTable(CThostFtdcOrderFieldWrapper::CREATE_TABLE_SQL);
+    sqlHandler.CreateTable(CThostFtdcTradeFieldWrapper::CREATE_TABLE_SQL);
+    sqlHandler.CreateTable(CThostFtdcTradingAccountFieldWrapper::CREATE_TABLE_SQL);
 
     //临时措施:将所有合约的保证金率和手续费率初始化(保证金率全部为10%,手续费全部为1元每手)
     auto initializeCommissionRateAndMarginRate = [&]() {
@@ -774,6 +940,8 @@ int CLocalTraderApi::ReqAuthenticate(CThostFtdcReqAuthenticateField *pReqAuthent
     m_authenticated = true;
     m_userID = pReqAuthenticateField->UserID;
     m_brokerID = pReqAuthenticateField->BrokerID;
+    strncpy(m_tradingAccount.AccountID, pReqAuthenticateField->UserID, sizeof(m_tradingAccount.AccountID));
+    strncpy(m_tradingAccount.BrokerID, pReqAuthenticateField->BrokerID, sizeof(m_tradingAccount.BrokerID));
     if (m_pSpi == nullptr) return 0;
     m_pSpi->OnRspAuthenticate(&RspAuthenticateField, &m_successRspInfo, nRequestID, true);
     return 0;
@@ -809,6 +977,9 @@ int CLocalTraderApi::ReqUserLogin(CThostFtdcReqUserLoginField *pReqUserLoginFiel
         return 0;
     }
     m_logined = true;
+    //加载账户的数据
+    reloadAccountData();
+
     if (m_pSpi == nullptr) return 0;
     strncpy(RspUserLogin.TradingDay, GetTradingDay(), sizeof(RspUserLogin.TradingDay));
     strncpy(RspUserLogin.LoginTime, CLeeDateTime::GetCurrentTime().Format("%H:%M:%S").c_str(),
@@ -1016,9 +1187,10 @@ int CLocalTraderApi::ReqOrderInsertImpl(CThostFtdcInputOrderField * pInputOrder,
                 : itMarginRate->second.ShortMarginRatioByVolume);
         totalFrozenMargin += frozenMargin;
 
+        std::map<std::string, PositionData>::iterator itPos;
         {
             std::lock_guard<std::mutex> posGuard(m_positionMtx);
-            auto itPos = m_positionData.find(posKey);
+            itPos = m_positionData.find(posKey);
             if (itPos == m_positionData.end())
             {
                 PositionData tempPos;
@@ -1037,7 +1209,7 @@ int CLocalTraderApi::ReqOrderInsertImpl(CThostFtdcInputOrderField * pInputOrder,
                 }
                 tempPos.pos.PosiDirection = (directionT == THOST_FTDC_D_Buy ? THOST_FTDC_PD_Long : THOST_FTDC_PD_Short);// 持仓方向
                 tempPos.pos.PositionDate = THOST_FTDC_PSD_Today;// 持仓日期类型(今仓)
-                m_positionData.emplace(posKey, tempPos);
+                std::tie(itPos, std::ignore) = m_positionData.emplace(posKey, tempPos);
             }
             else
             {
@@ -1047,6 +1219,7 @@ int CLocalTraderApi::ReqOrderInsertImpl(CThostFtdcInputOrderField * pInputOrder,
                 }
             }
         }
+        savePositionToDb(itPos->second.pos);
         if (preCheck)
         {
             double newAvailable = m_tradingAccount.Balance - m_tradingAccount.CurrMargin - m_tradingAccount.FrozenMargin
@@ -1069,30 +1242,34 @@ int CLocalTraderApi::ReqOrderInsertImpl(CThostFtdcInputOrderField * pInputOrder,
             directionT,
             getDateTypeFromOffset(itInstr->second.ExchangeID, pInputOrder->CombOffsetFlag[0]));
 
-        std::lock_guard<std::mutex> posGuard(m_positionMtx);
-        auto itPos = m_positionData.find(posKey);
-        if (itPos == m_positionData.end())
+        std::map<std::string, PositionData>::iterator itPos;
         {
-            return std::make_pair(false, ERRMSG_AVAILABLE_POSITION_NOT_ENOUGH + std::string("0")
-                + " on " + instr);
-        }
-        else
-        {
-            int& frozenPositionNum = (itPos->second.pos.PosiDirection == THOST_FTDC_PD_Long ?
-                itPos->second.pos.ShortFrozen : itPos->second.pos.LongFrozen);
-            const auto closable = itPos->second.pos.Position - frozenPositionNum;
-            if (closable < orderNum)
+            std::lock_guard<std::mutex> posGuard(m_positionMtx);
+            itPos = m_positionData.find(posKey);
+            if (itPos == m_positionData.end())
             {
-                return std::make_pair(false, 
-                    (isSpecialExchange(itInstr->second.ExchangeID) && pInputOrder->CombOffsetFlag[0] == THOST_FTDC_OF_CloseToday) ?
+                return std::make_pair(false, ERRMSG_AVAILABLE_POSITION_NOT_ENOUGH + std::string("0")
+                    + " on " + instr);
+            }
+            else
+            {
+                int& frozenPositionNum = (itPos->second.pos.PosiDirection == THOST_FTDC_PD_Long ?
+                    itPos->second.pos.ShortFrozen : itPos->second.pos.LongFrozen);
+                const auto closable = itPos->second.pos.Position - frozenPositionNum;
+                if (closable < orderNum)
+                {
+                    return std::make_pair(false,
+                        (isSpecialExchange(itInstr->second.ExchangeID) && pInputOrder->CombOffsetFlag[0] == THOST_FTDC_OF_CloseToday) ?
                         ERRMSG_AVAILABLE_POSITION_NOT_ENOUGH : ERRMSG_AVAILABLE_TODAY_POSITION_NOT_ENOUGH
                         + std::to_string(closable) + " on " + instr);
-            }
-            if (!preCheck)
-            {
-                frozenPositionNum += orderNum;
+                }
+                if (!preCheck)
+                {
+                    frozenPositionNum += orderNum;
+                }
             }
         }
+        savePositionToDb(itPos->second.pos);
         return std::make_pair(true, std::string());
     };
 
