@@ -1,4 +1,7 @@
 ﻿#!/usr/bin/python3
+#本脚本文件用于生成封装CTP的SQL管理类的C++代码.
+#使用方法: python3 ParseCTPHeaders.py
+
 import copy
 
 '''
@@ -28,7 +31,7 @@ struct XWrapper
     operator X() { return data; }
 
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
-        strncpy(data.a, rowValue.at("A").c_str(), sizeof(A));
+        strncpy(data.a, rowValue.at("a").c_str(), sizeof(A));
         data.b = rowValue.at("B").empty() ? '0' : rowValue.at("B").c_str()[0];
         data.c = std::stoi(rowValue.at("C"));
         data.d = std::stod(rowValue.at("D"));
@@ -58,7 +61,7 @@ predefinedTableKey = {
     'CThostFtdcOrderField':['BrokerID','InvestorID','TradingDay','ExchangeID','OrderSysID'],
     'CThostFtdcTradeField':['BrokerID','InvestorID','TradingDay','ExchangeID','TradeID','TradeType'],
     'CThostFtdcTradingAccountField':['BrokerID','AccountID'],
-}
+}# 预先定义好主键的表. key:表名. value: 这张表的主键. 如果以后有想要保存的表并且知道主键,则可以在此处添加.
 
 class CTPField:
     def __init__(self):
@@ -84,7 +87,7 @@ def getSqlInsertField(ctpField : CTPField , memberName : str):
         else:
             return "data."+memberName
     else: # single char, need to check whether is is '\0'
-        return "(" + "data."+memberName + " == 0 ? '0' : data."+memberName+  ")"
+        return "(" + "data."+memberName + " == 0 ? '0' : data."+memberName+  ")" #TODO:如果该类型有枚举值,可以保存下来并在此处使用其中一个枚举值,而不用统一的'0'
 
 def getSqlCreateTableField(ctpField : CTPField , memberName : str):
     section1 = "'" + memberName + "' "
@@ -226,6 +229,7 @@ with open(output_path, 'w') as f:
         f.write(prefix + "}\n")
         prefix = ""
         f.write(prefix + "};\n") # end struct
+        # in .cpp file
         f2.write("const std::string "+className+"Wrapper::CREATE_TABLE_SQL = \"CREATE TABLE '"+className+"'(" +
             ", ".join([getSqlCreateTableField(fieldInfo,memberName) for (fieldInfo,memberName) in ctpClass.fields])
             + ("" if className not in predefinedTableKey else (", PRIMARY KEY(\\\""+  "\\\",\\\"".join(predefinedTableKey[className]) +"\\\")"))
