@@ -14,9 +14,9 @@
 1. 本地部署, 稳定运行, 策略安全得到彻底保障
 1. 支持`windows`/`linux`等多个平台, `MAC`也即将支持
 1. 支持FAK/FOK订单, 支持条件单.
-1. 成交撮合逻辑同SimNow，通过是否满足行情中的对手价来判断是否成交。
-1. 支持多个CTP版本,切换CTP版本后仅需使用脚本自动生成代码即可,无需手动改代码适配
-1. 可以通过特定API接口来获取外部传入的行情快照，以更新账户的订单和资金等数据
+1. 成交撮合逻辑同SimNow, 通过是否满足行情中的对手价来判断是否成交。
+1. 支持多个CTP版本, 切换CTP版本后 仅需使用脚本自动生成代码即可, 无需手动改代码适配
+1. 可以通过特定API接口来获取外部传入的行情快照, 以更新账户的订单和资金等数据
 * 可以投喂给它实时行情以实现 实时仿真交易
 * 也可以投喂给它历史行情以实现 回测
 
@@ -50,17 +50,19 @@ Windows:
 Linux:
 (生成目录: `bin/linux/`  通过`makefile`文件来make生成)
 请把 `current` 设置为你要使用的CTP的版本的头文件文件夹的副本或软链接。
-示例(设为指向 6.3.19 版本的软链接):
+
+示例(设为指向 6.6.9 版本的软链接):
 
 `cd ./LocalCTP/ctp_file/`
 
-`ln -snf  ./6.3.19  ./current`
+`ln -snf  ./6.6.9  ./current`
 
 修改 `current` 指向的版本后，需要重新编译生成dll或so文件。请做好备份。
-在切换CTP头文件(`current` 目录中的文件) 后, 请执行python脚本(`GenScript/ParseCTPHeaders.py`)以自动生成对应CTP版本的C++代码.
-使用方法(先cd切换到`GenScript`中): `python3 ParseCTPHeaders.py`
 
-一些代码文件通过python脚本(GenScript/ParseCTPHeaders.py)自动生成，切换新版本后，可能需重新生成一次。
+在切换CTP头文件(`current` 目录中的文件) 后, 请执行python脚本(`GenScript/ParseCTPHeaders.py`)以自动生成对应CTP版本的C++代码.
+
+使用方法(先cd切换到`GenScript`中):  `python3 ParseCTPHeaders.py`
+
 
 ## LocalCTP内部干了啥：
 咱们通过CTP的API去下单，是报单到了CTP服务器，比如SimNow的仿真CTP服务器，或者期货公司的实盘CTP服务器。
@@ -104,7 +106,6 @@ Linux:
 1. `ReqQryClassifiedInstrument`
 1. `ReqQryExchange`
 1. `ReqQryProduct`
-1. `ReqQryMaxOrderVolume`
 1. `ReqQryInstrumentMarginRate`
 1. `ReqQryInstrumentCommissionRate`
 
