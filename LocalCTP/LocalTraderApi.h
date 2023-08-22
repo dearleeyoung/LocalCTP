@@ -12,18 +12,84 @@ class CLocalTraderApi :
     public CThostFtdcTraderApi,
     public std::enable_shared_from_this<CLocalTraderApi>
 {
-    using SP_TRADE_API = std::shared_ptr<CLocalTraderApi>;
 public:
-    CLocalTraderApi(const char* pszFlowPath = "");
-    ~CLocalTraderApi();
-    CThostFtdcTraderSpi* getSpi() const { return m_pSpi; }
-    std::atomic<int>& getOrderSysID() { return m_orderSysID; }
-    std::atomic<int>& getTradeID() { return m_tradeID; }
-    int getSessionID() const { return m_sessionID; }
-	// 储存交易API智能指针的集合
-	static std::set<SP_TRADE_API> trade_api_set;
+    using SP_TRADE_API = std::shared_ptr<CLocalTraderApi>;
+    using InstrMap = std::map<std::string, CThostFtdcInstrumentField>;
+    using TradePriceVec = std::vector<double>;
+    using MarketDataVec = std::vector<CThostFtdcDepthMarketDataField>;
+    using MarketDataMap = std::map<std::string, CThostFtdcDepthMarketDataField>;
+
+private:
+    struct PositionData
+    {
+        PositionData() : volumeMultiple(1), pos{ 0 } { }
+        int volumeMultiple;
+        CThostFtdcInvestorPositionField pos;
+        std::vector<CThostFtdcInvestorPositionDetailField> posDetailData;
+
+        static CThostFtdcInvestorPositionDetailField getPositionDetailFromOpenTrade(
+            const CThostFtdcTradeField& trade);
+        // 比较两个持仓明细
+        static bool comparePosDetail(const CThostFtdcInvestorPositionDetailField& lhs,
+            const CThostFtdcInvestorPositionDetailField& rhs)
+        {
+            if (strcmp(lhs.OpenDate, rhs.OpenDate) < 0)
+                return true;
+            else if (strcmp(lhs.OpenDate, rhs.OpenDate) > 0)
+                return false;
+            else // 同一开仓日期的按开仓成交编号比较大小
+                return strcmp(lhs.TradeID, rhs.TradeID) < 0;
+        }
+        // 对持仓明细排序
+        void sortPositionDetail()
+        {
+            std::sort(posDetailData.begin(), posDetailData.end(), comparePosDetail);
+        }
+        // 插入或更新持仓明细
+        void addPositionDetail(const CThostFtdcInvestorPositionDetailField& posDetail);
+    };
+
+    using PositionDataMap = std::map<std::string, PositionData>;
+
+    struct OrderData
+    {
+        OrderData(CLocalTraderApi* pApi, const CThostFtdcInputOrderField& _inputOrder,
+            bool _isConditionalOrder = false,
+            const std::string& relativeOrderSysID = std::string())
+            : inputOrder(_inputOrder), rtnOrder{ 0 }
+            , api(*pApi), isConditionalOrder(_isConditionalOrder)
+        {
+            dealTestReqOrderInsertNormal(inputOrder, relativeOrderSysID);
+        }
+        bool isDone() const;
+        void handleTrade(const TradePriceVec& tradedPriceVec, int tradedSize);
+        void handleCancel(bool cancelFromClient = true);
+        void sendRtnOrder();
+
+        CThostFtdcInputOrderField inputOrder;
+        CThostFtdcOrderField rtnOrder;
+        std::vector<CThostFtdcTradeField> rtnTrades;
+
+    private:
+        void dealTestReqOrderInsertNormal(const CThostFtdcInputOrderField& InputOrder,
+            const std::string& relativeOrderSysID);
+        void sendRtnTrade(CThostFtdcTradeField& rtnTrade);
+        void getRtnTrade(const TradePriceVec& tradePriceVec,
+            int tradedSize, std::vector<CThostFtdcTradeField>& Trades);
+
+        CLocalTraderApi& api;
+        bool isConditionalOrder;
+    };
+
+public:
+    // 储存交易API智能指针的集合
+    static std::set<SP_TRADE_API> trade_api_set;
     static std::atomic<int> maxSessionID;
     static CSqliteHandler sqlHandler;
+
+    // 判断是否成交
+    static bool isMatchTrade(TThostFtdcDirectionType direction, double orderPrice,
+        const MarketDataVec& mdVec, TradePriceVec& tradePriceVec);
     // 将组合合约代码拆分为单腿合约的数组. 支持处理多于2个单腿合约的组合合约.
     // input: CombinationContractID: 组合合约代码
     // input & output: SingleContracts: 拆分得到的单腿合约的数组
@@ -36,13 +102,19 @@ public:
     {
         return (exchangeID == "SHFE" || exchangeID == "INE");
     }
+    static TThostFtdcDirectionType getOppositeDirection(TThostFtdcDirectionType dir)
+    {
+        return (dir == THOST_FTDC_D_Buy ? THOST_FTDC_D_Sell : THOST_FTDC_D_Buy);
+    }
     static TThostFtdcPosiDirectionType getPositionDirectionFromDirection(TThostFtdcDirectionType dir)
     {
-        return dir == THOST_FTDC_D_Buy ? THOST_FTDC_PD_Long : THOST_FTDC_PD_Short;
+        return (dir == THOST_FTDC_D_Buy ? THOST_FTDC_PD_Long : THOST_FTDC_PD_Short);
     }
     static std::string generatePositionKey(const CThostFtdcInvestorPositionField& pos)
     {
-        return generatePositionKey(pos.InstrumentID, getPositionDirectionFromDirection(pos.PosiDirection), pos.PositionDate);
+        return generatePositionKey(pos.InstrumentID,
+            getPositionDirectionFromDirection(pos.PosiDirection),
+            pos.PositionDate);
     }
     static std::string generatePositionKey(const std::string& instrumentID,
         TThostFtdcDirectionType dir, TThostFtdcPositionDateType dateType)
@@ -68,102 +140,15 @@ public:
         else
             return THOST_FTDC_PSD_Today;
     }
-    static TThostFtdcDirectionType getOppositeDirection(TThostFtdcDirectionType dir)
-    {
-        return (dir == THOST_FTDC_D_Buy ? THOST_FTDC_D_Sell : THOST_FTDC_D_Buy);
-    }
+
+    CLocalTraderApi(const char* pszFlowPath = "");
+    ~CLocalTraderApi();
+    CThostFtdcTraderSpi* getSpi() const { return m_pSpi; }
+    std::atomic<int>& getOrderSysID() { return m_orderSysID; }
+    std::atomic<int>& getTradeID() { return m_tradeID; }
+    int getSessionID() const { return m_sessionID; }
+
 private:
-    struct PositionData
-    {
-        PositionData() : volumeMultiple(1), pos{ 0 } { }
-        int volumeMultiple;
-        CThostFtdcInvestorPositionField pos;
-        std::vector<CThostFtdcInvestorPositionDetailField> posDetailData;
-
-        // 比较两个持仓明细
-        static bool comparePosDetail(const CThostFtdcInvestorPositionDetailField& lhs, const CThostFtdcInvestorPositionDetailField& rhs)
-        {
-            if (strcmp(lhs.OpenDate, rhs.OpenDate) < 0)
-                return true;
-            else if (strcmp(lhs.OpenDate, rhs.OpenDate) > 0)
-                return false;
-            else
-                // 同一开仓日期的按开仓成交编号比较大小
-                return strcmp(lhs.TradeID, rhs.TradeID) < 0;
-        }
-        // 对持仓明细排序
-        void sortPositionDetail()
-        {
-            std::sort(posDetailData.begin(), posDetailData.end(),
-                comparePosDetail);
-        }
-        static CThostFtdcInvestorPositionDetailField getPositionDetailFromOpenTrade(const CThostFtdcTradeField& trade)
-        {
-            CThostFtdcInvestorPositionDetailField posDetail = { 0 };
-            if (!isOpen(trade.OffsetFlag)) return posDetail;
-            strcpy(posDetail.BrokerID, trade.BrokerID);
-            strcpy(posDetail.InvestorID, trade.InvestorID);
-            strcpy(posDetail.ExchangeID, trade.ExchangeID);
-            strcpy(posDetail.InstrumentID, trade.InstrumentID);
-            posDetail.HedgeFlag = trade.HedgeFlag;
-            posDetail.OpenPrice = trade.Price;
-            strcpy(posDetail.TradingDay, trade.TradingDay);
-            strcpy(posDetail.TradeID, trade.TradeID);
-            posDetail.Volume = trade.Volume;
-            posDetail.Direction = trade.Direction;
-            posDetail.TradeType = trade.TradeType;
-            posDetail.CloseVolume = 0;
-            //持仓明细中的盈亏等数据并不更新
-            return posDetail;
-        }
-        // 插入或更新持仓明细
-        void addPositionDetail(const CThostFtdcInvestorPositionDetailField& posDetail)
-        {
-            auto it = std::find_if(posDetailData.begin(), posDetailData.end(),
-                [&](const CThostFtdcInvestorPositionDetailField& d) {
-                    return (strcmp(d.ExchangeID, posDetail.ExchangeID) == 0 &&
-                        strcmp(d.OpenDate, posDetail.OpenDate) == 0 &&
-                        strcmp(d.TradeID, posDetail.TradeID) == 0);
-                }
-            );
-            if (it == posDetailData.end())// 若此笔持仓明细还不存在,则插入
-            {
-                posDetailData.push_back(posDetail);
-                sortPositionDetail();// 插入新的持仓明细后,需要对持仓明细排序
-            }
-            else// 若此笔持仓明细已存在,则更新
-                *it = posDetail;
-        }
-    };
-    struct OrderData
-    {
-        OrderData(CLocalTraderApi* pApi, const CThostFtdcInputOrderField& _inputOrder,
-            bool _isConditionalOrder = false,
-            const std::string& relativeOrderSysID = std::string())
-            : inputOrder(_inputOrder), rtnOrder{ 0 }
-            , api(*pApi), isConditionalOrder(_isConditionalOrder)
-        {
-            DealTestReqOrderInsert_Normal(inputOrder, relativeOrderSysID);
-        }
-        bool isDone() const;
-        void handleTrade(double tradedPrice, int tradedSize);
-        void handleCancel(bool cancelFromClient = true);
-        void sendRtnOrder();
-
-        CThostFtdcInputOrderField inputOrder;
-        CThostFtdcOrderField rtnOrder;
-        std::vector<CThostFtdcTradeField> rtnTrades;
-
-    private:
-        void DealTestReqOrderInsert_Normal(const CThostFtdcInputOrderField& InputOrder,
-            const std::string& relativeOrderSysID);
-        void sendRtnTrade(CThostFtdcTradeField& rtnTrade);
-        void getRtnTrade(double trade_price, int tradedSize, std::vector<CThostFtdcTradeField>& Trades);
-
-        CLocalTraderApi& api;
-        bool isConditionalOrder;
-    };
-
 	std::atomic<bool> m_bRunning;
     std::atomic<bool> m_authenticated;
     std::atomic<bool> m_logined;
@@ -172,13 +157,14 @@ private:
     std::string m_userID;
     std::string m_brokerID;
     int m_sessionID;
-    std::map<std::string, CThostFtdcInstrumentField> m_instrData; //合约数据
+    InstrMap m_instrData; //合约数据
     std::mutex m_mdMtx;
-    std::map<std::string, CThostFtdcDepthMarketDataField> m_mdData; //行情数据
+
+    MarketDataMap m_mdData; //行情数据
     std::mutex m_orderMtx;
     std::map<int, OrderData> m_orderData; //订单数据. key:OrderRef(报单引用).
     std::mutex m_positionMtx;
-    std::map<std::string, PositionData> m_positionData; //持仓数据. key通过generatePositionKey生成.
+    PositionDataMap m_positionData; //持仓数据. key通过generatePositionKey生成.
     std::map<std::string, CThostFtdcInstrumentMarginRateField> m_instrumentMarginRateData;// 合约保证金数据. key:合约代码.
     std::map<std::string, CThostFtdcInstrumentCommissionRateField> m_instrumentCommissionRateData;// 合约手续费数据. key:合约代码.
     CThostFtdcTradingAccountField m_tradingAccount;// 资金数据

@@ -88,7 +88,7 @@ bool CLocalTraderApi::OrderData::isDone() const
         rtnOrder.OrderStatus != THOST_FTDC_OST_NotTouched;
 }
 
-void CLocalTraderApi::OrderData::DealTestReqOrderInsert_Normal(const CThostFtdcInputOrderField& InputOrder,
+void CLocalTraderApi::OrderData::dealTestReqOrderInsertNormal(const CThostFtdcInputOrderField& InputOrder,
     const std::string& relativeOrderSysID)
 {
     // "未知"状态
@@ -253,7 +253,7 @@ void CLocalTraderApi::OrderData::DealTestReqOrderInsert_Normal(const CThostFtdcI
     return;
 }
 
-void CLocalTraderApi::OrderData::handleTrade(double tradedPrice, int tradedSize)
+void CLocalTraderApi::OrderData::handleTrade(const TradePriceVec& tradedPriceInfo, int tradedSize)
 {
     if (tradedSize <= 0 || isDone()) return;
     ///今成交数量
@@ -274,7 +274,7 @@ void CLocalTraderApi::OrderData::handleTrade(double tradedPrice, int tradedSize)
 
 
     std::vector<CThostFtdcTradeField> rtnTradeFromOrder;
-    getRtnTrade(tradedPrice, tradedSize, rtnTradeFromOrder);
+    getRtnTrade(tradedPriceInfo, tradedSize, rtnTradeFromOrder);
     rtnTrades.insert(rtnTrades.end(), rtnTradeFromOrder.begin(), rtnTradeFromOrder.end());
 
     for (auto& t : rtnTradeFromOrder)
@@ -307,19 +307,25 @@ void CLocalTraderApi::OrderData::handleCancel(bool cancelFromClient)
     sendRtnOrder();
 }
 
-void CLocalTraderApi::OrderData::getRtnTrade(double trade_price, int tradedSize, std::vector<CThostFtdcTradeField>& Trades)
+void CLocalTraderApi::OrderData::getRtnTrade(const TradePriceVec& tradePriceVec,
+    int tradedSize, std::vector<CThostFtdcTradeField>& Trades)
 {
     std::vector<std::string> SingleContracts;
     CLocalTraderApi::GetSingleContractFromCombinationContract(rtnOrder.InstrumentID, SingleContracts);
+    if (tradePriceVec.size() != SingleContracts.size())
+    {
+        return;
+    }
     for (size_t _index = 0; _index != SingleContracts.size(); ++_index)
     {
+        const auto& instr = SingleContracts[_index];
         CThostFtdcTradeField Trade = { 0 };
         ///经纪公司代码
         strncpy(Trade.BrokerID, rtnOrder.BrokerID, sizeof(Trade.BrokerID));
         ///投资者代码
         strncpy(Trade.InvestorID, rtnOrder.InvestorID, sizeof(Trade.InvestorID));
         ///合约代码
-        strncpy(Trade.InstrumentID, SingleContracts[_index].c_str(), sizeof(Trade.InstrumentID));
+        strncpy(Trade.InstrumentID, instr.c_str(), sizeof(Trade.InstrumentID));
         ///报单引用
         strncpy(Trade.OrderRef, rtnOrder.OrderRef, sizeof(Trade.OrderRef));
         ///用户代码
@@ -332,17 +338,14 @@ void CLocalTraderApi::OrderData::getRtnTrade(double trade_price, int tradedSize,
         {
             ///买卖方向
             Trade.Direction = rtnOrder.Direction;
-            ///价格
-            Trade.Price = trade_price;
         }
         else//若为第二腿
         {
             ///买卖方向
-            Trade.Direction =
-                (rtnOrder.Direction == THOST_FTDC_D_Buy ? THOST_FTDC_D_Sell : THOST_FTDC_D_Buy);
-            ///价格
-            Trade.Price = 0.0;
+            Trade.Direction = getOppositeDirection(rtnOrder.Direction);
         }
+        ///价格
+        Trade.Price = tradePriceVec[_index];
         ///报单编号
         strncpy(Trade.OrderSysID, rtnOrder.OrderSysID, sizeof(Trade.OrderSysID));
         ///会员代码
@@ -399,11 +402,55 @@ void CLocalTraderApi::OrderData::getRtnTrade(double trade_price, int tradedSize,
 void CLocalTraderApi::OrderData::sendRtnOrder()
 {
     api.saveOrderToDb(rtnOrder);
+    if (api.getSpi() == nullptr) return;
     api.getSpi()->OnRtnOrder(&rtnOrder);
 }
 
 void CLocalTraderApi::OrderData::sendRtnTrade(CThostFtdcTradeField& rtnTrade)
 {
     api.saveTradeToDb(rtnTrade);
+    if (api.getSpi() == nullptr) return;
     api.getSpi()->OnRtnTrade(&rtnTrade);
+}
+
+
+CThostFtdcInvestorPositionDetailField CLocalTraderApi::PositionData::getPositionDetailFromOpenTrade(
+    const CThostFtdcTradeField& trade)
+{
+    CThostFtdcInvestorPositionDetailField posDetail = { 0 };
+    if (!isOpen(trade.OffsetFlag)) return posDetail;
+    strcpy(posDetail.BrokerID, trade.BrokerID);
+    strcpy(posDetail.InvestorID, trade.InvestorID);
+    strcpy(posDetail.ExchangeID, trade.ExchangeID);
+    strcpy(posDetail.InstrumentID, trade.InstrumentID);
+    posDetail.HedgeFlag = trade.HedgeFlag;
+    posDetail.OpenPrice = trade.Price;
+    strcpy(posDetail.TradingDay, trade.TradingDay);
+    strcpy(posDetail.TradeID, trade.TradeID);
+    posDetail.Volume = trade.Volume;
+    posDetail.Direction = trade.Direction;
+    posDetail.TradeType = trade.TradeType;
+    posDetail.CloseVolume = 0;
+    //持仓明细中的盈亏等数据并不更新
+    return posDetail;
+}
+
+// 插入或更新持仓明细
+void CLocalTraderApi::PositionData::addPositionDetail(
+    const CThostFtdcInvestorPositionDetailField& posDetail)
+{
+    auto it = std::find_if(posDetailData.begin(), posDetailData.end(),
+        [&](const CThostFtdcInvestorPositionDetailField& d) {
+            return (strcmp(d.ExchangeID, posDetail.ExchangeID) == 0 &&
+                strcmp(d.OpenDate, posDetail.OpenDate) == 0 &&
+                strcmp(d.TradeID, posDetail.TradeID) == 0);
+        }
+    );
+    if (it == posDetailData.end())// 若此笔持仓明细还不存在,则插入
+    {
+        posDetailData.push_back(posDetail);
+        sortPositionDetail();// 插入新的持仓明细后,需要对持仓明细排序
+    }
+    else// 若此笔持仓明细已存在,则更新
+        *it = posDetail;
 }

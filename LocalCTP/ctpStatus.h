@@ -36,13 +36,6 @@ inline bool isConditionalType(TThostFtdcContingentConditionType	contingentCondit
         contingentCondition == THOST_FTDC_CC_LastPriceLesserEqualStopPrice;
 }
 
-// 判断是否满足成交条件
-inline bool isMatchTrade(TThostFtdcDirectionType direction, double orderPrice, const CThostFtdcDepthMarketDataField& md)
-{
-    return ((direction == THOST_FTDC_D_Buy && GE(orderPrice, md.AskPrice1)) ||
-        (direction == THOST_FTDC_D_Sell && LE(orderPrice, md.BidPrice1)));
-}
-
 inline std::string getStatusMsgByStatus(TThostFtdcOrderStatusType status)
 {
     switch (status)

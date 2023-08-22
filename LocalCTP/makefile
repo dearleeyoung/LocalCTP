@@ -20,7 +20,7 @@ $(OBJS):%.o :  %.cpp
 	g++ $(CFLAGS) $< -o $@ $(HEADER_PATH)
 
 $(OBJS2):%.o :  %.c
-	gcc $(CFLAGS2) $< -o $@ $(HEADER_PATH)
+	gcc $(CFLAGS2) $< -o $@ 
 
 clean:
 	$(RM) $(TARGET) *.o ./sqlite/*.o

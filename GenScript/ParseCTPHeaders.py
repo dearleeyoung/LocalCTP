@@ -196,7 +196,7 @@ with open(output_path, 'w') as f:
         f.write(prefix + className +" data;\n")
         f.write("\n")
         f.write(prefix + className + "Wrapper(const "+className+"& _data = {0}) :data(_data) {}\n")
-        f.write(prefix + className + "Wrapper(const std::map<std::string, std::string>& rowValue) { parseFromSqlValue(rowValue); }\n")
+        f.write(prefix + className + "Wrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }\n")
         f.write(prefix + "operator "+className+"() { return data; }\n")
         f.write(prefix + "void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {\n")
         temp = prefix

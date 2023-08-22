@@ -46,6 +46,50 @@ void CLocalTraderApi::GetSingleContractFromCombinationContract(const std::string
     return;
 }
 
+
+// 判断是否满足成交条件. md:订单有关的合约的行情数据的列表.
+bool CLocalTraderApi::isMatchTrade(TThostFtdcDirectionType direction, double orderPrice,
+    const MarketDataVec& mdVec, TradePriceVec& tradePriceVec)
+{
+    if (mdVec.empty())
+    {
+        return false;
+    }
+    else //单个独立的合约,或组合合约
+    {
+        double priceDiff(0);
+        // 单个合约示例: rb2405. 卖出报单价3671元.
+        // rb2405 买一价3670元,卖一价3672元.
+        // 则卖出对应的合约对手价是: 3670元. 3671>3670,无法成交.
+        //
+        // 组合合约示例: m2401-m2405 组合合约.买入报单价480元.
+        // m2401 买一价3998元,卖一价4000元.
+        // m2405 买一价3500元,卖一价3505元.
+        // 则买入对应的组合合约对手价(卖一价差)是: 4000-3500=500元. 500>480,可以成交.
+        for (std::size_t legNo = 0; legNo < mdVec.size(); ++legNo)
+        {
+            auto directionT = (legNo % 2 == 0 ?
+                direction : getOppositeDirection(direction));
+            int multi = (legNo % 2 == 0 ? 1 : -1);
+            double legTradePrice(0);
+            if (directionT == THOST_FTDC_D_Buy)
+            {
+                legTradePrice = mdVec[legNo].AskPrice1;
+                priceDiff += legTradePrice * multi;
+            }
+            else
+            {
+                legTradePrice = mdVec[legNo].BidPrice1;
+                priceDiff += legTradePrice * multi;
+            }
+            tradePriceVec.emplace_back(legTradePrice);
+        }
+        return ((direction == THOST_FTDC_D_Buy && GE(orderPrice, priceDiff)) ||
+            (direction == THOST_FTDC_D_Sell && LE(orderPrice, priceDiff)));
+    }
+}
+
+
 CLocalTraderApi::CLocalTraderApi(const char *pszFlowPath/* = ""*/)
 	: m_bRunning(true), m_authenticated(false), m_logined(false)
     , m_orderSysID(0), m_tradeID(0), m_sessionID(0)
@@ -76,24 +120,114 @@ CThostFtdcRspInfoField* CLocalTraderApi::setErrorMsgAndGetRspInfo(const char* er
 // 空头持仓的持仓盈亏 = （持仓成本 - 最新价计算得到的成本） * 合约数量乘数 * 持仓数量
 void CLocalTraderApi::onSnapshot(const CThostFtdcDepthMarketDataField& mdData)
 {
-    auto it = m_instrData.find(mdData.InstrumentID);
+    const std::string instrumentID = mdData.InstrumentID;
+    {
+        std::lock_guard<std::mutex> mdGuard(m_mdMtx);
+        m_mdData[instrumentID] = mdData;
+    }
+
+    auto it = m_instrData.find(instrumentID);
     if (it == m_instrData.end())
     {
         return;
     }
-    // 不根据组合合约的行情快照来更新PNL
+
+    //处理条件单的触发
+    for (auto& contionalOrderPair : m_contionalOrders)
+    {
+        auto& contionalOrder = contionalOrderPair.second;
+        if (instrumentID != contionalOrder.rtnOrder.InstrumentID
+            || contionalOrder.rtnOrder.OrderStatus == THOST_FTDC_OST_Touched)
+        {
+            continue;
+        }
+        auto isPriceValid = [](const bool price) {return LT(price, DBL_MAX); };
+        auto matchContion = [&]() -> bool {
+            switch (contionalOrder.rtnOrder.ContingentCondition)
+            {
+            case THOST_FTDC_CC_LastPriceGreaterThanStopPrice:
+                return isPriceValid(mdData.LastPrice) && GT(mdData.LastPrice, contionalOrder.rtnOrder.StopPrice);
+            case THOST_FTDC_CC_LastPriceGreaterEqualStopPrice:
+                return isPriceValid(mdData.LastPrice) && GE(mdData.LastPrice, contionalOrder.rtnOrder.StopPrice);
+            case THOST_FTDC_CC_LastPriceLesserThanStopPrice:
+                return isPriceValid(mdData.LastPrice) && LT(mdData.LastPrice, contionalOrder.rtnOrder.StopPrice);
+            case THOST_FTDC_CC_LastPriceLesserEqualStopPrice:
+                return isPriceValid(mdData.LastPrice) && LE(mdData.LastPrice, contionalOrder.rtnOrder.StopPrice);
+            default:
+                return false;
+            }
+        };
+        if (!matchContion())
+        {
+            continue;
+        }
+        contionalOrder.rtnOrder.OrderStatus = THOST_FTDC_OST_Touched;
+        strncpy(contionalOrder.rtnOrder.StatusMsg,
+            getStatusMsgByStatus(contionalOrder.rtnOrder.OrderStatus).c_str(),
+            sizeof(contionalOrder.rtnOrder.StatusMsg));
+        contionalOrder.sendRtnOrder();
+        ReqOrderInsertImpl(&contionalOrder.inputOrder, 0, contionalOrder.rtnOrder.OrderSysID);
+    }
+
+    // 不根据组合合约的行情快照来更新PNL和报单,因此这里直接返回
     if (it->second.ProductClass == THOST_FTDC_PC_Combination)
     {
         return;
     }
+
+    {
+        std::lock_guard<std::mutex> orderGuard(m_orderMtx);
+        // 此时订单数据中已包含刚才条件单触发后产生的新报单O(∩_∩)O
+        for (auto& o : m_orderData)
+        {
+            auto& order = o.second;
+            // 可能是组合合约的报单,合约代码与行情中的合约代码不同
+            if (std::string(order.rtnOrder.InstrumentID).find(instrumentID) == std::string::npos ||
+                order.isDone())
+            {
+                continue;
+            }
+            MarketDataVec mdVec;
+            if (order.rtnOrder.InstrumentID == instrumentID)//合约代码相等,说明是单腿合约
+            {
+                mdVec.emplace_back(mdData);
+            }
+            else
+            {
+                std::vector<std::string> singleContracts;
+                GetSingleContractFromCombinationContract(order.rtnOrder.InstrumentID, singleContracts);
+
+                for (std::size_t legNo = 0; legNo < singleContracts.size(); ++legNo)
+                {
+                    const std::string instr = singleContracts[legNo];
+
+                    std::lock_guard<std::mutex> mdGuard(m_mdMtx);
+                    auto itDepthMarketData = m_mdData.find(instr);
+                    if (itDepthMarketData == m_mdData.end())
+                    {
+                        continue;
+                    }
+                    mdVec.emplace_back(itDepthMarketData->second);
+                }
+            }
+            TradePriceVec priceVec;
+            // 对组合合约,判断两条腿的差价,成交价格使用两条腿各自的盘口价格,而并不使用组合合约自身的行情,
+            if (isMatchTrade(order.rtnOrder.Direction, order.rtnOrder.LimitPrice, mdVec, priceVec))
+            {
+                order.handleTrade(priceVec, order.rtnOrder.VolumeTotal);
+            }
+        }
+    }
+
     double diffPositionProfit(0.0);
     for (auto dir : { THOST_FTDC_D_Buy, THOST_FTDC_D_Sell })
     {
         for (auto dateType : { THOST_FTDC_PSD_Today, THOST_FTDC_PSD_History })
         {
-            auto posKey = CLocalTraderApi::generatePositionKey(mdData.InstrumentID,
+            auto posKey = CLocalTraderApi::generatePositionKey(instrumentID,
                 dir, dateType);
-            // 并不更新持仓明细中的PNL
+            std::lock_guard<std::mutex> posGuard(m_positionMtx);
+            // 更新持仓中的PNL,但并不更新持仓明细中的PNL
             auto itPos = m_positionData.find(posKey);
             if (itPos != m_positionData.end())
             {
@@ -177,7 +311,7 @@ void CLocalTraderApi::updateByCancel(const CThostFtdcOrderField& o)
                 (directionT == THOST_FTDC_D_Buy ?
                     itMarginRate->second.LongMarginRatioByVolume :
                     itMarginRate->second.ShortMarginRatioByVolume);
-            std::map<std::string, PositionData>::iterator itPos;
+            PositionDataMap::iterator itPos;
             {
                 std::lock_guard<std::mutex> posGuard(m_positionMtx);
                 itPos = m_positionData.find(posKey);
@@ -229,7 +363,7 @@ void CLocalTraderApi::updateByCancel(const CThostFtdcOrderField& o)
                 directionT,
                 getDateTypeFromOffset(
                     it->second.ExchangeID, o.CombOffsetFlag[0]));
-            std::map<std::string, PositionData>::iterator itPos;
+            PositionDataMap::iterator itPos;
             {
                 std::lock_guard<std::mutex> posGuard(m_positionMtx);
                 itPos = m_positionData.find(posKey);
@@ -293,7 +427,7 @@ void CLocalTraderApi::updateByTrade(const CThostFtdcTradeField& t)
         return;
     }
 
-    std::map<std::string, CThostFtdcDepthMarketDataField>::iterator itDepthMarketData;
+    MarketDataMap::iterator itDepthMarketData;
     {
         std::lock_guard<std::mutex> mdGuard(m_mdMtx);
         itDepthMarketData = m_mdData.find(pTrade->InstrumentID);
@@ -824,73 +958,18 @@ void CLocalTraderApi::RegisterNameServer(char *pszNsAddress) { return; }
 void CLocalTraderApi::RegisterFensUserInfo(CThostFtdcFensUserInfoField* pFensUserInfo) {
     if (pFensUserInfo == nullptr) return;
     CThostFtdcDepthMarketDataField* md = reinterpret_cast<CThostFtdcDepthMarketDataField*>(pFensUserInfo);
-    std::string instrumentID;
+    CThostFtdcDepthMarketDataField newMd(*md);
     if (strlen(md->InstrumentID) == 0)
     {
-        instrumentID = md->reserve1; // the old InstrumentID in struct before 6.5.1
+        // the old InstrumentID in struct before 6.5.1
+        strncpy(newMd.InstrumentID, md->reserve1, sizeof(md->reserve1));
     }
     else
     {
-        instrumentID = md->InstrumentID; // the new InstrumentID in struct since 6.5.1
-    }
-    {
-        std::lock_guard<std::mutex> mdGuard(m_mdMtx);
-        m_mdData[instrumentID] = *md;
-    }
-    {
-        for (auto& contionalOrderPair : m_contionalOrders)
-        {
-            auto& contionalOrder = contionalOrderPair.second;
-            if (strcmp(md->InstrumentID, contionalOrder.rtnOrder.InstrumentID) != 0
-                || contionalOrder.rtnOrder.OrderStatus == THOST_FTDC_OST_Touched)
-            {
-                continue;
-            }
-            auto isPriceValid = [](const bool price) {return LT(price, DBL_MAX); };
-            auto matchContion = [&]() -> bool {
-                switch (contionalOrder.rtnOrder.ContingentCondition)
-                {
-                case THOST_FTDC_CC_LastPriceGreaterThanStopPrice:
-                    return isPriceValid(md->LastPrice) && GT(md->LastPrice, contionalOrder.rtnOrder.StopPrice);
-                case THOST_FTDC_CC_LastPriceGreaterEqualStopPrice:
-                    return isPriceValid(md->LastPrice) && GE(md->LastPrice, contionalOrder.rtnOrder.StopPrice);
-                case THOST_FTDC_CC_LastPriceLesserThanStopPrice:
-                    return isPriceValid(md->LastPrice) && LT(md->LastPrice, contionalOrder.rtnOrder.StopPrice);
-                case THOST_FTDC_CC_LastPriceLesserEqualStopPrice:
-                    return isPriceValid(md->LastPrice) && LE(md->LastPrice, contionalOrder.rtnOrder.StopPrice);
-                default:
-                    return false;
-                }
-            };
-            if (!matchContion())
-            {
-                continue;
-            }
-            contionalOrder.rtnOrder.OrderStatus = THOST_FTDC_OST_Touched;
-            strncpy(contionalOrder.rtnOrder.StatusMsg,
-                getStatusMsgByStatus(contionalOrder.rtnOrder.OrderStatus).c_str(),
-                sizeof(contionalOrder.rtnOrder.StatusMsg));
-            contionalOrder.sendRtnOrder();
-            ReqOrderInsertImpl(&contionalOrder.inputOrder, 0, contionalOrder.rtnOrder.OrderSysID);
-        }
-
-        std::lock_guard<std::mutex> orderGuard(m_orderMtx);
-        // 此时订单数据中已包含刚才条件单触发后产生的新报单O(∩_∩)O
-        for (auto& o : m_orderData)
-        {
-            auto& order = o.second;
-            if (instrumentID != order.rtnOrder.InstrumentID || order.isDone())
-            {
-                continue;
-            }
-            if (isMatchTrade(order.rtnOrder.Direction, order.rtnOrder.LimitPrice, *md))
-            {
-                order.handleTrade(order.rtnOrder.LimitPrice, order.rtnOrder.VolumeTotal);
-            }
-        }
+        // the new InstrumentID in struct since 6.5.1
     }
 
-    onSnapshot(*md);
+    onSnapshot(newMd);
 }
 
 ///注册回调接口
@@ -1122,7 +1201,8 @@ int CLocalTraderApi::ReqOrderInsertImpl(CThostFtdcInputOrderField * pInputOrder,
         return 0;
     }
 
-    std::map<std::string, CThostFtdcDepthMarketDataField>::iterator itMd;
+    MarketDataMap::iterator itMd;
+    if (itInstr->second.ProductClass != THOST_FTDC_PC_Combination)
     {
         std::lock_guard<std::mutex> mdGuard(m_mdMtx);
         itMd = m_mdData.find(pInputOrder->InstrumentID);
@@ -1144,10 +1224,11 @@ int CLocalTraderApi::ReqOrderInsertImpl(CThostFtdcInputOrderField * pInputOrder,
     auto directionT = pInputOrder->Direction;
     const int orderNum = pInputOrder->VolumeTotalOriginal;
     double totalFrozenMargin = 0;
+    MarketDataVec mdVec;
 
     auto handleOpen = [&](bool preCheck) -> std::pair<bool, std::string>
     {
-        // 如果是开仓报单,增加冻结保证金
+        // 如果是开仓报单,增加(各单腿)持仓中的冻结保证金
         auto posKey = generatePositionKey(instr,
             directionT,
             THOST_FTDC_PSD_Today);
@@ -1156,7 +1237,8 @@ int CLocalTraderApi::ReqOrderInsertImpl(CThostFtdcInputOrderField * pInputOrder,
         {
             return std::make_pair(false, ErrMsg_INSTRUMENT_MARGINRATE_NOT_FOUND + instr);
         }
-        std::map<std::string, CThostFtdcDepthMarketDataField>::iterator itDepthMarketData;
+        MarketDataMap::iterator itDepthMarketData = itMd;
+        //如果是组合合约,则再次查找单腿合约的行情; 如果不是组合合约,则无需再次查找行情了
         if (itInstr->second.ProductClass == THOST_FTDC_PC_Combination)
         {
             std::lock_guard<std::mutex> mdGuard(m_mdMtx);
@@ -1166,15 +1248,16 @@ int CLocalTraderApi::ReqOrderInsertImpl(CThostFtdcInputOrderField * pInputOrder,
                 return std::make_pair(false, ErrMsg_NoMarketData + instr);
             }
         }
-        else //如果不是组合合约,则无需再次查找行情了
+        if (preCheck)
         {
-            itDepthMarketData = itMd;
+            mdVec.emplace_back(itDepthMarketData->second);
         }
+
         // 冻结保证金和保证金计算使用的价格,不同期货公司不一样.
         // 可以参见TThostFtdcMarginPriceTypeType类型取值说明.
         // 可通过查询经纪公司交易参数获得
         // (请求查询函数ReqQryBrokerTradingParams, 响应函数OnRspQryBrokerTradingParams)
-        // 本DEMO以昨结算价作为计算冻结保证金的基准价格,
+        // 本系统以昨结算价作为计算冻结保证金的基准价格,
         // 而以昨结算价(对昨仓)和开仓成交价格(对今仓)作为计算持仓保证金时的基准价格
         double frozenMargin = itDepthMarketData->second.PreSettlementPrice *
             itInstr->second.VolumeMultiple * orderNum *
@@ -1187,7 +1270,7 @@ int CLocalTraderApi::ReqOrderInsertImpl(CThostFtdcInputOrderField * pInputOrder,
                 : itMarginRate->second.ShortMarginRatioByVolume);
         totalFrozenMargin += frozenMargin;
 
-        std::map<std::string, PositionData>::iterator itPos;
+        PositionDataMap::iterator itPos;
         {
             std::lock_guard<std::mutex> posGuard(m_positionMtx);
             itPos = m_positionData.find(posKey);
@@ -1207,7 +1290,7 @@ int CLocalTraderApi::ReqOrderInsertImpl(CThostFtdcInputOrderField * pInputOrder,
                 {
                     tempPos.pos.FrozenMargin = frozenMargin;// (因为开仓未成交而)冻结的保证金
                 }
-                tempPos.pos.PosiDirection = (directionT == THOST_FTDC_D_Buy ? THOST_FTDC_PD_Long : THOST_FTDC_PD_Short);// 持仓方向
+                tempPos.pos.PosiDirection = getPositionDirectionFromDirection(directionT);// 持仓方向
                 tempPos.pos.PositionDate = THOST_FTDC_PSD_Today;// 持仓日期类型(今仓)
                 std::tie(itPos, std::ignore) = m_positionData.emplace(posKey, tempPos);
             }
@@ -1237,12 +1320,28 @@ int CLocalTraderApi::ReqOrderInsertImpl(CThostFtdcInputOrderField * pInputOrder,
         return std::make_pair(true, std::string());
     };
     auto handleClose = [&](bool preCheck) -> std::pair<bool, std::string> {
-        // 如果是平仓报单,则校验可平仓数量和增加冻结持仓数量
+        // 如果是平仓报单,则校验(各单腿)可平仓数量和增加(各单腿)冻结持仓数量
         auto posKey = generatePositionKey(instr,
             directionT,
             getDateTypeFromOffset(itInstr->second.ExchangeID, pInputOrder->CombOffsetFlag[0]));
 
-        std::map<std::string, PositionData>::iterator itPos;
+        MarketDataMap::iterator itDepthMarketData = itMd;
+        //如果是组合合约,则再次查找单腿合约的行情; 如果不是组合合约,则无需再次查找行情了
+        if (itInstr->second.ProductClass == THOST_FTDC_PC_Combination)
+        {
+            std::lock_guard<std::mutex> mdGuard(m_mdMtx);
+            itDepthMarketData = m_mdData.find(instr);
+            if (itDepthMarketData == m_mdData.end())
+            {
+                return std::make_pair(false, ErrMsg_NoMarketData + instr);
+            }
+        }
+        if (preCheck)
+        {
+            mdVec.emplace_back(itDepthMarketData->second);
+        }
+
+        PositionDataMap::iterator itPos;
         {
             std::lock_guard<std::mutex> posGuard(m_positionMtx);
             itPos = m_positionData.find(posKey);
@@ -1373,9 +1472,10 @@ int CLocalTraderApi::ReqOrderInsertImpl(CThostFtdcInputOrderField * pInputOrder,
         return 0;
     }*/
     {
-        if(isMatchTrade(pInputOrder->Direction, pInputOrder->LimitPrice, itMd->second))
+        TradePriceVec priceVec;
+        if(isMatchTrade(pInputOrder->Direction, pInputOrder->LimitPrice, mdVec, priceVec))
         {
-            itOrder->second.handleTrade(pInputOrder->LimitPrice, orderNum);
+            itOrder->second.handleTrade(priceVec, orderNum);
             return 0;
         }
         else
@@ -1383,7 +1483,8 @@ int CLocalTraderApi::ReqOrderInsertImpl(CThostFtdcInputOrderField * pInputOrder,
             // 判断是否是IOC订单
             // 可能有的交易所不是这样判断,但本系统以这种方式来统一判断处理
             auto isIOCOrder = [&]() {
-                return pInputOrder->TimeCondition == THOST_FTDC_TC_IOC && pInputOrder->VolumeCondition == THOST_FTDC_VC_CV;
+                return pInputOrder->TimeCondition == THOST_FTDC_TC_IOC &&
+                    pInputOrder->VolumeCondition == THOST_FTDC_VC_CV;
             };
             if (isIOCOrder())
             {

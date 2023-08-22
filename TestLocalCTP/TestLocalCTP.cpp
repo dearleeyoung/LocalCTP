@@ -133,6 +133,7 @@ class MySpi : public CThostFtdcTraderSpi
     }
 };
 
+
 int main()
 {
     std::cout << "Hello World!" << std::endl;
@@ -155,15 +156,16 @@ int main()
     QryProduct.ProductClass = THOST_FTDC_PC_Futures;
     pApi->ReqQryProduct(&QryProduct, 108);
 
-    auto InputOrder = generateNewOrderMsg("1000", "SPD MA309&MA401");
+    auto InputOrder = generateNewOrderMsg("1000", "MA309");
     int ret = pApi->ReqOrderInsert(&InputOrder,109);//没有行情数据时,下一单(预期被拒单)
 
     CThostFtdcDepthMarketDataField md = { 0 };
-    strcpy(md.InstrumentID, "SPD MA309&MA401");
-    md.BidPrice1 = 4900;
-    md.AskPrice1 = 5000;
-    md.PreSettlementPrice = 6000;
-    pApi->RegisterFensUserInfo((CThostFtdcFensUserInfoField*)&md);//喂一个行情快照给API
+    //报入组合合约的委托, 并不需要有组合合约的行情, 而只需要有两个单腿合约的行情
+    //strcpy(md.InstrumentID, "SPD MA309&MA401");
+    //md.BidPrice1 = 4900;
+    //md.AskPrice1 = 5000;
+    //md.PreSettlementPrice = 6000;
+    //pApi->RegisterFensUserInfo((CThostFtdcFensUserInfoField*)&md);//喂一个行情快照给API
     strcpy(md.InstrumentID, "MA309");
     md.BidPrice1 = 1000;
     md.AskPrice1 = 1010;
@@ -175,12 +177,13 @@ int main()
     md.PreSettlementPrice = 2020;
     pApi->RegisterFensUserInfo((CThostFtdcFensUserInfoField*)&md);//喂一个行情快照给API
     InputOrder = generateNewOrderMsg("1000", "SPD MA309&MA401");
-    ret = pApi->ReqOrderInsert(&InputOrder, 109);//有行情数据后,再下一单
+    InputOrder.LimitPrice = -985;//实际会以1010-2000 = (-990)元的差价成交
+    ret = pApi->ReqOrderInsert(&InputOrder, 109);//有行情数据后,再下一单(买入开仓成交)
 
     strcpy(InputOrder.OrderRef, "1001");
     InputOrder.Direction = THOST_FTDC_D_Sell;
     InputOrder.CombOffsetFlag[0] = THOST_FTDC_OF_Close;
-    ret = pApi->ReqOrderInsert(&InputOrder, 109);//有行情数据后,再下一单(平仓)
+    ret = pApi->ReqOrderInsert(&InputOrder, 109);//有行情数据后,再下一单(卖出平仓)
 
     auto InputOrderAction = generateCancelOrderMsg("1001", "SPD MA309&MA401");
     ret = pApi->ReqOrderAction(&InputOrderAction, 110);//把这个单子撤掉
@@ -195,7 +198,7 @@ int main()
     md.BidPrice1 = 1000;
     md.AskPrice1 = 1010;
     md.PreSettlementPrice = 1020;
-    md.LastPrice = 4997; // 4999 > 4998
+    md.LastPrice = 4999; // 4999 > 4998
     pApi->RegisterFensUserInfo((CThostFtdcFensUserInfoField*)&md);//喂一个行情快照给API(以触发条件单)
 
     CThostFtdcQryOrderField QryOrder = { "9876","TestUserID" };

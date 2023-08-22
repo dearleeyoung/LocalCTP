@@ -98,9 +98,10 @@ inline bool LTZ(double d, double ep = EPS)
     return !GEZ(d, ep);
 }
 
-
-// some IDE may complain that the ~codecvt_byname() is protected,
-// so we use a new derived one here.
+// why use this class ?
+// some complier may complain that class codecvt_byname is invalid because
+// the ~codecvt_byname() is protected,
+// so we use a new class to derive from codecvt_byname here.
 template <class InternT, class ExternT, class State>
 class CodecvtByname : public std::codecvt_byname<InternT, ExternT, State>
 {
