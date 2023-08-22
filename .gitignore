@@ -3,6 +3,7 @@
 *.pdb
 *.exp
 *.log
+*.db
 
 # Debug folder
 Debug

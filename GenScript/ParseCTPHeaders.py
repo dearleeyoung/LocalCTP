@@ -1,8 +1,15 @@
 ﻿#!/usr/bin/python3
-#本脚本文件用于生成封装CTP的SQL管理类的C++代码.
+#本脚本文件用于生成封装CTP相关类的C++代码. 生成的代码在 ./LocalCTP/auto_generated_code/ 目录中.
+#在切换CTP头文件(./LocalCTP/current/ 目录中的文件) 后, 请执行此脚本以自动生成对应CTP版本的C++代码.
 #使用方法: python3 ParseCTPHeaders.py
+#
+#使用后会生成3个文件:
+#   CTPApiHugeMacro.h : 包含本系统不支持的CTP的API接口的函数默认实现的宏 UNSUPPORTED_CTP_API_FUNC. (本系统支持的API接口见下面的 exclusiveApiFunctions )
+#   CTPSQLWrapper.h 和 CTPSQLWrapper.cpp : 封装CTP的SQL管理类的C++代码文件.
+
 
 import copy
+
 
 '''
 typedef char A[13];
@@ -51,8 +58,10 @@ const std::string XWrapper::INSERT_SQL_PREFIX = "REPLACE INTO 'X' VALUES (";
 
 ctp_datatype_path = "../LocalCTP/ctp_file/current/ThostFtdcUserApiDataType.h"
 ctp_struct_path = "../LocalCTP/ctp_file/current/ThostFtdcUserApiStruct.h"
-output_path = "../LocalCTP/CTPSQLWrapper.h"
-output2_path = "../LocalCTP/CTPSQLWrapper.cpp"
+ctp_api_path = "../LocalCTP/ctp_file/current/ThostFtdcTraderApi.h"
+output_path = "../LocalCTP/auto_generated_code/CTPSQLWrapper.h"
+output2_path = "../LocalCTP/auto_generated_code/CTPSQLWrapper.cpp"
+output_api_path = "../LocalCTP/auto_generated_code/CTPApiHugeMacro.h"
 
 needConvertMemberNames = ['StatusMsg','ErrorMsg'] #需要转换编码的成员变量
 predefinedTableKey = {
@@ -62,6 +71,18 @@ predefinedTableKey = {
     'CThostFtdcTradeField':['BrokerID','InvestorID','TradingDay','ExchangeID','TradeID','TradeType'],
     'CThostFtdcTradingAccountField':['BrokerID','AccountID'],
 }# 预先定义好主键的表. key:表名. value: 这张表的主键. 如果以后有想要保存的表并且知道主键,则可以在此处添加.
+
+# 自行处理的API接口函数(比如登录请求ReqUserLogin), 无需为这些函数自动生成API重写的代码.
+# 如果用户自行实现了其他接口,则可以在这个列表中添加接口函数名.
+exclusiveApiFunctions = ['Release','Init','Join','GetTradingDay','RegisterFront','RegisterNameServer','RegisterFensUserInfo',
+    'RegisterSpi','SubscribePrivateTopic','SubscribePublicTopic','ReqAuthenticate','ReqUserLogin','ReqUserLogout',
+    'ReqUserPasswordUpdate','ReqTradingAccountPasswordUpdate','ReqOrderInsert','ReqParkedOrderInsert','ReqParkedOrderAction',
+    'ReqOrderAction','ReqSettlementInfoConfirm','ReqRemoveParkedOrder','ReqRemoveParkedOrderAction',
+    'ReqQryOrder','ReqQryTrade','ReqQryInvestorPosition','ReqQryTradingAccount','ReqQryInvestor','ReqQryInstrumentMarginRate',
+    'ReqQryInstrumentCommissionRate','ReqQryExchange','ReqQryProduct','ReqQryInstrument','ReqQryDepthMarketData',
+    'ReqQrySettlementInfo','ReqQryInvestorPositionDetail','ReqQrySettlementInfoConfirm','ReqQryClassifiedInstrument',
+]
+
 
 class CTPField:
     def __init__(self):
@@ -181,7 +202,7 @@ with open(output_path, 'w') as f:
     f.write("#include \"ThostFtdcUserApiStruct.h\"\n")
     f.write("#include <map>\n")
     f.write("#include <string>\n")
-    f.write("#include \"stdafx.h\"\n")
+    f.write("#include \"../stdafx.h\"// gbk_to_utf8, utf8_to_gbk\n")
     f.write("\n")
     for className,ctpClass in ctpClasses.items():
         prefix = ""
@@ -229,7 +250,7 @@ with open(output_path, 'w') as f:
         f.write(prefix + "}\n")
         prefix = ""
         f.write(prefix + "};\n") # end struct
-        # in .cpp file
+        # in CTPSQLWrapper.cpp file
         f2.write("const std::string "+className+"Wrapper::CREATE_TABLE_SQL = \"CREATE TABLE '"+className+"'(" +
             ", ".join([getSqlCreateTableField(fieldInfo,memberName) for (fieldInfo,memberName) in ctpClass.fields])
             + ("" if className not in predefinedTableKey else (", PRIMARY KEY(\\\""+  "\\\",\\\"".join(predefinedTableKey[className]) +"\\\")"))
@@ -240,3 +261,87 @@ with open(output_path, 'w') as f:
         f.write(prefix + "\n")
 
 f2.close()
+
+
+
+class ApiFuncInfo:
+    def __init__(self):
+        self.funcComment = ''#函数注释(可能有多行,每行以" \"结尾)
+        self.funcName = ''#函数名
+        self.funcContent = ''#函数内容
+    def __str__(self):
+        return "ApiFuncInfo obj. funcName: " + self.funcName + " funcComment: " + self.funcComment + " funcContent: " + self.funcContent
+
+apiFuncInfos = [] # a list of ApiFuncInfo
+tapStr = ' ' * 4 # not use '\t' because its width is not certain
+
+with open(ctp_api_path, 'r', encoding='GBK') as f:
+    classStartPreFix = "class TRADER_API_EXPORT CThostFtdcTraderApi"
+    commentPreFix = "///"
+    virtualFuncPreFix = "virtual "
+    isInApiClass = False
+    funcComment = ""
+    macroPostFix = " \\\n"
+    singleLine = f.readline()
+    while len(singleLine) > 0:
+        singleLine = singleLine.strip()
+        #print(singleLine)
+        if len(singleLine) == 0:
+            singleLine = f.readline()
+            funcComment = ""#读取到一个空行,则将API函数的注释清空
+            continue
+        if not isInApiClass:
+            if singleLine.startswith(classStartPreFix):
+                isInApiClass = True
+            singleLine = f.readline()
+            continue
+        if singleLine.startswith(commentPreFix):
+            # CTP的注释以///开头,放在宏里会导致最后的"\"无法被识别为续行符而续行,因此需要用/**/包起来套娃一层
+            funcComment += tapStr + "/*" + singleLine + "*/" + macroPostFix
+        elif singleLine.startswith(virtualFuncPreFix):
+            funcContent = singleLine # "virtual int ReqQryProductGroup(CThostFtdcQryProductGroupField *pQryProductGroup, int nRequestID) = 0;"
+            apiFuncInfo = ApiFuncInfo()
+            apiFuncInfo.funcName = funcContent.split()[2].split('(')[0] # "ReqQryProductGroup"
+            if apiFuncInfo.funcName == 'char': # "virtual const char *GetTradingDay() = 0;"
+                apiFuncInfo.funcName = "GetTradingDay"
+            if funcContent.endswith("= 0;"):
+                funcContent = funcContent[0:-4] + "override { return -1; }"
+            apiFuncInfo.funcContent = funcContent
+            apiFuncInfo.funcComment = funcComment
+            #print(apiFuncInfo)
+            apiFuncInfos.append(apiFuncInfo)
+        singleLine = f.readline()
+
+'''
+#示例:
+CTP API函数:
+	///请求查询产品报价汇率
+	virtual int ReqQryProductExchRate(CThostFtdcQryProductExchRateField *pQryProductExchRate, int nRequestID) = 0;
+
+	///请求查询产品组
+	virtual int ReqQryProductGroup(CThostFtdcQryProductGroupField *pQryProductGroup, int nRequestID) = 0;
+ 
+生成的代码:
+#define UNSUPPORTED_CTP_API_FUNC \
+    /*///请求查询产品报价汇率*/ \
+    virtual int ReqQryProductExchRate(CThostFtdcQryProductExchRateField *pQryProductExchRate, int nRequestID) override { return -1; } \
+ \
+	/*///请求查询产品组*/ \
+	virtual int ReqQryProductGroup(CThostFtdcQryProductGroupField *pQryProductGroup, int nRequestID) override { return -1; }
+
+'''
+
+# utf-8 with BOM
+with open(output_api_path, 'w', encoding='utf-8-sig') as f:
+    f.write("#pragma once\n")
+    f.write(noticeStr + "\n")
+    #f.write("#pragma warning(disable: 4010)\n")
+    f.write("\n")
+    f.write("#define UNSUPPORTED_CTP_API_FUNC \\\n")
+    for i in range(len(apiFuncInfos)):
+        apiFuncInfo = apiFuncInfos[i]
+        if apiFuncInfo.funcName not in exclusiveApiFunctions:
+            f.write(apiFuncInfo.funcComment)
+            postFix = macroPostFix if i < len(apiFuncInfos)-1 else "\n"
+            f.write(tapStr + apiFuncInfo.funcContent + postFix)
+            f.write(postFix)

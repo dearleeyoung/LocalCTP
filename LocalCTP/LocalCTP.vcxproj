@@ -75,7 +75,7 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>true</LinkIncremental>
-    <IncludePath>./ctp_file/current/;$(IncludePath)</IncludePath>
+    <IncludePath>./ctp_file/current/;./auto_generated_code/;$(IncludePath)</IncludePath>
     <LibraryPath>$(LibraryPath)</LibraryPath>
     <TargetName>thosttraderapi_se</TargetName>
     <OutDir>$(SolutionDir)./bin/win/$(Platform)\$(Configuration)\</OutDir>
@@ -85,7 +85,7 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LinkIncremental>false</LinkIncremental>
-    <IncludePath>./ctp_file/current/;$(IncludePath)</IncludePath>
+    <IncludePath>./ctp_file/current/;./auto_generated_code/;$(IncludePath)</IncludePath>
     <LibraryPath>$(LibraryPath)</LibraryPath>
     <TargetName>thosttraderapi_se</TargetName>
     <OutDir>$(SolutionDir)./bin/win/$(Platform)\$(Configuration)\</OutDir>
@@ -161,8 +161,8 @@
     <ClInclude Include="stdafx.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="auto_generated_code\CTPSQLWrapper.cpp" />
     <ClCompile Include="CSqliteHandler.cpp" />
-    <ClCompile Include="CTPSQLWrapper.cpp" />
     <ClCompile Include="dllmain.cpp" />
     <ClCompile Include="LeeDateTime.cpp" />
     <ClCompile Include="LocalCTP.cpp" />
