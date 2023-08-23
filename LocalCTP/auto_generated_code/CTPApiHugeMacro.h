@@ -41,9 +41,6 @@
     /*///询价录入请求*/ \
     virtual int ReqForQuoteInsert(CThostFtdcInputForQuoteField *pInputForQuote, int nRequestID) override { return -1; } \
  \
-    /*///报价录入请求*/ \
-    virtual int ReqQuoteInsert(CThostFtdcInputQuoteField *pInputQuote, int nRequestID) override { return -1; } \
- \
     /*///报价操作请求*/ \
     virtual int ReqQuoteAction(CThostFtdcInputQuoteActionField *pInputQuoteAction, int nRequestID) override { return -1; } \
  \

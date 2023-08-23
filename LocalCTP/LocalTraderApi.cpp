@@ -1904,6 +1904,74 @@ int CLocalTraderApi::ReqQrySettlementInfoConfirm(CThostFtdcQrySettlementInfoConf
     return 0;
 }
 
+///报价录入请求
+// 本接口被改造为接收行情快照数据的接口.
+// 具体字段对应:
+// (CThostFtdcDepthMarketDataField 中的字段 -> CThostFtdcInputQuoteField pInputQuote 中的字段):
+//
+// 交易日: TradingDay -> BrokerID
+// 业务日期: ActionDay -> InvestorID
+// 交易所代码: ExchangeID -> ExchangeID(名字不变)
+// 合约代码: InstrumentID -> InstrumentID(名字不变)
+// 最后修改时间: UpdateTime -> ClientID
+// 最后修改毫秒: UpdateMillisec -> RequestID(不是函数参数 nRequestID 哦)
+// 数量(今日的成交量): Volume -> 函数参数 nRequestID(不是 RequestID 哦)
+// 申买价一: BidPrice1 -> BidPrice
+// 申卖价一: AskPrice1 -> AskPrice
+// 申买量一: BidVolume1 -> BidVolume
+// 申卖量一: AskVolume1 -> AskVolume
+//
+// 最新价: LastPrice -> UserID(字符串类型) 请将它转换为字符串.
+// 涨停价: UpperLimitPrice -> BidOrderRef(字符串类型) 请将它转换为字符串.
+// 跌停价: LowerLimitPrice -> AskOrderRef(字符串类型) 请将它转换为字符串.
+// 上次结算价(昨结算价): PreSettlementPrice -> QuoteRef(字符串类型) 请将它转换为字符串.
+// 持仓量: OpenInterest -> BusinessUnit(字符串类型) 请将它转换为字符串.
+//      如: LastPrice (100.5) -> UserID ("100.5")
+//      转换示例: python: x.UserID = str(100.5)
+//                Java:   x.UserID = Float.toString(100.5);
+//                C#:     x.UserID = 100.5.ToString();
+//                C++:    strcpy(x.UserID, std::to_string(100.5).c_str());
+int CLocalTraderApi::ReqQuoteInsert(CThostFtdcInputQuoteField* pInputQuote, int nRequestID) {
+    if (pInputQuote == nullptr) return -1;
+    CThostFtdcDepthMarketDataField newMd = { 0 };
+    strncpy(newMd.TradingDay, pInputQuote->BrokerID, sizeof(newMd.TradingDay));
+    strncpy(newMd.ActionDay, pInputQuote->InvestorID, sizeof(newMd.ActionDay));
+    strncpy(newMd.ExchangeID, pInputQuote->ExchangeID, sizeof(newMd.ExchangeID));
+    if (strlen(pInputQuote->InstrumentID) == 0)
+    {
+        // the old InstrumentID in struct before 6.5.1
+        strncpy(newMd.InstrumentID, pInputQuote->reserve1, sizeof(pInputQuote->reserve1));
+    }
+    else
+    {
+        // the new InstrumentID in struct since 6.5.1
+        strncpy(newMd.InstrumentID, pInputQuote->InstrumentID, sizeof(pInputQuote->InstrumentID));
+    }
+
+    strncpy(newMd.UpdateTime, pInputQuote->ClientID, sizeof(newMd.UpdateTime));
+    newMd.UpdateMillisec = pInputQuote->RequestID;
+    newMd.Volume = nRequestID;
+    newMd.BidPrice1 = pInputQuote->BidPrice;
+    newMd.AskPrice1 = pInputQuote->AskPrice;
+    newMd.BidVolume1 = pInputQuote->BidVolume;
+    newMd.AskVolume1 = pInputQuote->AskVolume;
+    try
+    {
+        newMd.LastPrice = std::stod(pInputQuote->UserID);
+        newMd.UpperLimitPrice = std::stod(pInputQuote->BidOrderRef);
+        newMd.LowerLimitPrice = std::stod(pInputQuote->AskOrderRef);
+        newMd.PreSettlementPrice = std::stod(pInputQuote->QuoteRef);
+        newMd.OpenInterest = std::stod(pInputQuote->BusinessUnit);
+    }
+    catch (...)
+    {
+        // some price field is not filled correctly
+    }
+
+    onSnapshot(newMd);
+    return 0;
+}
+
 ///请求查询分类合约
 int CLocalTraderApi::ReqQryClassifiedInstrument(CThostFtdcQryClassifiedInstrumentField *pQryClassifiedInstrument, int nRequestID) {
     if (pQryClassifiedInstrument == nullptr || !m_logined) return -1;

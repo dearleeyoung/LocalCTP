@@ -194,12 +194,15 @@ int main()
     InputOrder.ContingentCondition = THOST_FTDC_CC_LastPriceGreaterThanStopPrice;//下一个条件单
     InputOrder.StopPrice = 4998;
     ret = pApi->ReqOrderInsert(&InputOrder, 109);
-    strcpy(md.InstrumentID, "MA309");
-    md.BidPrice1 = 1000;
-    md.AskPrice1 = 1010;
-    md.PreSettlementPrice = 1020;
-    md.LastPrice = 4999; // 4999 > 4998
-    pApi->RegisterFensUserInfo((CThostFtdcFensUserInfoField*)&md);//喂一个行情快照给API(以触发条件单)
+
+    CThostFtdcInputQuoteField marketData = { 0 };
+    strcpy(marketData.InstrumentID, "MA309");
+    marketData.BidPrice = 1000;
+    marketData.AskPrice = 1010;
+    strcpy(marketData.QuoteRef, "1020.0");// PreSettlementPrice
+    strcpy(marketData.UserID, "4999");// LastPrice.   4999 > 4998
+    int Volume = 88888;
+    pApi->ReqQuoteInsert(&marketData, Volume);//使用ReqQuoteInsert接口, 喂一个行情快照给API(以触发条件单), 
 
     CThostFtdcQryOrderField QryOrder = { "9876","TestUserID" };
     strcpy(QryOrder.ExchangeID, "CZCE");// 有数条CZCE的委托记录,查询返回

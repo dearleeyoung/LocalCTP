@@ -225,6 +225,7 @@ public:
 
     ///注册名字服务器用户信息
     ///@param pFensUserInfo：用户信息。
+    // 本接口被改造为接收行情快照数据的接口.
     virtual void RegisterFensUserInfo(CThostFtdcFensUserInfoField * pFensUserInfo) override;
 
     ///注册回调接口
@@ -329,6 +330,10 @@ public:
 
     ///请求查询结算信息确认
     virtual int ReqQrySettlementInfoConfirm(CThostFtdcQrySettlementInfoConfirmField *pQrySettlementInfoConfirm, int nRequestID) override;
+
+    ///报价录入请求
+    // 本接口被改造为接收行情快照数据的接口.
+    virtual int ReqQuoteInsert(CThostFtdcInputQuoteField* pInputQuote, int nRequestID) override;
 
     ///请求查询分类合约
     // 这是自v6.5.1版本加入的函数.如果使用低版本API头文件则可以把这个接口注释掉

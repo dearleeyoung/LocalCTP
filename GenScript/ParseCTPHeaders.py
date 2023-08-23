@@ -81,6 +81,7 @@ exclusiveApiFunctions = ['Release','Init','Join','GetTradingDay','RegisterFront'
     'ReqQryOrder','ReqQryTrade','ReqQryInvestorPosition','ReqQryTradingAccount','ReqQryInvestor','ReqQryInstrumentMarginRate',
     'ReqQryInstrumentCommissionRate','ReqQryExchange','ReqQryProduct','ReqQryInstrument','ReqQryDepthMarketData',
     'ReqQrySettlementInfo','ReqQryInvestorPositionDetail','ReqQrySettlementInfoConfirm','ReqQryClassifiedInstrument',
+    'ReqQuoteInsert',
 ]
 
 
