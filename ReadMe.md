@@ -117,12 +117,12 @@ Linux:
 1. `RegisterFront`: 会直接返回，并不会连接到参数中的地址也不会校验地址合法性。
 1. `RegisterFensUserInfo`: 【重要】被修改为接收行情快照的接口。内部会将参数转化为 `CThostFtdcDepthMarketDataField*` 类型并处理以更新行情数据，请在外部收到行情快照时调用此接口。
 1. `ReqQuoteInsert`: 【重要】也被修改为接收行情快照的接口。内部会将一些参数中的字段转换为行情快照中的字段，数据字段转换规则见附录。
-1. 用户可以使用上述这两个接口中的任意一个来为本系统提供行情快照数据. 使用方法可参考DEMO.
+用户可以使用上述这两个接口中的任意一个来为本系统提供行情快照数据. 使用方法可参考DEMO.
 1. `ReqAuthenticate/ReqUserLogin/ReqUserLogout`: 都不会校验参数，即都会直接认证/登录/登出成功。
 1. `ReqOrderInsert`: 支持条件单(支持四种价格条件TThostFtdcContingentConditionType,即用最新价LastPrice和条件价StopPrice的四种比较类型)
 1. `ReqQryInstrumentMarginRate/ReqQryInstrumentCommissionRate`: 会返回所有符合条件的合约的保证金率或手续费率数据,而不像CTP中只能按合约查询并只返回一条
 1. `ReqOrderAction`: 支持两种撤单方式:
-    * ` OrderRef + FrontID + SessionID( 还需填IntrumentID )`
+    * ` OrderRef + FrontID + SessionID (还需填IntrumentID)`
     * ` OrderSysID + ExchangeID`
 
 
@@ -149,36 +149,38 @@ Windows中可使用 [DB Browser for SQLite](https://sqlitebrowser.org/) 以查�
 
 ### 附录
 
-`ReqQuoteInsert` 投喂行情的数据字段转换规则:
+**`ReqQuoteInsert` 投喂行情的数据字段转换规则:**
 
 具体字段对应:
 
-(`CThostFtdcDepthMarketDataField 中的字段 <-> `CThostFtdcInputQuoteField pInputQuote` 中的字段):
+`CThostFtdcDepthMarketDataField` 中的字段 <-> `CThostFtdcInputQuoteField pInputQuote` 中的字段
 
 1. 交易日: `TradingDay` <-> `BrokerID`
 1. 业务日期: `ActionDay` <-> `InvestorID`
-1. 交易所代码: `ExchangeID` <-> `ExchangeID(名字不变)
+1. 交易所代码: `ExchangeID` <-> `ExchangeID`(名字不变)
 1. 合约代码: `InstrumentID` <-> `InstrumentID`(名字不变)
 1. 最后修改时间: `UpdateTime` <-> `ClientID`
-1. 最后修改毫秒: `UpdateMillisec` <-> `RequestID`(不是函数参数 `nRequestID` 哦)
-1. 数量(今日的成交量): `Volume` <-> 函数参数 `nRequestID`(不是 `RequestID` 哦)
+1. 最后修改毫秒: `UpdateMillisec` <-> `RequestID`(不是`函数参数 nRequestID` 哦)
+1. 数量(今日的成交量): `Volume` <-> `函数参数 nRequestID`(不是 `RequestID` 哦)
 1. 申买价一: `BidPrice1` <-> `BidPrice`
 1. 申卖价一: `AskPrice1` <-> `AskPrice`
 1. 申买量一: `BidVolume1` <-> `BidVolume`
 1. 申卖量一: `AskVolume1` <-> `AskVolume`
-1. 最新价: `LastPrice` <-> `UserID`(字符串类型) 请将它转换为字符串.
-1. 涨停价: `UpperLimitPrice <-> `BidOrderRef(字符串类型) 请将它转换为字符串.
-1. 跌停价: `LowerLimitPrice <-> `AskOrderRef(字符串类型) 请将它转换为字符串.
-1. 上次结算价(昨结算价): `PreSettlementPrice <-> `QuoteRef`(字符串类型) 请将它转换为字符串.
-1. 持仓量: `OpenInterest` <-> `BusinessUnit`(字符串类型) 请将它转换为字符串.
+1. 最新价: `LastPrice` <-> `UserID(字符串类型)` 请将它转换为字符串.
+1. 涨停价: `UpperLimitPrice` <-> `BidOrderRef(字符串类型)` 请将它转换为字符串.
+1. 跌停价: `LowerLimitPrice` <-> `AskOrderRef(字符串类型)` 请将它转换为字符串.
+1. 上次结算价(昨结算价): `PreSettlementPrice` <-> `QuoteRef(字符串类型)` 请将它转换为字符串.
+1. 持仓量: `OpenInterest` <-> `BusinessUnit(字符串类型)` 请将它转换为字符串.
 
       如: `LastPrice (100.5) -> UserID ("100.5")`
 
-      转换示例:   python: `x.UserID = str(100.5)`
+      转换示例:
 
-                  Java:   `x.UserID = Float.toString(100.5);`
+                  python: x.UserID = str(100.5)
 
-                  C#:     `x.UserID = 100.5.ToString();`
+                  Java:   x.UserID = Float.toString(100.5);
 
-                  C++:    `strcpy(x.UserID, std::to_string(100.5).c_str());`
+                  C#:     x.UserID = 100.5.ToString();
+
+                  C++:    strcpy(x.UserID, std::to_string(100.5).c_str());
 
