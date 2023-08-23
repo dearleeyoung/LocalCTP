@@ -15,7 +15,7 @@
 1. 支持`windows`/`linux`等多个平台, `MAC`也即将支持
 1. 支持FAK/FOK订单, 支持条件单.
 1. 成交撮合逻辑同SimNow, 通过是否满足行情中的对手价来判断是否成交。
-1. 支持多个CTP版本, 切换CTP版本后 仅需使用脚本自动生成代码即可, 无需手动改代码适配
+1. 支持多个CTP版本, 切换CTP版本后 仅需使用项目中的脚本自动生成CTP相关代码即可, 无需手动改代码适配
 1. 可以通过特定API接口来获取外部传入的行情快照, 以更新账户的订单和资金等数据
 * 可以投喂给它实时行情以实现 实时仿真交易
 * 也可以投喂给它历史行情以实现 回测
@@ -184,3 +184,6 @@ Windows中可使用 [DB Browser for SQLite](https://sqlitebrowser.org/) 以查�
 
                   C++:    strcpy(x.UserID, std::to_string(100.5).c_str());
 
+**制作不容易，请一定要多多支持！欢迎打赏投食鼓励！~**
+
+![Support](https://i0.hdslb.com/bfs/article/87ce53f38c1d5c8272dd59cf2830cb648a46c85f.jpg)

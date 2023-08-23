@@ -83,10 +83,11 @@ private:
     };
 
 public:
-    // 储存交易API智能指针的集合
-    static std::set<SP_TRADE_API> trade_api_set;
-    static std::atomic<int> maxSessionID;
-    static CSqliteHandler sqlHandler;
+    static std::set<SP_TRADE_API> trade_api_set;// 储存交易API智能指针的集合
+    static std::atomic<int> maxSessionID; // 当前最大会话编号
+    static CSqliteHandler sqlHandler; // SQL管理器
+    static std::mutex m_mdMtx; // 行情数据互斥体
+    static MarketDataMap m_mdData; // 行情数据
 
     // 判断是否成交
     static bool isMatchTrade(TThostFtdcDirectionType direction, double orderPrice,
@@ -103,29 +104,35 @@ public:
     {
         return (exchangeID == "SHFE" || exchangeID == "INE");
     }
+    // 获取反方向的买卖方向
     static TThostFtdcDirectionType getOppositeDirection(TThostFtdcDirectionType dir)
     {
         return (dir == THOST_FTDC_D_Buy ? THOST_FTDC_D_Sell : THOST_FTDC_D_Buy);
     }
+    // 通过买卖方向获取持仓多空方向
     static TThostFtdcPosiDirectionType getPositionDirectionFromDirection(TThostFtdcDirectionType dir)
     {
         return (dir == THOST_FTDC_D_Buy ? THOST_FTDC_PD_Long : THOST_FTDC_PD_Short);
     }
+    // 生成持仓的key
     static std::string generatePositionKey(const CThostFtdcInvestorPositionField& pos)
     {
         return generatePositionKey(pos.InstrumentID,
             getPositionDirectionFromDirection(pos.PosiDirection),
             pos.PositionDate);
     }
+    // 生成持仓的key
     static std::string generatePositionKey(const std::string& instrumentID,
         TThostFtdcDirectionType dir, TThostFtdcPositionDateType dateType)
     {
         return instrumentID + "_" + dir + "_" + dateType;
     }
+    // 判断是否是开仓类型
     static bool isOpen(TThostFtdcOffsetFlagType	OffsetFlag)
     {
         return OffsetFlag == THOST_FTDC_OF_Open;
     }
+    // 通过开平方向获取持仓日期类型
     static TThostFtdcPositionDateType getDateTypeFromOffset(const std::string& exchangeID,
         TThostFtdcOffsetFlagType offsetFlag)
     {
@@ -150,46 +157,44 @@ public:
     int getSessionID() const { return m_sessionID; }
 
 private:
-	std::atomic<bool> m_bRunning;
-    std::atomic<bool> m_authenticated;
-    std::atomic<bool> m_logined;
-    std::atomic<int> m_orderSysID;
-    std::atomic<int> m_tradeID;
-    std::string m_userID;
-    std::string m_brokerID;
-    int m_sessionID;
+	std::atomic<bool> m_bRunning; // 是否在运行
+    std::atomic<bool> m_authenticated; // 是否已认证
+    std::atomic<bool> m_logined; // 是否已登录
+    std::atomic<int> m_orderSysID; // 当前最大委托编号
+    std::atomic<int> m_tradeID; // 当前最大成交编号
+    std::string m_userID;// 用户名
+    std::string m_brokerID;// 期货公司代码
+    int m_sessionID;// 本连接会话编号
     InstrMap m_instrData; //合约数据
-    std::mutex m_mdMtx;
 
-    MarketDataMap m_mdData; //行情数据
-    std::mutex m_orderMtx;
-    std::map<int, OrderData> m_orderData; //订单数据. key:OrderRef(报单引用).
-    std::mutex m_positionMtx;
-    PositionDataMap m_positionData; //持仓数据. key通过generatePositionKey生成.
+    std::mutex m_orderMtx;// 订单数据互斥体
+    std::map<int, OrderData> m_orderData; // 订单数据. key:OrderRef(报单引用).
+    std::mutex m_positionMtx;// 持仓数据互斥体
+    PositionDataMap m_positionData; // 持仓数据. key通过generatePositionKey生成.
     std::map<std::string, CThostFtdcInstrumentMarginRateField> m_instrumentMarginRateData;// 合约保证金数据. key:合约代码.
     std::map<std::string, CThostFtdcInstrumentCommissionRateField> m_instrumentCommissionRateData;// 合约手续费数据. key:合约代码.
     CThostFtdcTradingAccountField m_tradingAccount;// 资金数据
     std::map<std::string, OrderData> m_contionalOrders;// 条件报单数据. key:条件单报单编号(OrderSysID)
     std::map<std::string, CThostFtdcExchangeField> m_exchanges;// 交易所数据. key:交易所代码
     std::map<std::string, CThostFtdcProductField> m_products;// 品种数据. key:品种代码
-	CThostFtdcTraderSpi* m_pSpi;//回调接口类的指针
+	CThostFtdcTraderSpi* m_pSpi;// 回调接口类的指针
 
-    CThostFtdcRspInfoField m_successRspInfo;
-    CThostFtdcRspInfoField m_errorRspInfo;
-    CThostFtdcRspInfoField* setErrorMsgAndGetRspInfo(const char* errorMsg = "error");
-    void onSnapshot(const CThostFtdcDepthMarketDataField& mdData);
-    void updatePNL(bool needTotalCalc = false);
-    void updateByCancel(const CThostFtdcOrderField& o);
-    void updateByTrade(const CThostFtdcTradeField& t);
-    void reloadAccountData();
-    void saveTradingAccountToDb();
-    void savePositionToDb(const PositionData& pos);
-    void savePositionToDb(const CThostFtdcInvestorPositionField& pos);
-    void savePositionDetialToDb(const CThostFtdcInvestorPositionDetailField& pos);
-    void saveOrderToDb(const CThostFtdcOrderField& order);
-    void saveTradeToDb(const CThostFtdcTradeField& trade);
+    CThostFtdcRspInfoField m_successRspInfo;// 成功的响应信息
+    CThostFtdcRspInfoField m_errorRspInfo;// 错误的响应信息
+    CThostFtdcRspInfoField* setErrorMsgAndGetRspInfo(const char* errorMsg = "error");// 设置并返回错误的响应信息
+    void onSnapshot(const CThostFtdcDepthMarketDataField& mdData);// 处理行情快照的接口
+    void updatePNL(bool needTotalCalc = false);// 更新PNL(盈亏)的接口
+    void updateByCancel(const CThostFtdcOrderField& o);// 根据已撤单的委托更新账户数据的接口,在委托被撤单后被调用
+    void updateByTrade(const CThostFtdcTradeField& t);// 根据成交更新账户数据的接口,在发生成交后被调用
+    void reloadAccountData();// 从数据库中重新加载账户数据的接口
+    void saveTradingAccountToDb();// 保存账户资金数据到数据库中的接口
+    void savePositionToDb(const PositionData& pos);// 保存账户持仓数据到数据库中的接口
+    void savePositionToDb(const CThostFtdcInvestorPositionField& pos);// 保存账户持仓数据到数据库中的接口
+    void savePositionDetialToDb(const CThostFtdcInvestorPositionDetailField& pos);// 保存账户持仓明细数据到数据库中的接口
+    void saveOrderToDb(const CThostFtdcOrderField& order);// 保存账户委托数据到数据库中的接口
+    void saveTradeToDb(const CThostFtdcTradeField& trade);// 保存账户成交数据到数据库中的接口
     int ReqOrderInsertImpl(CThostFtdcInputOrderField* pInputOrder, int nRequestID,
-        std::string relativeOrderSysID = std::string());
+        std::string relativeOrderSysID = std::string());// 处理新委托的实现的接口
 
 public:
 

@@ -19,6 +19,8 @@
 std::set<CLocalTraderApi::SP_TRADE_API> CLocalTraderApi::trade_api_set;
 std::atomic<int> CLocalTraderApi::maxSessionID( 0 );
 CSqliteHandler CLocalTraderApi::sqlHandler("LocalCTP.db");
+std::mutex CLocalTraderApi::m_mdMtx;
+CLocalTraderApi::MarketDataMap CLocalTraderApi::m_mdData; //行情数据
 
 void CLocalTraderApi::GetSingleContractFromCombinationContract(const std::string& CombinationContractID,
     std::vector<std::string>& SingleContracts)
@@ -297,10 +299,14 @@ void CLocalTraderApi::updateByCancel(const CThostFtdcOrderField& o)
             {
                 return;
             }
-            auto itDepthMarketData = m_mdData.find(instr);
-            if (itDepthMarketData == m_mdData.end())
+            MarketDataMap::iterator itDepthMarketData;
             {
-                return;
+                std::lock_guard<std::mutex> mdGuard(m_mdMtx);
+                itDepthMarketData = m_mdData.find(instr);
+                if (itDepthMarketData == m_mdData.end())
+                {
+                    return;
+                }
             }
             double frozenMargin = itDepthMarketData->second.PreSettlementPrice *
                 it->second.VolumeMultiple * o.VolumeTotal *
@@ -1276,7 +1282,6 @@ int CLocalTraderApi::ReqOrderInsertImpl(CThostFtdcInputOrderField * pInputOrder,
                 }
             }
         }
-        savePositionToDb(itPos->second.pos);
         if (preCheck)
         {
             double newAvailable = m_tradingAccount.Balance - m_tradingAccount.CurrMargin - m_tradingAccount.FrozenMargin
@@ -1288,6 +1293,7 @@ int CLocalTraderApi::ReqOrderInsertImpl(CThostFtdcInputOrderField * pInputOrder,
         }
         else
         {
+            savePositionToDb(itPos->second.pos);
             m_tradingAccount.FrozenMargin += frozenMargin;
             updatePNL();
         }
@@ -1342,7 +1348,10 @@ int CLocalTraderApi::ReqOrderInsertImpl(CThostFtdcInputOrderField * pInputOrder,
                 }
             }
         }
-        savePositionToDb(itPos->second.pos);
+        if (!preCheck)
+        {
+            savePositionToDb(itPos->second.pos);
+        }
         return std::make_pair(true, std::string());
     };
 
