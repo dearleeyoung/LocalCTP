@@ -41,35 +41,47 @@
 ### DIY版
 根据LocalCTP库的代码来编译生成dll或so库并拿来使用，可以自由选择CTP（头文件）的版本和平台位数（32/64）。这种方法适合于有一定动手能力的玩家。
 
-本API默认都是由6.5.1版本头文件编译生成，如需替换为别的API版本，需修改包含目录并重新编译，具体步骤:
+生成路径: 
 
-Windows:
-(生成目录: `bin/win/`)
-请把 `./LocalCTP/ctp_file/current` 设置为你要使用的CTP的版本的头文件文件夹的副本(VS不支持快捷方式作为包含目录)。
+windows: bin/win/  (通过 Visual Studio 2019 工程生成)
 
-Linux:
-(生成目录: `bin/linux/`  通过`makefile`文件来make生成)
-请把 `current` 设置为你要使用的CTP的版本的头文件文件夹的副本或软链接。
+linux: bin/linux/ (通过`makefile`文件来 make 生成)
 
-示例(设为指向 6.6.9 版本的软链接):
+**本API默认都是由v6.5.1版本头文件编译生成，如需替换为别的API版本，需修改包含目录并重新生成代码文件和编译，具体步骤:**
+
+**第一步, 替换包含目录current中的文件内容.**
+
+将 `./LocalCTP/ctp_file/current/`目录 中的文件设置为你要使用的CTP的版本的头文件。
+
+Linux中, 还可以将`current`设置为指向实际CTP头文件目录软链接, 示例(设为指向 v6.6.9 版本的软链接):
 
 `cd ./LocalCTP/ctp_file/`
 
 `ln -snf  ./6.6.9  ./current`
 
-修改 `current` 指向的版本后，需要重新编译生成dll或so文件。请做好备份。
+
+**第二步, 使用脚本自动生成CTP相关代码.**
 
 在切换CTP头文件(`current` 目录中的文件) 后, 请执行python脚本(`GenScript/ParseCTPHeaders.py`)以自动生成对应CTP版本的C++代码.
 
-使用方法(先cd切换到`GenScript`中):  `python3 ParseCTPHeaders.py`
+使用方法( 先`cd`切换到`GenScript`目录中 ):
+
+`python3 ParseCTPHeaders.py`
+
+**完成以上两步之后, 就可以重新编译生成啦！注意做好备份哦.**
+
 
 
 ## LocalCTP内部干了啥：
 咱们通过CTP的API去下单，是报单到了CTP服务器，比如SimNow的仿真CTP服务器，或者期货公司的实盘CTP服务器。
+
 而LocalCTP呢，它并不联网，下单时，并不会把你的单子通过网络发出去，它是在API内部，进行撮合和判断成交和更新账户持仓等，然后将成交回报等通过SPI发给用户。
 
-**LocalCTP包含交易API，而不包含行情API。
-用户可以通过CTP的行情API从实盘获取行情快照来传入LocalCTP中。（友情提示：行情API实盘登录时并不会校验用户名和密码，实盘行情地址可咨询期货公司，也可以加入QQ群获取地址。）**
+**LocalCTP包含交易API，而不包含行情API。**
+
+**用户可以通过CTP的行情API从实盘获取行情快照来传入LocalCTP中。**
+
+**（友情提示：行情API实盘登录时并不会校验用户名和密码，实盘行情地址可咨询期货公司，也可以加入QQ群获取地址。）**
 
 
 ### 支持的接口如下:
@@ -153,26 +165,27 @@ Windows中可使用 [DB Browser for SQLite](https://sqlitebrowser.org/) 以查�
 
 具体字段对应:
 
-`CThostFtdcDepthMarketDataField` 中的字段 <-> `CThostFtdcInputQuoteField pInputQuote` 中的字段
+|  字段含义 |  CThostFtdcDepthMarketDataField 中字段   | CThostFtdcInputQuoteField 中字段  | 说明 | 
+|  ---- |  ----   | ----   | ----  |
+|  交易日 | TradingDay  | BrokerID | |
+| 业务日期 | ActionDay  | InvestorID | |
+|  交易所代码 | ExchangeID  | ExchangeID | 名字不变 |
+|  合约代码 | InstrumentID  | InstrumentID | 名字不变 |
+|  最后修改时间 | UpdateTime  | ClientID | |
+|  最后修改毫秒 | UpdateMillisec  | RequestID | 不是 函数参数 nRequestID 哦 |
+|  数量(今日的成交量) | Volume  | 函数参数 nRequestID | 不是 RequestID 哦 |
+|  申买价一 | BidPrice1  | BidPrice | |
+|  申卖价一 | AskPrice1  | AskPrice | |
+|  申买量一 | BidVolume1  | BidVolume | |
+|  申卖量一 | AskVolume1  | AskVolume | |
+|  最新价 | LastPrice  | UserID | 浮点数<->字符串 |
+|  涨停价 | UpperLimitPrice  | BidOrderRef | 浮点数<->字符串 |
+|  跌停价 | LowerLimitPrice  | AskOrderRef | 浮点数<->字符串 |
+|  上次结算价(昨结算价) | PreSettlementPrice  | QuoteRef | 浮点数<->字符串 |
+|  持仓量 | OpenInterest  | BusinessUnit | 浮点数<->字符串 |
 
-1. 交易日: `TradingDay` <-> `BrokerID`
-1. 业务日期: `ActionDay` <-> `InvestorID`
-1. 交易所代码: `ExchangeID` <-> `ExchangeID`(名字不变)
-1. 合约代码: `InstrumentID` <-> `InstrumentID`(名字不变)
-1. 最后修改时间: `UpdateTime` <-> `ClientID`
-1. 最后修改毫秒: `UpdateMillisec` <-> `RequestID`(不是`函数参数 nRequestID` 哦)
-1. 数量(今日的成交量): `Volume` <-> `函数参数 nRequestID`(不是 `RequestID` 哦)
-1. 申买价一: `BidPrice1` <-> `BidPrice`
-1. 申卖价一: `AskPrice1` <-> `AskPrice`
-1. 申买量一: `BidVolume1` <-> `BidVolume`
-1. 申卖量一: `AskVolume1` <-> `AskVolume`
-1. 最新价: `LastPrice` <-> `UserID(字符串类型)` 请将它转换为字符串.
-1. 涨停价: `UpperLimitPrice` <-> `BidOrderRef(字符串类型)` 请将它转换为字符串.
-1. 跌停价: `LowerLimitPrice` <-> `AskOrderRef(字符串类型)` 请将它转换为字符串.
-1. 上次结算价(昨结算价): `PreSettlementPrice` <-> `QuoteRef(字符串类型)` 请将它转换为字符串.
-1. 持仓量: `OpenInterest` <-> `BusinessUnit(字符串类型)` 请将它转换为字符串.
 
-      如: `LastPrice (100.5) -> UserID ("100.5")`
+      如: LastPrice (100.5) -> UserID ("100.5")
 
       转换示例:
 
