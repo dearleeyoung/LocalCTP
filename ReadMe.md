@@ -199,4 +199,7 @@ Windows中可使用 [DB Browser for SQLite](https://sqlitebrowser.org/) 以查�
 
 **制作不容易，请一定要多多支持！欢迎打赏投食鼓励！~**
 
-![Support](https://i0.hdslb.com/bfs/article/87ce53f38c1d5c8272dd59cf2830cb648a46c85f.jpg)
+<div align=center>
+    <img src="https://i0.hdslb.com/bfs/article/87ce53f38c1d5c8272dd59cf2830cb648a46c85f.jpg" alt="Support">
+</div>
+
