@@ -337,6 +337,7 @@ with open(output_api_path, 'w', encoding='utf-8-sig') as f:
     f.write(noticeStr + "\n")
     #f.write("#pragma warning(disable: 4010)\n")
     f.write("\n")
+    f.write("#ifndef UNSUPPORTED_CTP_API_FUN\n")
     f.write("#define UNSUPPORTED_CTP_API_FUNC \\\n")
     for i in range(len(apiFuncInfos)):
         apiFuncInfo = apiFuncInfos[i]
@@ -345,3 +346,4 @@ with open(output_api_path, 'w', encoding='utf-8-sig') as f:
             postFix = macroPostFix if i < len(apiFuncInfos)-1 else "\n"
             f.write(tapStr + apiFuncInfo.funcContent + postFix)
             f.write(postFix)
+    f.write("#endif\n")
