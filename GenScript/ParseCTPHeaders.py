@@ -21,9 +21,12 @@ needConvertMemberNames = ['StatusMsg','ErrorMsg'] #需要转换编码的成员�
 predefinedTableKey = {
     'CThostFtdcInvestorPositionField':['BrokerID','InvestorID','HedgeFlag','PositionDate','InstrumentID','PosiDirection'],
     'CThostFtdcInvestorPositionDetailField':['BrokerID','InvestorID','HedgeFlag','OpenDate','TradeID','InstrumentID','Direction'],
-    'CThostFtdcOrderField':['BrokerID','InvestorID','TradingDay','ExchangeID','OrderSysID'],
+    'CThostFtdcOrderField':['BrokerID','InvestorID','TradingDay','FrontID','SessionID','OrderRef'],
     'CThostFtdcTradeField':['BrokerID','InvestorID','TradingDay','ExchangeID','TradeID','TradeType'],
     'CThostFtdcTradingAccountField':['BrokerID','AccountID'],
+    'CThostFtdcInstrumentField':['InstrumentID'],
+    'CThostFtdcInstrumentMarginRateField':['BrokerID','InvestorID','InstrumentID'],
+    'CThostFtdcInstrumentCommissionRateField':['BrokerID','InvestorID','InstrumentID'],
 }# 预先定义好主键的表. key:表名. value: 这张表的主键. 如果以后有想要保存的表并且知道主键,则可以在此处添加.
 
 # 本系统已支持的API接口函数(比如登录请求ReqUserLogin), 无需为这些函数自动生成API重写的代码.

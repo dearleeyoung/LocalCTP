@@ -28,7 +28,8 @@ CThostFtdcInputOrderField generateNewOrderMsg(const char* OrderRef, const char* 
     return InputOrder;
 }
 
-CThostFtdcInputOrderActionField generateCancelOrderMsg(const char* OrderRef, const char* InstrumentID = "MA401")
+CThostFtdcInputOrderActionField generateCancelOrderMsg(const char* OrderRef, const char* InstrumentID = "MA401",
+    int frontID = 0, int sessionID = 0)
 {
     CThostFtdcInputOrderActionField InputOrderAction = { 0 };
     strcpy(InputOrderAction.UserID, "TestUserID");
@@ -37,13 +38,16 @@ CThostFtdcInputOrderActionField generateCancelOrderMsg(const char* OrderRef, con
     strcpy(InputOrderAction.ExchangeID, "CZCE");
     strcpy(InputOrderAction.InstrumentID, InstrumentID);
     strcpy(InputOrderAction.OrderRef, OrderRef);
-    InputOrderAction.FrontID = 0;
-    InputOrderAction.SessionID = 0;
+    InputOrderAction.FrontID = frontID;
+    InputOrderAction.SessionID = sessionID;
     InputOrderAction.ActionFlag = THOST_FTDC_AF_Delete;
     return InputOrderAction;
 }
 
 CThostFtdcTraderApi* pApi = nullptr;
+int g_frontID = 0;
+int g_sessionID = 0;
+
 class MySpi : public CThostFtdcTraderSpi
 {
     void OnFrontConnected(){
@@ -58,6 +62,8 @@ class MySpi : public CThostFtdcTraderSpi
     void OnRspUserLogin(CThostFtdcRspUserLoginField* pRspUserLogin, CThostFtdcRspInfoField* pRspInfo, int nRequestID, bool bIsLast) {
         std::cout << "收到登录响应! " << " UserID:" << pRspUserLogin->UserID
             << " errorID:" << pRspInfo->ErrorID << " errorMsg:" << pRspInfo->ErrorMsg << std::endl;
+        g_frontID = pRspUserLogin->FrontID;
+        g_sessionID = pRspUserLogin->SessionID;
     }
     void OnRspQryInstrument(CThostFtdcInstrumentField* pInstrument, CThostFtdcRspInfoField* pRspInfo, int nRequestID, bool bIsLast) {
         std::cout << "收到查询合约响应! " << " errorID:" << pRspInfo->ErrorID << " errorMsg:" << pRspInfo->ErrorMsg
@@ -96,7 +102,7 @@ class MySpi : public CThostFtdcTraderSpi
                 << std::endl;
         }
     }
-    void  OnRspQryInvestorPosition(CThostFtdcInvestorPositionField* pInvestorPosition, CThostFtdcRspInfoField* pRspInfo, int nRequestID, bool bIsLast) {
+    void OnRspQryInvestorPosition(CThostFtdcInvestorPositionField* pInvestorPosition, CThostFtdcRspInfoField* pRspInfo, int nRequestID, bool bIsLast) {
         std::cout << "收到查询持仓响应! " << " errorID:" << pRspInfo->ErrorID << " errorMsg:" << pRspInfo->ErrorMsg
             << ", bIsLast:" << bIsLast << std::endl;
         if (pInvestorPosition)
@@ -133,7 +139,6 @@ class MySpi : public CThostFtdcTraderSpi
     }
 };
 
-
 int main()
 {
     std::cout << "Hello World!" << std::endl;
@@ -142,8 +147,8 @@ int main()
     std::cout << pApi->GetTradingDay() << std::endl;
     MySpi spi;
     pApi->RegisterSpi(&spi);
-    pApi->Init();//读取 instrument.csv 合约文件
-    
+    pApi->Init();//读取 instrument.csv 合约文件, 以及数据库中的合约表和费率表
+
     CThostFtdcReqUserLoginField ReqUserLoginField = { "", "9876", "TestUserID", "TestPassword" };
     pApi->ReqUserLogin(&ReqUserLoginField, 100);
 
@@ -185,7 +190,7 @@ int main()
     InputOrder.CombOffsetFlag[0] = THOST_FTDC_OF_Close;
     ret = pApi->ReqOrderInsert(&InputOrder, 109);//有行情数据后,再下一单(卖出平仓)
 
-    auto InputOrderAction = generateCancelOrderMsg("1001", "SPD MA309&MA401");
+    auto InputOrderAction = generateCancelOrderMsg("1001", "SPD MA309&MA401", g_frontID, g_sessionID);
     ret = pApi->ReqOrderAction(&InputOrderAction, 110);//把这个单子撤掉
 
     InputOrder = generateNewOrderMsg("1002", "MA309");

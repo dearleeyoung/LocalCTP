@@ -55,23 +55,35 @@ private:
     struct OrderData
     {
         OrderData(CLocalTraderApi* pApi, const CThostFtdcInputOrderField& _inputOrder,
-            bool _isConditionalOrder = false,
             const std::string& relativeOrderSysID = std::string())
-            : inputOrder(_inputOrder), rtnOrder{ 0 }
-            , api(*pApi), isConditionalOrder(_isConditionalOrder)
+            : inputOrder(_inputOrder)
+            , rtnOrder(OrderData::genrateRtnOrderFromInputOrder(inputOrder) )
+            , api(*pApi)
+            , isConditionalOrder(isConditionalType(_inputOrder.ContingentCondition))
         {
             dealTestReqOrderInsertNormal(inputOrder, relativeOrderSysID);
+        }
+        OrderData(CLocalTraderApi* pApi, const CThostFtdcOrderField& _rtnOrder)
+            : inputOrder(OrderData::genrateInputOrderFromRtnOrder(_rtnOrder))
+            , rtnOrder(_rtnOrder)
+            , api(*pApi)
+            , isConditionalOrder(_rtnOrder.ContingentCondition)
+        {
         }
         bool isDone() const;
         void handleTrade(const TradePriceVec& tradedPriceVec, int tradedSize);
         void handleCancel(bool cancelFromClient = true);
         void sendRtnOrder();
 
-        CThostFtdcInputOrderField inputOrder;
+        const CThostFtdcInputOrderField inputOrder;
         CThostFtdcOrderField rtnOrder;
         std::vector<CThostFtdcTradeField> rtnTrades;
 
     private:
+        static CThostFtdcInputOrderField genrateInputOrderFromRtnOrder(
+            const CThostFtdcOrderField& o);
+        static CThostFtdcOrderField genrateRtnOrderFromInputOrder(
+            const CThostFtdcInputOrderField& inputO);
         void dealTestReqOrderInsertNormal(const CThostFtdcInputOrderField& InputOrder,
             const std::string& relativeOrderSysID);
         void sendRtnTrade(CThostFtdcTradeField& rtnTrade);
@@ -85,10 +97,40 @@ private:
 public:
     static std::set<SP_TRADE_API> trade_api_set;// 储存交易API智能指针的集合
     static std::atomic<int> maxSessionID; // 当前最大会话编号
+    static std::map<std::string, long long> m_orderSysID; // 当前最大委托编号
+    static std::map<std::string, long long> m_tradeID; // 当前最大成交编号
     static CSqliteHandler sqlHandler; // SQL管理器
     static std::mutex m_mdMtx; // 行情数据互斥体
     static MarketDataMap m_mdData; // 行情数据
+    static const long long initStartTime;
 
+    // 生成会话的key
+    static std::string generateSessionKey(int frontID, int sessionID)
+    {
+        return std::to_string(frontID) + "_" + std::to_string(sessionID);
+    }
+    // 获取下一个最大的委托编号
+    static long long getNextOrderSysID(const std::string& exchangeID) {
+        auto it = m_orderSysID.find(exchangeID);
+        if (it == m_orderSysID.end())
+        {
+            m_orderSysID[exchangeID] = initStartTime;
+            return initStartTime;
+        }
+        else
+            return ++(it->second);
+    }
+    // 获取下一个最大的成交编号
+    static long long getNextTradeID(const std::string& exchangeID) {
+        auto it = m_tradeID.find(exchangeID);
+        if (it == m_tradeID.end())
+        {
+            m_tradeID[exchangeID] = initStartTime;
+            return initStartTime;
+        }
+        else
+            return ++(it->second);
+    }
     // 判断是否成交
     static bool isMatchTrade(TThostFtdcDirectionType direction, double orderPrice,
         const MarketDataVec& mdVec, TradePriceVec& tradePriceVec);
@@ -114,11 +156,16 @@ public:
     {
         return (dir == THOST_FTDC_D_Buy ? THOST_FTDC_PD_Long : THOST_FTDC_PD_Short);
     }
+    // 通过持仓多空方向获取买卖方向
+    static TThostFtdcDirectionType getDirectionFromPositionDirection(TThostFtdcPosiDirectionType dir)
+    {
+        return (dir == THOST_FTDC_PD_Long ? THOST_FTDC_D_Buy : THOST_FTDC_D_Sell);
+    }
     // 生成持仓的key
     static std::string generatePositionKey(const CThostFtdcInvestorPositionField& pos)
     {
         return generatePositionKey(pos.InstrumentID,
-            getPositionDirectionFromDirection(pos.PosiDirection),
+            getDirectionFromPositionDirection(pos.PosiDirection),
             pos.PositionDate);
     }
     // 生成持仓的key
@@ -152,29 +199,27 @@ public:
     CLocalTraderApi(const char* pszFlowPath = "");
     ~CLocalTraderApi();
     CThostFtdcTraderSpi* getSpi() const { return m_pSpi; }
-    std::atomic<int>& getOrderSysID() { return m_orderSysID; }
-    std::atomic<int>& getTradeID() { return m_tradeID; }
+    int getFrontID() const { return m_frontID; }
     int getSessionID() const { return m_sessionID; }
 
 private:
 	std::atomic<bool> m_bRunning; // 是否在运行
     std::atomic<bool> m_authenticated; // 是否已认证
     std::atomic<bool> m_logined; // 是否已登录
-    std::atomic<int> m_orderSysID; // 当前最大委托编号
-    std::atomic<int> m_tradeID; // 当前最大成交编号
     std::string m_userID;// 用户名
     std::string m_brokerID;// 期货公司代码
-    int m_sessionID;// 本连接会话编号
+    const int m_frontID;// 本连接前置编号. 每次启动进程时值是不同的.
+    int m_sessionID;// 本连接会话编号. 从0开始自增.
     InstrMap m_instrData; //合约数据
 
     std::mutex m_orderMtx;// 订单数据互斥体
-    std::map<int, OrderData> m_orderData; // 订单数据. key:OrderRef(报单引用).
+    std::map<std::string, std::map<int, OrderData>> m_orderData;// 订单数据. outer key:FrontID+SessionID(generateSessionKey生成), inner key:OrderRef(报单引用).
     std::mutex m_positionMtx;// 持仓数据互斥体
     PositionDataMap m_positionData; // 持仓数据. key通过generatePositionKey生成.
     std::map<std::string, CThostFtdcInstrumentMarginRateField> m_instrumentMarginRateData;// 合约保证金数据. key:合约代码.
     std::map<std::string, CThostFtdcInstrumentCommissionRateField> m_instrumentCommissionRateData;// 合约手续费数据. key:合约代码.
     CThostFtdcTradingAccountField m_tradingAccount;// 资金数据
-    std::map<std::string, OrderData> m_contionalOrders;// 条件报单数据. key:条件单报单编号(OrderSysID)
+    std::vector<OrderData*> m_contionalOrders;// 条件报单数据
     std::map<std::string, CThostFtdcExchangeField> m_exchanges;// 交易所数据. key:交易所代码
     std::map<std::string, CThostFtdcProductField> m_products;// 品种数据. key:品种代码
 	CThostFtdcTraderSpi* m_pSpi;// 回调接口类的指针

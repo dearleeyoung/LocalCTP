@@ -17,10 +17,14 @@
     (strlen(a->memberName) == 0 || strcmp((a->memberName),(b.memberName)) == 0)
 
 std::set<CLocalTraderApi::SP_TRADE_API> CLocalTraderApi::trade_api_set;
-std::atomic<int> CLocalTraderApi::maxSessionID( 0 );
+std::atomic<int> CLocalTraderApi::maxSessionID(0);
+std::map<std::string, long long> CLocalTraderApi::m_orderSysID; // 当前最大委托编号
+std::map<std::string, long long> CLocalTraderApi::m_tradeID; // 当前最大成交编号
 CSqliteHandler CLocalTraderApi::sqlHandler("LocalCTP.db");
 std::mutex CLocalTraderApi::m_mdMtx;
 CLocalTraderApi::MarketDataMap CLocalTraderApi::m_mdData; //行情数据
+const long long CLocalTraderApi::initStartTime = CLeeDateTime::GetCurrentTime().Get_time_t() * 1000 +
+     CLeeDateTime::GetCurrentTime().GetMillisecond(); // 1612345678 999
 
 void CLocalTraderApi::GetSingleContractFromCombinationContract(const std::string& CombinationContractID,
     std::vector<std::string>& SingleContracts)
@@ -94,7 +98,7 @@ bool CLocalTraderApi::isMatchTrade(TThostFtdcDirectionType direction, double ord
 
 CLocalTraderApi::CLocalTraderApi(const char *pszFlowPath/* = ""*/)
 	: m_bRunning(true), m_authenticated(false), m_logined(false)
-    , m_orderSysID(0), m_tradeID(0), m_sessionID(0)
+    , m_frontID(static_cast<int>(CLeeDateTime::GetCurrentTime().Get_time_t())), m_sessionID(0)
     , m_tradingAccount{ 0 }, m_pSpi(nullptr)
     , m_successRspInfo{ 0, "success" }, m_errorRspInfo{ -1, "error" }
 {
@@ -135,9 +139,9 @@ void CLocalTraderApi::onSnapshot(const CThostFtdcDepthMarketDataField& mdData)
     }
 
     //处理条件单的触发
-    for (auto& contionalOrderPair : m_contionalOrders)
+    for (auto contionalOrderPtr : m_contionalOrders)
     {
-        auto& contionalOrder = contionalOrderPair.second;
+        auto& contionalOrder = *contionalOrderPtr;
         if (instrumentID != contionalOrder.rtnOrder.InstrumentID
             || contionalOrder.rtnOrder.OrderStatus == THOST_FTDC_OST_Touched)
         {
@@ -168,7 +172,15 @@ void CLocalTraderApi::onSnapshot(const CThostFtdcDepthMarketDataField& mdData)
             getStatusMsgByStatus(contionalOrder.rtnOrder.OrderStatus).c_str(),
             sizeof(contionalOrder.rtnOrder.StatusMsg));
         contionalOrder.sendRtnOrder();
-        ReqOrderInsertImpl(&contionalOrder.inputOrder, 0, contionalOrder.rtnOrder.OrderSysID);
+
+        // send a new non-conditional order
+        CThostFtdcInputOrderField InputOrder = contionalOrder.inputOrder;
+        strncpy(InputOrder.OrderRef, "", sizeof(InputOrder.OrderRef));
+        InputOrder.LimitPrice = contionalOrder.inputOrder.StopPrice;
+        InputOrder.StopPrice = 0;
+        InputOrder.ContingentCondition = THOST_FTDC_CC_Immediately;
+
+        ReqOrderInsertImpl(&InputOrder, 0, contionalOrder.rtnOrder.OrderSysID);
     }
 
     // 不根据组合合约的行情快照来更新PNL和报单,因此这里直接返回
@@ -180,43 +192,46 @@ void CLocalTraderApi::onSnapshot(const CThostFtdcDepthMarketDataField& mdData)
     {
         std::lock_guard<std::mutex> orderGuard(m_orderMtx);
         // 此时订单数据中已包含刚才条件单触发后产生的新报单O(∩_∩)O
-        for (auto& o : m_orderData)
+        for (auto& sessionOrders : m_orderData)
         {
-            auto& order = o.second;
-            // 可能是组合合约的报单,合约代码与行情中的合约代码不同
-            if (std::string(order.rtnOrder.InstrumentID).find(instrumentID) == std::string::npos ||
-                order.isDone())
+            for (auto& o : sessionOrders.second)
             {
-                continue;
-            }
-            MarketDataVec mdVec;
-            if (order.rtnOrder.InstrumentID == instrumentID)//合约代码相等,说明是单腿合约
-            {
-                mdVec.emplace_back(mdData);
-            }
-            else
-            {
-                std::vector<std::string> singleContracts;
-                GetSingleContractFromCombinationContract(order.rtnOrder.InstrumentID, singleContracts);
-
-                for (std::size_t legNo = 0; legNo < singleContracts.size(); ++legNo)
+                auto& order = o.second;
+                // 可能是组合合约的报单,合约代码与行情中的合约代码不同
+                if (std::string(order.rtnOrder.InstrumentID).find(instrumentID) == std::string::npos ||
+                    order.isDone())
                 {
-                    const std::string instr = singleContracts[legNo];
-
-                    std::lock_guard<std::mutex> mdGuard(m_mdMtx);
-                    auto itDepthMarketData = m_mdData.find(instr);
-                    if (itDepthMarketData == m_mdData.end())
-                    {
-                        continue;
-                    }
-                    mdVec.emplace_back(itDepthMarketData->second);
+                    continue;
                 }
-            }
-            TradePriceVec priceVec;
-            // 对组合合约,判断两条腿的差价,成交价格使用两条腿各自的盘口价格,而并不使用组合合约自身的行情,
-            if (isMatchTrade(order.rtnOrder.Direction, order.rtnOrder.LimitPrice, mdVec, priceVec))
-            {
-                order.handleTrade(priceVec, order.rtnOrder.VolumeTotal);
+                MarketDataVec mdVec;
+                if (order.rtnOrder.InstrumentID == instrumentID)//合约代码相等,说明是单腿合约
+                {
+                    mdVec.emplace_back(mdData);
+                }
+                else
+                {
+                    std::vector<std::string> singleContracts;
+                    GetSingleContractFromCombinationContract(order.rtnOrder.InstrumentID, singleContracts);
+
+                    for (std::size_t legNo = 0; legNo < singleContracts.size(); ++legNo)
+                    {
+                        const std::string instr = singleContracts[legNo];
+
+                        std::lock_guard<std::mutex> mdGuard(m_mdMtx);
+                        auto itDepthMarketData = m_mdData.find(instr);
+                        if (itDepthMarketData == m_mdData.end())
+                        {
+                            continue;
+                        }
+                        mdVec.emplace_back(itDepthMarketData->second);
+                    }
+                }
+                TradePriceVec priceVec;
+                // 对组合合约,判断两条腿的差价,成交价格使用两条腿各自的盘口价格,而并不使用组合合约自身的行情,
+                if (isMatchTrade(order.rtnOrder.Direction, order.rtnOrder.LimitPrice, mdVec, priceVec))
+                {
+                    order.handleTrade(priceVec, order.rtnOrder.VolumeTotal);
+                }
             }
         }
     }
@@ -617,7 +632,7 @@ void CLocalTraderApi::updateByTrade(const CThostFtdcTradeField& t)
     }
 }
 
-// 从数据库中重新加载账户数据,但并不读取委托和成交表
+// 从数据库中重新加载账户数据但并不读取委托和成交表
 void CLocalTraderApi::reloadAccountData()
 {
     auto reloadPosition = [&]() {
@@ -699,6 +714,60 @@ void CLocalTraderApi::reloadAccountData()
     {
         saveTradingAccountToDb(); // 如果此账户是初次创建,则数据库中还不存在其的记录,因此需保存到数据库中    
     }
+
+    std::vector<CThostFtdcOrderField> ordersInDb;
+    std::vector<CThostFtdcTradeField> tradesInDb;
+    auto reloadOrder = [&]() {
+        CSqliteHandler::SQL_VALUES posSqlValues;
+        sqlHandler.SelectData(CThostFtdcOrderFieldWrapper::SELECT_SQL, posSqlValues);
+        for (const auto& rowData : posSqlValues)
+        {
+            CThostFtdcOrderFieldWrapper wrapper(rowData);
+            if (m_brokerID != wrapper.data.BrokerID ||
+                m_userID != wrapper.data.InvestorID ||
+                strcmp(GetTradingDay(), wrapper.data.TradingDay) != 0)// only select today's orders
+            {
+                continue;
+            }
+            ordersInDb.emplace_back(wrapper.data);
+        }
+    };
+    auto reloadTrade = [&]() {
+        CSqliteHandler::SQL_VALUES posSqlValues;
+        sqlHandler.SelectData(CThostFtdcTradeFieldWrapper::SELECT_SQL, posSqlValues);
+        for (const auto& rowData : posSqlValues)
+        {
+            CThostFtdcTradeFieldWrapper wrapper(rowData);
+            if (m_brokerID != wrapper.data.BrokerID ||
+                m_userID != wrapper.data.InvestorID ||
+                strcmp(GetTradingDay(), wrapper.data.TradingDay) != 0)// only select today's trades
+            {
+                continue;
+            }
+            tradesInDb.emplace_back(wrapper.data);
+        }
+    };
+    reloadOrder();
+    reloadTrade();
+
+    auto generateOrderData = [&]() {
+        std::lock_guard<std::mutex> orderGuard(m_orderMtx);
+        for (auto& order : ordersInDb)
+        {
+            OrderData o(this, order);
+            for (auto& trade : tradesInDb)
+            {
+                if (strcmp(trade.OrderSysID, order.OrderSysID) == 0 &&
+                    strcmp(trade.ExchangeID, order.ExchangeID) == 0)
+                {
+                    o.rtnTrades.emplace_back(trade);
+                }
+            }
+            const auto sessionKey = generateSessionKey(order.FrontID, order.SessionID);
+            m_orderData[sessionKey].emplace(::atoi(order.OrderRef), o);
+        }
+    };
+    generateOrderData();
 }
 
 void CLocalTraderApi::saveTradingAccountToDb()
@@ -786,7 +855,17 @@ void CLocalTraderApi::Release() {
 ///初始化
 ///@remark 初始化运行环境,只有调用后,接口才开始工作
 void CLocalTraderApi::Init() {
-	// 从当前目录(或环境变量中的目录)的 instrument.csv 中读取合约信息
+    // create some tables in database
+    sqlHandler.CreateTable(CThostFtdcInvestorPositionFieldWrapper::CREATE_TABLE_SQL);
+    sqlHandler.CreateTable(CThostFtdcInvestorPositionDetailFieldWrapper::CREATE_TABLE_SQL);
+    sqlHandler.CreateTable(CThostFtdcOrderFieldWrapper::CREATE_TABLE_SQL);
+    sqlHandler.CreateTable(CThostFtdcTradeFieldWrapper::CREATE_TABLE_SQL);
+    sqlHandler.CreateTable(CThostFtdcTradingAccountFieldWrapper::CREATE_TABLE_SQL);
+    sqlHandler.CreateTable(CThostFtdcInstrumentFieldWrapper::CREATE_TABLE_SQL);
+    sqlHandler.CreateTable(CThostFtdcInstrumentMarginRateFieldWrapper::CREATE_TABLE_SQL);
+    sqlHandler.CreateTable(CThostFtdcInstrumentCommissionRateFieldWrapper::CREATE_TABLE_SQL);
+
+	// 从当前目录(或环境变量中的目录)的 instrument.csv 以及数据库中的合约表中读取合约信息
     std::ifstream ifs("instrument.csv");
     if (!ifs.is_open())
     {
@@ -809,7 +888,19 @@ void CLocalTraderApi::Init() {
         m_instrData[instr.InstrumentID] = instr;
     }
 #ifdef _DEBUG
-    std::cout << "Total instrument count: " << m_instrData.size() << std::endl;
+    std::cout << "Total instrument count from instrument.csv: " << m_instrData.size() << std::endl;
+#endif
+
+    CSqliteHandler::SQL_VALUES instrumentSqlValues;
+    sqlHandler.SelectData(CThostFtdcInstrumentFieldWrapper::SELECT_SQL, instrumentSqlValues);
+    for (const auto& rowData : instrumentSqlValues)
+    {
+        CThostFtdcInstrumentFieldWrapper instrument(rowData);
+        m_instrData[instrument.data.InstrumentID] = instrument.data;
+    }
+#ifdef _DEBUG
+    std::cout << "Total instrument count from instrument table in database: "
+        << instrumentSqlValues.size() << std::endl;
 #endif
 
     auto initProductsAndExchanges = [&]() {
@@ -875,20 +966,16 @@ void CLocalTraderApi::Init() {
                     strncpy(p.ExchangeProductID, p.ProductID, sizeof(p.ExchangeProductID));
                     return p;
                 };
-                
+
                 m_products.emplace(instr.ProductID, getProductFronInstrument());
             }
         }
     };
     initProductsAndExchanges();
 
-    sqlHandler.CreateTable(CThostFtdcInvestorPositionFieldWrapper::CREATE_TABLE_SQL);
-    sqlHandler.CreateTable(CThostFtdcInvestorPositionDetailFieldWrapper::CREATE_TABLE_SQL);
-    sqlHandler.CreateTable(CThostFtdcOrderFieldWrapper::CREATE_TABLE_SQL);
-    sqlHandler.CreateTable(CThostFtdcTradeFieldWrapper::CREATE_TABLE_SQL);
-    sqlHandler.CreateTable(CThostFtdcTradingAccountFieldWrapper::CREATE_TABLE_SQL);
 
-    //临时措施:将所有合约的保证金率和手续费率初始化(保证金率全部为10%,手续费全部为1元每手)
+    // 从数据库中读取合约的保证金率和手续费.
+    // 临时措施:对数据库中没有数据的合约,将合约的保证金率和手续费率初始化(保证金率为10%,手续费为1元每手)
     auto initializeCommissionRateAndMarginRate = [&]() {
         CThostFtdcInstrumentMarginRateField MarginRate = { 0 };
         MarginRate.LongMarginRatioByMoney = 0.1;
@@ -907,8 +994,32 @@ void CLocalTraderApi::Init() {
             strncpy(CommissionRate.InstrumentID, instr.second.InstrumentID, sizeof(CommissionRate.InstrumentID));
             m_instrumentCommissionRateData[instr.first] = CommissionRate;
         }
+
+        CSqliteHandler::SQL_VALUES marinRateSqlValues;
+        sqlHandler.SelectData(CThostFtdcInstrumentMarginRateFieldWrapper::SELECT_SQL, marinRateSqlValues);
+        for (const auto& rowData : marinRateSqlValues)
+        {
+            CThostFtdcInstrumentMarginRateFieldWrapper marginRate(rowData);
+            m_instrumentMarginRateData[marginRate.data.InstrumentID] = marginRate.data;
+        }
+#ifdef _DEBUG
+        std::cout << "Total instrument marinRate count from table in database: "
+            << marinRateSqlValues.size() << std::endl;
+#endif
+        CSqliteHandler::SQL_VALUES commissionRateSqlValues;
+        sqlHandler.SelectData(CThostFtdcInstrumentCommissionRateFieldWrapper::SELECT_SQL, commissionRateSqlValues);
+        for (const auto& rowData : commissionRateSqlValues)
+        {
+            CThostFtdcInstrumentCommissionRateFieldWrapper commissionRate(rowData);
+            m_instrumentCommissionRateData[commissionRate.data.InstrumentID] = commissionRate.data;
+        }
+#ifdef _DEBUG
+        std::cout << "Total instrument CommissionRate count from table in database: "
+            << commissionRateSqlValues.size() << std::endl;
+#endif
     };
     initializeCommissionRateAndMarginRate();
+
 
     if (m_pSpi == nullptr) return;
 
@@ -1068,6 +1179,7 @@ int CLocalTraderApi::ReqUserLogin(CThostFtdcReqUserLoginField *pReqUserLoginFiel
     strncpy(RspUserLogin.INETime, RspUserLogin.LoginTime, sizeof(RspUserLogin.INETime));
     strncpy(RspUserLogin.SystemName, "LocalCTP", sizeof(RspUserLogin.SystemName));
     strncpy(RspUserLogin.MaxOrderRef, "1", sizeof(RspUserLogin.MaxOrderRef));
+    RspUserLogin.FrontID = m_frontID;
     m_sessionID = maxSessionID++;
     RspUserLogin.SessionID = m_sessionID;
     m_pSpi->OnRspUserLogin(&RspUserLogin, &m_successRspInfo, nRequestID, true);
@@ -1191,13 +1303,6 @@ int CLocalTraderApi::ReqOrderInsertImpl(CThostFtdcInputOrderField * pInputOrder,
             sendRejectOrder((std::string(ErrMsg_NoMarketData) + pInputOrder->InstrumentID).c_str());
             return 0;
         }
-    }
-
-    if (isConditionalType(pInputOrder->ContingentCondition))
-    {
-        OrderData x(this, *pInputOrder, true);
-        m_contionalOrders.emplace(x.rtnOrder.OrderSysID, x);
-        return 0;
     }
 
     std::string instr = pInputOrder->InstrumentID;
@@ -1357,6 +1462,11 @@ int CLocalTraderApi::ReqOrderInsertImpl(CThostFtdcInputOrderField * pInputOrder,
 
     auto doRiskCheck = [&](bool preCheck) -> std::pair<bool, std::string>
     {
+        // not check riskcontrol on conditional orders
+        if (isConditionalType(pInputOrder->ContingentCondition))
+        {
+            return std::make_pair(true, std::string());
+        }
         if (isOpen(pInputOrder->CombOffsetFlag[0]))
         {
             if (itInstr->second.ProductClass == THOST_FTDC_PC_Combination)
@@ -1428,22 +1538,56 @@ int CLocalTraderApi::ReqOrderInsertImpl(CThostFtdcInputOrderField * pInputOrder,
 
     std::map<int, OrderData>::iterator itOrder;
     {
-        int OrderRef = atoi(pInputOrder->OrderRef);
+        int OrderRef = ::atoi(pInputOrder->OrderRef);
+        const auto sessionKey = generateSessionKey(m_frontID, m_sessionID);
         std::lock_guard<std::mutex> orderGuard(m_orderMtx);
+        auto getMaxOrderRef = [&](int& _maxOrderRef) -> bool
+        {
+            auto itSessionOrder = m_orderData.find(sessionKey);
+            if (itSessionOrder == m_orderData.end() || itSessionOrder->second.empty())
+            {
+                return false;
+            }
+            _maxOrderRef = (--(itSessionOrder->second.end()))->first;
+            return true;
+        };
+        int maxOrderRef = 0;
+        bool getmaxOrderRefRet = getMaxOrderRef(maxOrderRef);
+        std::unique_ptr<OrderData> x;
         if (strlen(pInputOrder->OrderRef) != 0)// check the OrderRef if OrderRef in order is not empty
         {
-            if (!m_orderData.empty() && OrderRef < (--m_orderData.end())->first)
+            if(getmaxOrderRefRet && OrderRef < maxOrderRef)
             {
                 sendRejectOrder(ErrMsgDuplicateOrder);
                 return 0;
             }
+            else
+            {
+                // OrderRef is allowed
+                x.reset(new OrderData(this, *pInputOrder, relativeOrderSysID));
+            }
         }
-        OrderData x(this, *pInputOrder, false, relativeOrderSysID);
+        else
+        {
+            // if OrderRef is empty, we need set it to a valid value
+            OrderRef = getmaxOrderRefRet ? (maxOrderRef + 1) : 1;
+            auto InputOrder = *pInputOrder;
+            strncpy(InputOrder.OrderRef, std::to_string(OrderRef).c_str(),
+                sizeof(InputOrder.OrderRef));
+            x.reset(new OrderData(this, InputOrder, relativeOrderSysID));
+        }
+
         bool emplaceSuccess(false);
-        std::tie(itOrder, emplaceSuccess) = m_orderData.emplace(OrderRef, x);
+        std::tie(itOrder, emplaceSuccess) = m_orderData[sessionKey].emplace(OrderRef, *x);
         if (!emplaceSuccess)
         {
             sendRejectOrder(ErrMsgDuplicateOrder);
+            return 0;
+        }
+
+        if (isConditionalType(pInputOrder->ContingentCondition))
+        {
+            m_contionalOrders.emplace_back(&(itOrder->second));
             return 0;
         }
     }
@@ -1511,34 +1655,40 @@ int CLocalTraderApi::ReqOrderAction(CThostFtdcInputOrderActionField *pInputOrder
         m_pSpi->OnRspOrderAction(pInputOrderAction, setErrorMsgAndGetRspInfo(ErrMsg_NotSupportModifyOrder), nRequestID, true);
         return 0;
     }
+    const auto sessionKey = generateSessionKey(pInputOrderAction->FrontID, pInputOrderAction->SessionID);
     int OrderRef = atoi(pInputOrderAction->OrderRef);
     {
         std::lock_guard<std::mutex> orderGuard(m_orderMtx);
-        auto itOrder = m_orderData.find(OrderRef);
         // first, we find order by "OrderRef + FrontID + SessionID" (and, the InstrumentID must be valid)
-        if (itOrder != m_orderData.end())
+        auto it = m_orderData.find(sessionKey);
+        if (it != m_orderData.end())
         {
-            auto& order = itOrder->second;
-            if (order.isDone() ||
-                order.rtnOrder.FrontID != pInputOrderAction->FrontID ||
-                order.rtnOrder.SessionID != pInputOrderAction->SessionID ||
-                strcmp( order.rtnOrder.InstrumentID, pInputOrderAction->InstrumentID) != 0)
+            auto itOrder = it->second.find(OrderRef);
+            if (itOrder != it->second.end())
             {
-                if (m_pSpi == nullptr) return 0;
-                m_pSpi->OnRspOrderAction(pInputOrderAction, setErrorMsgAndGetRspInfo(
-                    order.isDone() ? ErrMsg_AlreadyDoneOrder : ErrMsg_NotExistOrder),
-                    nRequestID, true);
-                return 0;
-            }
-            else
-            {
-                order.handleCancel();
-                return 0;
+                auto& order = itOrder->second;
+                if (order.isDone() ||
+                    order.rtnOrder.FrontID != pInputOrderAction->FrontID ||
+                    order.rtnOrder.SessionID != pInputOrderAction->SessionID ||
+                    strcmp(order.rtnOrder.InstrumentID, pInputOrderAction->InstrumentID) != 0)
+                {
+                    if (m_pSpi == nullptr) return 0;
+                    m_pSpi->OnRspOrderAction(pInputOrderAction, setErrorMsgAndGetRspInfo(
+                        order.isDone() ? ErrMsg_AlreadyDoneOrder : ErrMsg_NotExistOrder),
+                        nRequestID, true);
+                    return 0;
+                }
+                else
+                {
+                    order.handleCancel();
+                    return 0;
+                }
             }
         }
-        else // second, we find order by "OrderSysID + ExchangeID"
+        // second, we find order by "OrderSysID + ExchangeID"
+        for (auto& sessionOrderPair : m_orderData)
         {
-            for (auto& orderPair : m_orderData)
+            for (auto& orderPair : sessionOrderPair.second)
             {
                 auto& order = orderPair.second;
                 if (strcmp(order.rtnOrder.OrderSysID, pInputOrderAction->OrderSysID) == 0 &&
@@ -1547,10 +1697,8 @@ int CLocalTraderApi::ReqOrderAction(CThostFtdcInputOrderActionField *pInputOrder
                     order.handleCancel();
                     return 0;
                 }
-
             }
         }
-        
     }
     if (m_pSpi == nullptr) return 0;
     m_pSpi->OnRspOrderAction(pInputOrderAction, setErrorMsgAndGetRspInfo(ErrMsg_NotExistOrder), nRequestID, true);
@@ -1603,14 +1751,17 @@ int CLocalTraderApi::ReqQryOrder(CThostFtdcQryOrderField *pQryOrder, int nReques
     std::vector<CThostFtdcOrderField*> v;
     {
         std::lock_guard<std::mutex> orderGuard(m_orderMtx);
-        for (auto& o : m_orderData)
+        for (auto& sessionOrders : m_orderData)
         {
-            auto& rtnOrder = o.second.rtnOrder;
-            if (COMPARE_MEMBER_MATCH(pQryOrder, rtnOrder, ExchangeID) &&
-                COMPARE_MEMBER_MATCH(pQryOrder, rtnOrder, OrderSysID) &&
-                COMPARE_MEMBER_MATCH(pQryOrder, rtnOrder, InstrumentID))
+            for (auto& o : sessionOrders.second)
             {
-                v.emplace_back(&rtnOrder);
+                auto& rtnOrder = o.second.rtnOrder;
+                if (COMPARE_MEMBER_MATCH(pQryOrder, rtnOrder, ExchangeID) &&
+                    COMPARE_MEMBER_MATCH(pQryOrder, rtnOrder, OrderSysID) &&
+                    COMPARE_MEMBER_MATCH(pQryOrder, rtnOrder, InstrumentID))
+                {
+                    v.emplace_back(&rtnOrder);
+                }
             }
         }
     }
@@ -1632,15 +1783,18 @@ int CLocalTraderApi::ReqQryTrade(CThostFtdcQryTradeField *pQryTrade, int nReques
     std::vector<CThostFtdcTradeField*> v;
     {
         std::lock_guard<std::mutex> orderGuard(m_orderMtx);
-        for (auto& o : m_orderData)
+        for (auto& sessionOrders : m_orderData)
         {
-            for (auto& t : o.second.rtnTrades)
+            for (auto& o : sessionOrders.second)
             {
-                if (COMPARE_MEMBER_MATCH(pQryTrade, t, ExchangeID) &&
-                    COMPARE_MEMBER_MATCH(pQryTrade, t, TradeID) &&
-                    COMPARE_MEMBER_MATCH(pQryTrade, t, InstrumentID))
+                for (auto& t : o.second.rtnTrades)
                 {
-                    v.emplace_back(&t);
+                    if (COMPARE_MEMBER_MATCH(pQryTrade, t, ExchangeID) &&
+                        COMPARE_MEMBER_MATCH(pQryTrade, t, TradeID) &&
+                        COMPARE_MEMBER_MATCH(pQryTrade, t, InstrumentID))
+                    {
+                        v.emplace_back(&t);
+                    }
                 }
             }
         }
