@@ -1,6 +1,8 @@
 ﻿#include "stdafx.h"
 #include "LocalTraderApi.h"
+#include "LocalMDApi.h"
 #include <iostream>
+#include <iomanip>
 
 using namespace localCTP;
 
@@ -106,7 +108,7 @@ bool CLocalTraderApi::isMatchTrade(TThostFtdcDirectionType direction, double ord
 CLocalTraderApi::CLocalTraderApi(const char *pszFlowPath/* = ""*/)
 	: m_bRunning(false), m_authenticated(false), m_logined(false)
     , m_frontID(static_cast<int>(CLeeDateTime::GetCurrentTime().Get_time_t())), m_sessionID(0)
-    , m_tradingAccount{ 0 }, m_pSpi(nullptr)
+    , m_tradingAccount{ 0 }, m_pSpi(nullptr), m_pMDApi(nullptr)
     , m_successRspInfo{ 0, "success" }, m_errorRspInfo{ -1, "error" }
 {
     m_tradingAccount.PreBalance = 2e7;
@@ -1160,7 +1162,14 @@ void CLocalTraderApi::Init() {
     };
     initializeCommissionRateAndMarginRate();
 
+    //初始化行情API
+    m_pMDApi->Init();
+    
+    //等待行情服务器登陆成功
+    WaitForSingleObject(m_pMdSpi->xinhao, INFINITE);
 
+    //订阅所有的合约
+    SubscribeMarketData();
     if (m_pSpi == nullptr) return;
 
     m_pSpi->OnFrontConnected();
@@ -1171,6 +1180,7 @@ void CLocalTraderApi::Init() {
 ///@return 线程退出代码
 int CLocalTraderApi::Join() {
     // Do nothing
+    m_pMDApi->Join();
 	return 0;
 }
 
@@ -1227,7 +1237,17 @@ const char* CLocalTraderApi::GetTradingDay() {
 ///@remark 网络地址的格式为：“protocol://ipaddress:port”，如：”tcp://127.0.0.1:17001”。 
 ///@remark “tcp”代表传输协议，“127.0.0.1”代表服务器地址。”17001”代表服务器端口号。
 // 本API不联网, 无需注册到前置机.
-void CLocalTraderApi::RegisterFront(char *pszFrontAddress) { return; }
+void CLocalTraderApi::RegisterFront(char *pszFrontAddress) {
+
+    //生成行情API，并且连接，这样后续收到tick后可以投喂
+    m_pMDApi = CThostFtdcMdApi::CreateFtdcMdApi();
+    m_pMdSpi = std::make_unique<CLocalMdSpi>(m_pMDApi, this);
+    m_pMDApi->RegisterSpi(m_pMdSpi.get());
+
+    m_pMDApi->RegisterFront(pszFrontAddress);
+
+    return; 
+}
 
 ///注册名字服务器网络地址
 ///@param pszNsAddress：名字服务器网络地址。
@@ -2370,4 +2390,96 @@ int CLocalTraderApi::ReqQuoteInsert(CThostFtdcInputQuoteField* pInputQuote, int 
 
     onSnapshot(newMd);
     return 0;
+}
+
+///请求查询分类合约
+int CLocalTraderApi::ReqQryClassifiedInstrument(CThostFtdcQryClassifiedInstrumentField *pQryClassifiedInstrument, int nRequestID) {
+    if (pQryClassifiedInstrument == nullptr || !m_logined) return -1;
+    if (m_pSpi == nullptr) return 0;
+    std::vector<CThostFtdcInstrumentField*> v;
+    v.reserve(1000); // maybe less than this count ?
+    for (auto& instrPair : m_instrData)
+    {
+        CThostFtdcInstrumentField& instr = instrPair.second;
+        auto matchClassType = [&]() -> bool {
+            switch (pQryClassifiedInstrument->ClassType)
+            {
+            case THOST_FTDC_INS_ALL:
+                return true;
+            case THOST_FTDC_INS_FUTURE:
+                return instr.ProductClass == THOST_FTDC_PC_Futures || instr.ProductClass == THOST_FTDC_PC_Spot ||
+                    instr.ProductClass == THOST_FTDC_PC_EFP || instr.ProductClass == THOST_FTDC_PC_TAS ||
+                    instr.ProductClass == THOST_FTDC_PC_MI;
+            case THOST_FTDC_INS_OPTION:
+                return instr.ProductClass == THOST_FTDC_PC_Options || instr.ProductClass == THOST_FTDC_PC_SpotOption;
+            case THOST_FTDC_INS_COMB:
+                return instr.ProductClass == THOST_FTDC_PC_Combination;
+            default:
+                return false;
+            }
+        };
+        if (!matchClassType())
+        {
+            continue;
+        }
+        if (COMPARE_MEMBER_MATCH(pQryClassifiedInstrument, instr, ExchangeID) &&
+            COMPARE_MEMBER_MATCH(pQryClassifiedInstrument, instr, ProductID) &&
+            COMPARE_MEMBER_MATCH(pQryClassifiedInstrument, instr, InstrumentID))
+        {
+            v.emplace_back(&instr);
+        }
+    }
+    for (auto it = v.begin(); it != v.end(); ++it)
+    {
+        m_pSpi->OnRspQryClassifiedInstrument(*it, &m_successRspInfo, nRequestID, (it + 1 == v.end() ? true : false));
+    }
+    if (v.empty())
+    {
+        m_pSpi->OnRspQryClassifiedInstrument(nullptr, &m_successRspInfo, nRequestID, true);
+    }
+    return 0;
+}
+
+
+//订阅所有的合约
+void CLocalTraderApi::SubscribeMarketData()
+{
+    int md_num = 0;
+    char** ppInstrumentID = new char* [5000]; //合约数量不要超过5000
+
+    std::vector<std::string> md_InstrumentID;    
+
+    for (auto& instrPair : m_instrData)
+    {
+        CThostFtdcInstrumentField& instr = instrPair.second;
+
+        md_InstrumentID.push_back(instr.InstrumentID);
+
+    }
+
+    for (int count1 = 0; count1 <= md_InstrumentID.size() / 500; count1++)
+    {
+        if (count1 < md_InstrumentID.size() / 500)
+        {
+            int a = 0;
+            for (a; a < 500; a++)
+            {
+                ppInstrumentID[a] = const_cast<char*>(md_InstrumentID.at(md_num).c_str());
+                md_num++;
+            }
+            int result = m_pMDApi->SubscribeMarketData(ppInstrumentID, a);
+            //LOG((result == 0) ? "订阅行情请求1......发送成功\n" : "订阅行情请求1......发送失败，错误序号=[%d]\n", result);
+        }
+        else if (count1 == md_InstrumentID.size() / 500)
+        {
+            int count2 = 0;
+            for (count2; count2 < md_InstrumentID.size() % 500; count2++)
+            {
+                ppInstrumentID[count2] = const_cast<char*>(md_InstrumentID.at(md_num).c_str());
+                md_num++;
+            }
+            int result = m_pMDApi->SubscribeMarketData(ppInstrumentID, count2);
+            //LOG((result == 0) ? "订阅行情请求2......发送成功\n" : "订阅行情请求2......发送失败，错误序号=[%d]\n", result);
+        }
+    }
 }

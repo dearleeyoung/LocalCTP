@@ -5,6 +5,9 @@
 #include <cstring>
 #include <string>
 #include <fstream> // std::ofstream
+#include <thread>
+#include <chrono>
+
 #include "ThostFtdcTraderApi.h"//CTP交易的头文件
 
 CThostFtdcInputOrderField generateNewOrderMsg(const char* OrderRef, const char* InstrumentID = "MA401")
@@ -179,7 +182,21 @@ int main()
     std::cout << pApi->GetTradingDay() << std::endl;
     MySpi spi;
     pApi->RegisterSpi(&spi);
-    pApi->Init();
+
+
+    // 切换服务器的时候需要切换对应的thostmduserapi_se.dll
+    // 真实CTP的行情源
+    //char gMdFrontAddr[] = "tcp://180.169.101.177:43213";
+    //openctp 的行情源
+    char gMdFrontAddr[] = "tcp://121.37.80.177:20004";
+    // 魔改了RegisterFront 作为行情服务器的输入
+    pApi->RegisterFront(gMdFrontAddr);
+
+
+    pApi->Init();//读取 instrument.csv 合约文件, 以及数据库中的合约表和费率表
+    
+    // 休眠10秒 ，稍微停顿一下等待行情的tick到来，否则可能会导致因为没有行情的下单失败
+    std::this_thread::sleep_for(std::chrono::seconds(10));
 
     std::cout << "请输入任意数字以登录..." << std::endl;
     int i;

@@ -50,5 +50,8 @@
     <ClCompile Include="auto_generated_code\CTPSQLWrapper.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
+    <ClCompile Include="LocalMDApi.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>
