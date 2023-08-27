@@ -18,6 +18,8 @@ output2_path = "../LocalCTP/auto_generated_code/CTPSQLWrapper.cpp"
 output_api_path = "../LocalCTP/auto_generated_code/CTPApiHugeMacro.h"
 
 needConvertMemberNames = ['StatusMsg','ErrorMsg'] #需要转换编码的成员变量
+# 预先定义好主键的表. key:表名. value: 这张表的主键. 如果以后有想要保存的表并且知道主键,则可以在此处添加.
+# 如果没有手动设置主键,则默认用BrokerID+UserID/AccountID/InvestorID(如果存在)作为主键
 predefinedTableKey = {
     'CThostFtdcInvestorPositionField':['BrokerID','InvestorID','HedgeFlag','PositionDate','InstrumentID','PosiDirection'],
     'CThostFtdcInvestorPositionDetailField':['BrokerID','InvestorID','HedgeFlag','OpenDate','TradeID','InstrumentID','Direction'],
@@ -27,7 +29,7 @@ predefinedTableKey = {
     'CThostFtdcInstrumentField':['InstrumentID'],
     'CThostFtdcInstrumentMarginRateField':['BrokerID','InvestorID','InstrumentID'],
     'CThostFtdcInstrumentCommissionRateField':['BrokerID','InvestorID','InstrumentID'],
-}# 预先定义好主键的表. key:表名. value: 这张表的主键. 如果以后有想要保存的表并且知道主键,则可以在此处添加.
+}
 
 # 本系统已支持的API接口函数(比如登录请求ReqUserLogin), 无需为这些函数自动生成API重写的代码.
 # 如果用户自行实现了其他接口,则可以在这个列表中添加接口函数名.
@@ -82,6 +84,25 @@ def getSqlCreateTableField(ctpField : CTPField , memberName : str):
         section2 = "INTEGER"
     section3 = " NOT NULL"
     return section1 + section2 + section3
+
+def getPrimaryKey(ctpClass : CTPClass):
+    primaryKeyList = []
+    if ctpClass.className in predefinedTableKey:
+        primaryKeyList = predefinedTableKey[ctpClass.className]
+    else:
+        primaryKeyList = []
+        memberNameList = [x for (_ignore, x) in ctpClass.fields]
+        if 'BrokerID' in memberNameList:
+            primaryKeyList.append('BrokerID')
+        userIDNameList = ['InvestorID','AccountID','UserID']# only choose one
+        for userIDName in userIDNameList:
+            if userIDName in memberNameList:
+                primaryKeyList.append(userIDName)
+                break
+    if len(primaryKeyList) == 0: # if primary key does not exist
+        return ""
+    else:
+        return (", PRIMARY KEY(\\\""+  "\\\",\\\"".join(primaryKeyList) +"\\\")")
 
 fieldMap = {}
 ctpClasses = {}
@@ -259,7 +280,7 @@ with open(output_path, 'w') as f:
         # in CTPSQLWrapper.cpp file
         f2.write("const std::string "+className+"Wrapper::CREATE_TABLE_SQL = \"CREATE TABLE '"+className+"'(" +
             ", ".join([getSqlCreateTableField(fieldInfo,memberName) for (fieldInfo,memberName) in ctpClass.fields])
-            + ("" if className not in predefinedTableKey else (", PRIMARY KEY(\\\""+  "\\\",\\\"".join(predefinedTableKey[className]) +"\\\")"))
+            + getPrimaryKey(ctpClass)
             +");\";\n")
         f2.write("const std::string "+className+"Wrapper::SELECT_SQL = \"SELECT * FROM '"+className+"';\";\n")
         f2.write("const std::string "+className+"Wrapper::INSERT_SQL_PREFIX = \"REPLACE INTO '"+className+"' VALUES (\";\n")

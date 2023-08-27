@@ -316,7 +316,7 @@ void CLocalTraderApi::OrderData::dealTestReqOrderInsertNormal(const CThostFtdcIn
             sizeof(rtnOrder.OrderSysID));
         rtnOrder.OrderStatus = THOST_FTDC_OST_NoTradeQueueing; 
     }
-    rtnOrder.BrokerOrderSeq = OrderSysID;
+    rtnOrder.BrokerOrderSeq = static_cast<TThostFtdcSequenceNoType>(OrderSysID);
     rtnOrder.OrderSubmitStatus = THOST_FTDC_OSS_Accepted;
     strncpy(rtnOrder.StatusMsg, getStatusMsgByStatus(rtnOrder.OrderStatus).c_str(),
         sizeof(rtnOrder.StatusMsg));

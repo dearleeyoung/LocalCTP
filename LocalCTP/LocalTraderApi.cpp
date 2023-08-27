@@ -515,7 +515,7 @@ void CLocalTraderApi::updateByTrade(const CThostFtdcTradeField& t)
         m_tradingAccount.Commission += feeOfTrade;
         m_tradingAccount.CurrMargin += marginOfTrade;
         m_tradingAccount.FrozenMargin = (std::max)(m_tradingAccount.FrozenMargin - frozenMargin, 0.0);
-        updatePNL();
+        updatePNL(true);
     }
     // 平仓成交时,按"先开先平"的原则更新持仓明细,减少持仓中的冻结持仓,更新持仓和资金.
     else
@@ -666,10 +666,10 @@ void CLocalTraderApi::reloadAccountData()
             for (const auto& posDetail : posDetails)
             {
                 auto posDetailMatchPos = [&]() -> bool {
-                    bool isMatch = posDetail.InstrumentID == posData.pos.InstrumentID &&
-                        posDetail.ExchangeID == posData.pos.ExchangeID &&
-                        posDetail.BrokerID == posData.pos.BrokerID &&
-                        posDetail.InvestorID == posData.pos.InvestorID;
+                    bool isMatch = std::string(posDetail.InstrumentID) == posData.pos.InstrumentID &&
+                        std::string(posDetail.ExchangeID) == posData.pos.ExchangeID &&
+                        std::string(posDetail.BrokerID) == posData.pos.BrokerID &&
+                        std::string(posDetail.InvestorID) == posData.pos.InvestorID;
                     if (!isMatch) return isMatch;
                     if (isSpecialExchange(posData.pos.ExchangeID))
                     {
