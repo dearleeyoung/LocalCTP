@@ -43,49 +43,50 @@ exclusiveApiFunctions = ['Release','Init','Join','GetTradingDay','RegisterFront'
     'ReqQuoteInsert',
 ]
 
-
 class CTPField:
-    def __init__(self):
-        self.fieldName = ''
-        self.fieldType1 = ''
-        self.fieldType2 = 0 #length of char array. if > 0, indicate that it is a str.
+    def __init__(self, _fieldName='', _fieldType1='', _fieldType2=0):
+        self.fieldName = _fieldName
+        self.fieldType1 = _fieldType1
+        self.fieldType2 = _fieldType2 #length of char array. if > 0, indicate that it is a str.
     def isStr(self):
         return (self.fieldType2 > 0)
-    
+
 class CTPClass:
     def __init__(self):
         self.clear()
     def clear(self):
         self.className = ''
         self.fields = [] # a list of tuple -- (CTPField, memberName)
+        self.extraFields = [] # a list of tuple -- (CTPField, memberName)
 
-def getSqlInsertField(ctpField : CTPField , memberName : str):
+def getSqlInsertField(ctpField : CTPField , memberName : str, isExtraField : bool) -> str:
+    memberFullName = ("" if isExtraField else "data.") + memberName
     if ctpField.fieldType1 != 'char':
-        return "std::to_string(data."+memberName+")"
+        return "std::to_string(" + memberFullName+")"
     elif ctpField.isStr():
         if memberName in needConvertMemberNames:
-            return "gbk_to_utf8(" + "data."+memberName + ")"
+            return "gbk_to_utf8(" + memberFullName + ")"
         else:
-            return "data."+memberName
+            return memberFullName
     else: # single char, need to check whether is is '\0'
-        return "(" + "data."+memberName + " == 0 ? '0' : data."+memberName+  ")" #TODO:如果该类型有枚举值,可以保存下来并在此处使用其中一个枚举值,而不用统一的'0'
+        return "(" + memberFullName + " == 0 ? '0' : " + memberFullName+  ")" #TODO:如果该类型有枚举值,可以保存下来并在此处使用其中一个枚举值,而不用统一的'0'
 
-def getSqlCreateTableField(ctpField : CTPField , memberName : str):
+def getSqlCreateTableField(ctpField : CTPField , memberName : str) -> str:
     section1 = "'" + memberName + "' "
     if ctpField.isStr():
         section2 = "VARCHAR(" + str(ctpField.fieldType2) + ")"
-    elif ctpField.fieldType2 == "char":
+    elif ctpField.fieldType1 == "char":
         section2 = "VARCHAR(1)"
-    elif ctpField.fieldType2 == "int" or ctpField.fieldType2 == "short":
+    elif ctpField.fieldType1 == "int" or ctpField.fieldType1 == "short":
         section2 = "INTEGER"
-    elif ctpField.fieldType2 == "double" or ctpField.fieldType2 == "float":
+    elif ctpField.fieldType1 == "double" or ctpField.fieldType1 == "float":
         section2 = "DOUBLE"
     else:
         section2 = "INTEGER"
     section3 = " NOT NULL"
     return section1 + section2 + section3
 
-def getPrimaryKey(ctpClass : CTPClass):
+def getPrimaryKey(ctpClass : CTPClass) -> str:
     primaryKeyList = []
     if ctpClass.className in predefinedTableKey:
         primaryKeyList = predefinedTableKey[ctpClass.className]
@@ -106,8 +107,8 @@ def getPrimaryKey(ctpClass : CTPClass):
 
 fieldMap = {}
 ctpClasses = {}
-
-
+# extra field in XXWrapper class
+extraFieldMap = { "CThostFtdcTradeField" : [(CTPField('TThostFtdcMoneyType','double',0), "Commission"), ] }
 
 '''
 读取到的内容:
@@ -131,25 +132,34 @@ struct XWrapper
     static const std::string SELECT_SQL;
     static const std::string INSERT_SQL_PREFIX;
     X data;
+    TThostFtdcVolumeType extraInt; // <- some classes has these extra fields, they are listed in extraFieldMap
 
-    XWrapper(const X& _data = {0}) :data(_data) {}
+    XWrapper(const X& _data = {0}) :data(_data) { ::memset((char*)(this) + sizeof(data), 0, sizeof(*this) - sizeof(data)); }
     XWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
     operator X() { return data; }
 
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         strncpy(data.a, rowValue.at("a").c_str(), sizeof(A));
-        data.b = rowValue.at("B").empty() ? '0' : rowValue.at("B").c_str()[0];
-        data.c = std::stoi(rowValue.at("C"));
-        data.d = std::stod(rowValue.at("D"));
+        data.b = rowValue.at("b").empty() ? '0' : rowValue.at("b").c_str()[0];
+        data.c = std::stoi(rowValue.at("c"));
+        data.d = std::stod(rowValue.at("d"));
+        extraInt = std::stoi(rowValue.at("extraInt"));
     }
     std::string generateInsertSql() const {
         const auto insertSqlBody = std::string() + "'" +
-            data.a + "','" + data.b + "','" + std::to_string(data.c) + "','" + std::to_string(data.d)
+            data.a + "','" + data.b + "','" + std::to_string(data.c) + "','" + std::to_string(data.d) + "','" + std::to_string(extraInt)
             + "'";
         return INSERT_SQL_PREFIX + insertSqlBody + ");";
     }
+    // these below two func will be generated if X type has BrokerID and InvestorID/AccountID/UserID
+    std::string generateSelectSqlByUserID() const {
+        return generateSelectSqlByUserID(data.BrokerID, data.UserID);
+    }
+    static std::string generateSelectSqlByUserID(const std::string& BrokerID, const std::string& UserID) {
+        return "SELECT * FROM 'CThostFtdcFensUserInfoField' where BrokerID='" + BrokerID + "' and UserID='" + UserID + "';";
+    }
 };
-const std::string XWrapper::CREATE_TABLE_SQL = "CREATE TABLE 'X' ('A' VARCHAR(13) NOT NULL, 'B' VARCHAR(1) NOT NULL, 'C' INTEGER NOT NULL, 'D' DOUBLE NOT NULL );";
+const std::string XWrapper::CREATE_TABLE_SQL = "CREATE TABLE 'X' ('a' VARCHAR(13) NOT NULL, 'b' VARCHAR(1) NOT NULL, 'c' INTEGER NOT NULL, 'D' DOUBLE NOT NULL, 'extraInt' INTEGER NOT NULL );";
 const std::string XWrapper::SELECT_SQL = "SELECT * FROM 'X';";
 const std::string XWrapper::INSERT_SQL_PREFIX = "REPLACE INTO 'X' VALUES (";
 
@@ -169,7 +179,7 @@ with open(ctp_datatype_path, 'r', encoding='GBK') as f:
         if singleLine.startswith(typedefPreFix):
             typedefInfo = singleLine.split() #['typedef', 'char', 'TThostFtdcIdCardTypeType;']
             ctpField = CTPField()
-            if '[' in typedefInfo[2]: # char array.  'typedef char TThostFtdcDateType[9];'
+            if '[' in typedefInfo[2]: # char array type: 'typedef char TThostFtdcDateType[9];'
                 ctpField.fieldName = typedefInfo[2].split('[')[0] # 'TThostFtdcDateType'
                 ctpField.fieldType1 = typedefInfo[1] # 'char'
                 ctpField.fieldType2 = int(typedefInfo[2].split('[')[1].split(']')[0]) # 9
@@ -197,6 +207,8 @@ with open(ctp_struct_path, 'r', encoding='GBK') as f:
             if singleLine.startswith(structBeginPreFix): # 'struct CThostFtdcReqUserLoginField'
                 isInStruct = True
                 ctpClass.className = singleLine.split()[1] # 'CThostFtdcReqUserLoginField'
+                if ctpClass.className in extraFieldMap:
+                    ctpClass.extraFields = extraFieldMap[ctpClass.className]
         else:
             if singleLine.startswith(structEndPreFix):
                 isInStruct = False
@@ -242,44 +254,71 @@ with open(output_path, 'w') as f:
     static const std::string INSERT_SQL_PREFIX;
 ''')
         f.write(prefix + className +" data;\n")
+        for (fieldInfo,memberName) in ctpClass.extraFields:
+            f.write(prefix + fieldInfo.fieldName + " " + memberName +" ;\n")
         f.write("\n")
-        f.write(prefix + className + "Wrapper(const "+className+"& _data = {0}) :data(_data) {}\n")
-        f.write(prefix + className + "Wrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }\n")
+        f.write(prefix + className + "Wrapper(const "+className+"& _data = { 0 }) :data(_data) { "+
+            ("::memset((char*)(this) + sizeof(data), 0, sizeof(*this) - sizeof(data)); " if 0!=len(ctpClass.extraFields) else "")
+            +"}\n")
+        f.write(prefix + className + "Wrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }\n")
         f.write(prefix + "operator "+className+"() { return data; }\n")
         f.write(prefix + "void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {\n")
         temp = prefix
         prefix += tapStr
-        for field in ctpClass.fields:
-            if field[0].isStr():
-                if field[1] in needConvertMemberNames:
-                    sourceStr = ", utf8_to_gbk(rowValue.at(\""+field[1]+"\")).c_str(),"
+        memberNameList = [memberName for (_ignore, memberName) in ctpClass.fields]
+        extraMemberNames = [ memberName for (fieldInfo,memberName) in ctpClass.extraFields ]
+        for (fieldInfo,memberName) in (ctpClass.fields+ctpClass.extraFields):
+            isExtraField = (True if memberName in extraMemberNames else False)
+            memberFullName = ("" if isExtraField else "data.") + memberName
+            if fieldInfo.isStr():
+                if memberName in needConvertMemberNames:
+                    sourceStr = ", utf8_to_gbk(rowValue.at(\""+memberName+"\")).c_str(),"
                 else:
-                    sourceStr = ", rowValue.at(\""+field[1]+"\").c_str(),"
-                f.write(prefix + "strncpy(data."+field[1]+sourceStr+" sizeof("+field[0].fieldName+"));\n")
-            elif field[0].fieldType1 == 'char':
-                f.write(prefix + "data."+field[1]+" = rowValue.at(\""+field[1]+"\").empty() ? '0' : rowValue.at(\""+field[1]+"\")[0];\n")
-            elif field[0].fieldType1 == 'int' or field[0].fieldType1 == 'short':
-                f.write(prefix + "data."+field[1]+" = std::stoi(rowValue.at(\""+field[1]+"\"));\n")
-            elif field[0].fieldType1 == 'double' or field[0].fieldType1 == 'float':
-                f.write(prefix + "data."+field[1]+" = std::stod(rowValue.at(\""+field[1]+"\"));\n")
+                    sourceStr = ", rowValue.at(\""+memberName+"\").c_str(),"
+                f.write(prefix + "strncpy("+memberFullName+sourceStr+" sizeof("+fieldInfo.fieldName+"));\n")
+            elif fieldInfo.fieldType1 == 'char':
+                f.write(prefix + memberFullName+" = rowValue.at(\""+memberName+"\").empty() ? '0' : rowValue.at(\""+memberName+"\")[0];\n")
+            elif fieldInfo.fieldType1 == 'int' or fieldInfo.fieldType1 == 'short':
+                f.write(prefix + memberFullName+" = std::stoi(rowValue.at(\""+memberName+"\"));\n")
+            elif fieldInfo.fieldType1 == 'double' or fieldInfo.fieldType1 == 'float':
+                f.write(prefix + memberFullName+" = std::stod(rowValue.at(\""+memberName+"\"));\n")
             else:
-                print("Unknown type for field " + field[0].fieldName + " in class " + className)
+                print("Unknown type for field " + fieldInfo.fieldName + " in class " + className)
         prefix = temp # resume the prefix
         f.write(prefix + "}\n")
         f.write(prefix + "std::string generateInsertSql() const {\n")
         prefix += tapStr
         f.write(prefix + "const auto insertSqlBody = std::string() + \"'\" +\n")
         f.write(prefix + tapStr + " + \"','\" + ".join(
-            [ getSqlInsertField(fieldInfo,memberName) for (fieldInfo,memberName) in ctpClass.fields]) + "\n")
+            [ getSqlInsertField(fieldInfo,memberName,(True if memberName in extraMemberNames else False)) for (fieldInfo,memberName) in (ctpClass.fields+ctpClass.extraFields)])
+            + "\n")
         f.write(prefix + tapStr + "+ \"'\";" + "\n")
         f.write(prefix + "return INSERT_SQL_PREFIX + insertSqlBody + \");\";\n")
         prefix = temp # resume the prefix
         f.write(prefix + "}\n")
+        if 'BrokerID' in memberNameList:
+            userIDField = ''
+            userIDNameList = ['InvestorID','AccountID','UserID']# only choose one
+            for userIDName in userIDNameList:
+                if userIDName in memberNameList:
+                    userIDField = userIDName
+                    break
+            if len(userIDField) != 0:
+                f.write(prefix + "std::string generateSelectSqlByUserID() const {\n")
+                prefix += tapStr
+                f.write(prefix + "return generateSelectSqlByUserID(data.BrokerID, data." +userIDField+");\n")
+                prefix = temp # resume the prefix
+                f.write(prefix + "}\n")
+                f.write(prefix + "static std::string generateSelectSqlByUserID(const std::string& BrokerID, const std::string& "+userIDField+") {\n")
+                prefix += tapStr
+                f.write(prefix + "return \"SELECT * FROM '"+className+"' where BrokerID='\" + BrokerID + \"' and "+userIDField+"='\" + "+userIDField+" + \"';\";\n")
+                prefix = temp # resume the prefix
+                f.write(prefix + "}\n")
         prefix = ""
         f.write(prefix + "};\n") # end struct
         # in CTPSQLWrapper.cpp file
         f2.write("const std::string "+className+"Wrapper::CREATE_TABLE_SQL = \"CREATE TABLE '"+className+"'(" +
-            ", ".join([getSqlCreateTableField(fieldInfo,memberName) for (fieldInfo,memberName) in ctpClass.fields])
+            ", ".join([getSqlCreateTableField(fieldInfo,memberName) for (fieldInfo,memberName) in (ctpClass.fields+ctpClass.extraFields)])
             + getPrimaryKey(ctpClass)
             +");\";\n")
         f2.write("const std::string "+className+"Wrapper::SELECT_SQL = \"SELECT * FROM '"+className+"';\";\n")

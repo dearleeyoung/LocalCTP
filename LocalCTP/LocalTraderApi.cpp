@@ -53,7 +53,7 @@ void CLocalTraderApi::GetSingleContractFromCombinationContract(const std::string
 }
 
 
-// 判断是否满足成交条件. md:订单有关的合约的行情数据的列表.
+// 判断是否满足成交条件.
 bool CLocalTraderApi::isMatchTrade(TThostFtdcDirectionType direction, double orderPrice,
     const MarketDataVec& mdVec, TradePriceVec& tradePriceVec)
 {
@@ -428,9 +428,9 @@ void CLocalTraderApi::updateByCancel(const CThostFtdcOrderField& o)
 
 }
 
-void CLocalTraderApi::updateByTrade(const CThostFtdcTradeField& t)
+void CLocalTraderApi::updateByTrade(const CThostFtdcTradeFieldWrapper& t)
 {
-    const auto* pTrade = &t;
+    const auto* pTrade = &(t.data);
 
     auto it = m_instrData.find(pTrade->InstrumentID);
     if (it == m_instrData.end())
@@ -479,6 +479,8 @@ void CLocalTraderApi::updateByTrade(const CThostFtdcTradeField& t)
         double feeOfTrade = pTrade->Price * it->second.VolumeMultiple *
             pTrade->Volume * itCommissionRate->second.OpenRatioByMoney +
             pTrade->Volume * itCommissionRate->second.OpenRatioByVolume;
+        const_cast<CThostFtdcTradeFieldWrapper&>(t).Commission = feeOfTrade;
+
         auto posKey = generatePositionKey(pTrade->InstrumentID,
             pTrade->Direction,
             THOST_FTDC_PSD_Today);
@@ -590,6 +592,8 @@ void CLocalTraderApi::updateByTrade(const CThostFtdcTradeField& t)
                 closeTodayVolume * itCommissionRate->second.CloseTodayRatioByMoney +
                 closeTodayVolume * itCommissionRate->second.CloseTodayRatioByVolume;
             double feeOfTrade = feeCloseYesterdayOfTrade + feeCloseTodayOfTrade;
+            // set commission for this trade
+            const_cast<CThostFtdcTradeFieldWrapper&>(t).Commission = feeOfTrade;
 
             //重新统计持仓中的一些数据
             pos.Position = 0;// 持仓数量
@@ -638,9 +642,13 @@ void CLocalTraderApi::reloadAccountData()
     auto reloadPosition = [&]() {
         m_positionData.clear();
         CSqliteHandler::SQL_VALUES posSqlValues;
-        sqlHandler.SelectData(CThostFtdcInvestorPositionFieldWrapper::SELECT_SQL, posSqlValues);
+        sqlHandler.SelectData(
+            CThostFtdcInvestorPositionFieldWrapper::generateSelectSqlByUserID(m_brokerID,m_userID),
+            posSqlValues);
         CSqliteHandler::SQL_VALUES posDetailSqlValues;
-        sqlHandler.SelectData(CThostFtdcInvestorPositionDetailFieldWrapper::SELECT_SQL, posDetailSqlValues);
+        sqlHandler.SelectData(
+            CThostFtdcInvestorPositionDetailFieldWrapper::generateSelectSqlByUserID(m_brokerID, m_userID),
+            posDetailSqlValues);
         std::vector<CThostFtdcInvestorPositionDetailField> posDetails;
         posDetails.reserve(posDetailSqlValues.size());
         for (const auto& rowData : posDetailSqlValues)
@@ -650,11 +658,6 @@ void CLocalTraderApi::reloadAccountData()
         for (const auto& rowData : posSqlValues)
         {
             CThostFtdcInvestorPositionFieldWrapper wrapper(rowData);
-            if (m_brokerID != wrapper.data.BrokerID ||
-                m_userID != wrapper.data.InvestorID)
-            {
-                continue;
-            }
             auto itInstr = m_instrData.find(wrapper.data.InstrumentID);
             if (itInstr == m_instrData.end())
             {
@@ -666,10 +669,8 @@ void CLocalTraderApi::reloadAccountData()
             for (const auto& posDetail : posDetails)
             {
                 auto posDetailMatchPos = [&]() -> bool {
-                    bool isMatch = std::string(posDetail.InstrumentID) == posData.pos.InstrumentID &&
-                        std::string(posDetail.ExchangeID) == posData.pos.ExchangeID &&
-                        std::string(posDetail.BrokerID) == posData.pos.BrokerID &&
-                        std::string(posDetail.InvestorID) == posData.pos.InvestorID;
+                    bool isMatch = strcmp(posDetail.InstrumentID, posData.pos.InstrumentID) == 0 &&
+                        strcmp(posDetail.ExchangeID, posData.pos.ExchangeID) == 0;
                     if (!isMatch) return isMatch;
                     if (isSpecialExchange(posData.pos.ExchangeID))
                     {
@@ -696,15 +697,12 @@ void CLocalTraderApi::reloadAccountData()
 
     auto reloadTradingAccount = [&]() -> bool {
         CSqliteHandler::SQL_VALUES posSqlValues;
-        sqlHandler.SelectData(CThostFtdcTradingAccountFieldWrapper::SELECT_SQL, posSqlValues);
+        sqlHandler.SelectData(
+            CThostFtdcTradingAccountFieldWrapper::generateSelectSqlByUserID(m_brokerID, m_userID),
+            posSqlValues);
         for (const auto& rowData : posSqlValues)
         {
             CThostFtdcTradingAccountFieldWrapper wrapper(rowData);
-            if (m_brokerID != wrapper.data.BrokerID ||
-                m_userID != wrapper.data.AccountID)
-            {
-                continue;
-            }
             m_tradingAccount = wrapper;
             return true;
         }
@@ -716,16 +714,16 @@ void CLocalTraderApi::reloadAccountData()
     }
 
     std::vector<CThostFtdcOrderField> ordersInDb;
-    std::vector<CThostFtdcTradeField> tradesInDb;
+    std::vector<CThostFtdcTradeFieldWrapper> tradesInDb;
     auto reloadOrder = [&]() {
         CSqliteHandler::SQL_VALUES posSqlValues;
-        sqlHandler.SelectData(CThostFtdcOrderFieldWrapper::SELECT_SQL, posSqlValues);
+        sqlHandler.SelectData(
+            CThostFtdcOrderFieldWrapper::generateSelectSqlByUserID(m_brokerID, m_userID),
+            posSqlValues);
         for (const auto& rowData : posSqlValues)
         {
             CThostFtdcOrderFieldWrapper wrapper(rowData);
-            if (m_brokerID != wrapper.data.BrokerID ||
-                m_userID != wrapper.data.InvestorID ||
-                strcmp(GetTradingDay(), wrapper.data.TradingDay) != 0)// only select today's orders
+            if (strcmp(GetTradingDay(), wrapper.data.TradingDay) != 0)// only select today's orders
             {
                 continue;
             }
@@ -734,17 +732,17 @@ void CLocalTraderApi::reloadAccountData()
     };
     auto reloadTrade = [&]() {
         CSqliteHandler::SQL_VALUES posSqlValues;
-        sqlHandler.SelectData(CThostFtdcTradeFieldWrapper::SELECT_SQL, posSqlValues);
+        sqlHandler.SelectData(
+            CThostFtdcTradeFieldWrapper::generateSelectSqlByUserID(m_brokerID, m_userID),
+            posSqlValues);
         for (const auto& rowData : posSqlValues)
         {
             CThostFtdcTradeFieldWrapper wrapper(rowData);
-            if (m_brokerID != wrapper.data.BrokerID ||
-                m_userID != wrapper.data.InvestorID ||
-                strcmp(GetTradingDay(), wrapper.data.TradingDay) != 0)// only select today's trades
+            if (strcmp(GetTradingDay(), wrapper.data.TradingDay) != 0)// only select today's trades
             {
                 continue;
             }
-            tradesInDb.emplace_back(wrapper.data);
+            tradesInDb.emplace_back(wrapper);
         }
     };
     reloadOrder();
@@ -757,8 +755,8 @@ void CLocalTraderApi::reloadAccountData()
             OrderData o(this, order);
             for (auto& trade : tradesInDb)
             {
-                if (strcmp(trade.OrderSysID, order.OrderSysID) == 0 &&
-                    strcmp(trade.ExchangeID, order.ExchangeID) == 0)
+                if (strcmp(trade.data.OrderSysID, order.OrderSysID) == 0 &&
+                    strcmp(trade.data.ExchangeID, order.ExchangeID) == 0)
                 {
                     o.rtnTrades.emplace_back(trade);
                 }
@@ -819,7 +817,7 @@ void CLocalTraderApi::saveOrderToDb(const CThostFtdcOrderField& order)
     }
 }
 
-void CLocalTraderApi::saveTradeToDb(const CThostFtdcTradeField& trade)
+void CLocalTraderApi::saveTradeToDb(const CThostFtdcTradeFieldWrapper& trade)
 {
     const std::string sqlStr = CThostFtdcTradeFieldWrapper(trade).generateInsertSql();
     bool ret = sqlHandler.Insert(sqlStr);
@@ -1789,11 +1787,11 @@ int CLocalTraderApi::ReqQryTrade(CThostFtdcQryTradeField *pQryTrade, int nReques
             {
                 for (auto& t : o.second.rtnTrades)
                 {
-                    if (COMPARE_MEMBER_MATCH(pQryTrade, t, ExchangeID) &&
-                        COMPARE_MEMBER_MATCH(pQryTrade, t, TradeID) &&
-                        COMPARE_MEMBER_MATCH(pQryTrade, t, InstrumentID))
+                    if (COMPARE_MEMBER_MATCH(pQryTrade, t.data, ExchangeID) &&
+                        COMPARE_MEMBER_MATCH(pQryTrade, t.data, TradeID) &&
+                        COMPARE_MEMBER_MATCH(pQryTrade, t.data, InstrumentID))
                     {
-                        v.emplace_back(&t);
+                        v.emplace_back(&(t.data));
                     }
                 }
             }

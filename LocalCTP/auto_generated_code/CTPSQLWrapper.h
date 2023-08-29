@@ -13,8 +13,8 @@ struct CThostFtdcDisseminationFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcDisseminationField data;
 
-    CThostFtdcDisseminationFieldWrapper(const CThostFtdcDisseminationField& _data = {0}) :data(_data) {}
-    CThostFtdcDisseminationFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcDisseminationFieldWrapper(const CThostFtdcDisseminationField& _data = { 0 }) :data(_data) { }
+    CThostFtdcDisseminationFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcDisseminationField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         data.SequenceSeries = std::stoi(rowValue.at("SequenceSeries"));
@@ -36,8 +36,8 @@ struct CThostFtdcReqUserLoginFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcReqUserLoginField data;
 
-    CThostFtdcReqUserLoginFieldWrapper(const CThostFtdcReqUserLoginField& _data = {0}) :data(_data) {}
-    CThostFtdcReqUserLoginFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcReqUserLoginFieldWrapper(const CThostFtdcReqUserLoginField& _data = { 0 }) :data(_data) { }
+    CThostFtdcReqUserLoginFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcReqUserLoginField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         strncpy(data.TradingDay, rowValue.at("TradingDay").c_str(), sizeof(TThostFtdcDateType));
@@ -60,6 +60,12 @@ struct CThostFtdcReqUserLoginFieldWrapper
             + "'";
         return INSERT_SQL_PREFIX + insertSqlBody + ");";
     }
+    std::string generateSelectSqlByUserID() const {
+        return generateSelectSqlByUserID(data.BrokerID, data.UserID);
+    }
+    static std::string generateSelectSqlByUserID(const std::string& BrokerID, const std::string& UserID) {
+        return "SELECT * FROM 'CThostFtdcReqUserLoginField' where BrokerID='" + BrokerID + "' and UserID='" + UserID + "';";
+    }
 };
 
 struct CThostFtdcRspUserLoginFieldWrapper
@@ -70,8 +76,8 @@ struct CThostFtdcRspUserLoginFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcRspUserLoginField data;
 
-    CThostFtdcRspUserLoginFieldWrapper(const CThostFtdcRspUserLoginField& _data = {0}) :data(_data) {}
-    CThostFtdcRspUserLoginFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcRspUserLoginFieldWrapper(const CThostFtdcRspUserLoginField& _data = { 0 }) :data(_data) { }
+    CThostFtdcRspUserLoginFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcRspUserLoginField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         strncpy(data.TradingDay, rowValue.at("TradingDay").c_str(), sizeof(TThostFtdcDateType));
@@ -94,6 +100,12 @@ struct CThostFtdcRspUserLoginFieldWrapper
             + "'";
         return INSERT_SQL_PREFIX + insertSqlBody + ");";
     }
+    std::string generateSelectSqlByUserID() const {
+        return generateSelectSqlByUserID(data.BrokerID, data.UserID);
+    }
+    static std::string generateSelectSqlByUserID(const std::string& BrokerID, const std::string& UserID) {
+        return "SELECT * FROM 'CThostFtdcRspUserLoginField' where BrokerID='" + BrokerID + "' and UserID='" + UserID + "';";
+    }
 };
 
 struct CThostFtdcUserLogoutFieldWrapper
@@ -104,8 +116,8 @@ struct CThostFtdcUserLogoutFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcUserLogoutField data;
 
-    CThostFtdcUserLogoutFieldWrapper(const CThostFtdcUserLogoutField& _data = {0}) :data(_data) {}
-    CThostFtdcUserLogoutFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcUserLogoutFieldWrapper(const CThostFtdcUserLogoutField& _data = { 0 }) :data(_data) { }
+    CThostFtdcUserLogoutFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcUserLogoutField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         strncpy(data.BrokerID, rowValue.at("BrokerID").c_str(), sizeof(TThostFtdcBrokerIDType));
@@ -117,6 +129,12 @@ struct CThostFtdcUserLogoutFieldWrapper
             + "'";
         return INSERT_SQL_PREFIX + insertSqlBody + ");";
     }
+    std::string generateSelectSqlByUserID() const {
+        return generateSelectSqlByUserID(data.BrokerID, data.UserID);
+    }
+    static std::string generateSelectSqlByUserID(const std::string& BrokerID, const std::string& UserID) {
+        return "SELECT * FROM 'CThostFtdcUserLogoutField' where BrokerID='" + BrokerID + "' and UserID='" + UserID + "';";
+    }
 };
 
 struct CThostFtdcForceUserLogoutFieldWrapper
@@ -127,8 +145,8 @@ struct CThostFtdcForceUserLogoutFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcForceUserLogoutField data;
 
-    CThostFtdcForceUserLogoutFieldWrapper(const CThostFtdcForceUserLogoutField& _data = {0}) :data(_data) {}
-    CThostFtdcForceUserLogoutFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcForceUserLogoutFieldWrapper(const CThostFtdcForceUserLogoutField& _data = { 0 }) :data(_data) { }
+    CThostFtdcForceUserLogoutFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcForceUserLogoutField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         strncpy(data.BrokerID, rowValue.at("BrokerID").c_str(), sizeof(TThostFtdcBrokerIDType));
@@ -140,6 +158,12 @@ struct CThostFtdcForceUserLogoutFieldWrapper
             + "'";
         return INSERT_SQL_PREFIX + insertSqlBody + ");";
     }
+    std::string generateSelectSqlByUserID() const {
+        return generateSelectSqlByUserID(data.BrokerID, data.UserID);
+    }
+    static std::string generateSelectSqlByUserID(const std::string& BrokerID, const std::string& UserID) {
+        return "SELECT * FROM 'CThostFtdcForceUserLogoutField' where BrokerID='" + BrokerID + "' and UserID='" + UserID + "';";
+    }
 };
 
 struct CThostFtdcReqAuthenticateFieldWrapper
@@ -150,8 +174,8 @@ struct CThostFtdcReqAuthenticateFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcReqAuthenticateField data;
 
-    CThostFtdcReqAuthenticateFieldWrapper(const CThostFtdcReqAuthenticateField& _data = {0}) :data(_data) {}
-    CThostFtdcReqAuthenticateFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcReqAuthenticateFieldWrapper(const CThostFtdcReqAuthenticateField& _data = { 0 }) :data(_data) { }
+    CThostFtdcReqAuthenticateFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcReqAuthenticateField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         strncpy(data.BrokerID, rowValue.at("BrokerID").c_str(), sizeof(TThostFtdcBrokerIDType));
@@ -166,6 +190,12 @@ struct CThostFtdcReqAuthenticateFieldWrapper
             + "'";
         return INSERT_SQL_PREFIX + insertSqlBody + ");";
     }
+    std::string generateSelectSqlByUserID() const {
+        return generateSelectSqlByUserID(data.BrokerID, data.UserID);
+    }
+    static std::string generateSelectSqlByUserID(const std::string& BrokerID, const std::string& UserID) {
+        return "SELECT * FROM 'CThostFtdcReqAuthenticateField' where BrokerID='" + BrokerID + "' and UserID='" + UserID + "';";
+    }
 };
 
 struct CThostFtdcRspAuthenticateFieldWrapper
@@ -176,8 +206,8 @@ struct CThostFtdcRspAuthenticateFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcRspAuthenticateField data;
 
-    CThostFtdcRspAuthenticateFieldWrapper(const CThostFtdcRspAuthenticateField& _data = {0}) :data(_data) {}
-    CThostFtdcRspAuthenticateFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcRspAuthenticateFieldWrapper(const CThostFtdcRspAuthenticateField& _data = { 0 }) :data(_data) { }
+    CThostFtdcRspAuthenticateFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcRspAuthenticateField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         strncpy(data.BrokerID, rowValue.at("BrokerID").c_str(), sizeof(TThostFtdcBrokerIDType));
@@ -192,6 +222,12 @@ struct CThostFtdcRspAuthenticateFieldWrapper
             + "'";
         return INSERT_SQL_PREFIX + insertSqlBody + ");";
     }
+    std::string generateSelectSqlByUserID() const {
+        return generateSelectSqlByUserID(data.BrokerID, data.UserID);
+    }
+    static std::string generateSelectSqlByUserID(const std::string& BrokerID, const std::string& UserID) {
+        return "SELECT * FROM 'CThostFtdcRspAuthenticateField' where BrokerID='" + BrokerID + "' and UserID='" + UserID + "';";
+    }
 };
 
 struct CThostFtdcAuthenticationInfoFieldWrapper
@@ -202,8 +238,8 @@ struct CThostFtdcAuthenticationInfoFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcAuthenticationInfoField data;
 
-    CThostFtdcAuthenticationInfoFieldWrapper(const CThostFtdcAuthenticationInfoField& _data = {0}) :data(_data) {}
-    CThostFtdcAuthenticationInfoFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcAuthenticationInfoFieldWrapper(const CThostFtdcAuthenticationInfoField& _data = { 0 }) :data(_data) { }
+    CThostFtdcAuthenticationInfoFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcAuthenticationInfoField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         strncpy(data.BrokerID, rowValue.at("BrokerID").c_str(), sizeof(TThostFtdcBrokerIDType));
@@ -222,6 +258,12 @@ struct CThostFtdcAuthenticationInfoFieldWrapper
             + "'";
         return INSERT_SQL_PREFIX + insertSqlBody + ");";
     }
+    std::string generateSelectSqlByUserID() const {
+        return generateSelectSqlByUserID(data.BrokerID, data.UserID);
+    }
+    static std::string generateSelectSqlByUserID(const std::string& BrokerID, const std::string& UserID) {
+        return "SELECT * FROM 'CThostFtdcAuthenticationInfoField' where BrokerID='" + BrokerID + "' and UserID='" + UserID + "';";
+    }
 };
 
 struct CThostFtdcRspUserLogin2FieldWrapper
@@ -232,8 +274,8 @@ struct CThostFtdcRspUserLogin2FieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcRspUserLogin2Field data;
 
-    CThostFtdcRspUserLogin2FieldWrapper(const CThostFtdcRspUserLogin2Field& _data = {0}) :data(_data) {}
-    CThostFtdcRspUserLogin2FieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcRspUserLogin2FieldWrapper(const CThostFtdcRspUserLogin2Field& _data = { 0 }) :data(_data) { }
+    CThostFtdcRspUserLogin2FieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcRspUserLogin2Field() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         strncpy(data.TradingDay, rowValue.at("TradingDay").c_str(), sizeof(TThostFtdcDateType));
@@ -257,6 +299,12 @@ struct CThostFtdcRspUserLogin2FieldWrapper
             + "'";
         return INSERT_SQL_PREFIX + insertSqlBody + ");";
     }
+    std::string generateSelectSqlByUserID() const {
+        return generateSelectSqlByUserID(data.BrokerID, data.UserID);
+    }
+    static std::string generateSelectSqlByUserID(const std::string& BrokerID, const std::string& UserID) {
+        return "SELECT * FROM 'CThostFtdcRspUserLogin2Field' where BrokerID='" + BrokerID + "' and UserID='" + UserID + "';";
+    }
 };
 
 struct CThostFtdcTransferHeaderFieldWrapper
@@ -267,8 +315,8 @@ struct CThostFtdcTransferHeaderFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcTransferHeaderField data;
 
-    CThostFtdcTransferHeaderFieldWrapper(const CThostFtdcTransferHeaderField& _data = {0}) :data(_data) {}
-    CThostFtdcTransferHeaderFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcTransferHeaderFieldWrapper(const CThostFtdcTransferHeaderField& _data = { 0 }) :data(_data) { }
+    CThostFtdcTransferHeaderFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcTransferHeaderField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         strncpy(data.Version, rowValue.at("Version").c_str(), sizeof(TThostFtdcVersionType));
@@ -301,8 +349,8 @@ struct CThostFtdcTransferBankToFutureReqFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcTransferBankToFutureReqField data;
 
-    CThostFtdcTransferBankToFutureReqFieldWrapper(const CThostFtdcTransferBankToFutureReqField& _data = {0}) :data(_data) {}
-    CThostFtdcTransferBankToFutureReqFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcTransferBankToFutureReqFieldWrapper(const CThostFtdcTransferBankToFutureReqField& _data = { 0 }) :data(_data) { }
+    CThostFtdcTransferBankToFutureReqFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcTransferBankToFutureReqField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         strncpy(data.FutureAccount, rowValue.at("FutureAccount").c_str(), sizeof(TThostFtdcAccountIDType));
@@ -328,8 +376,8 @@ struct CThostFtdcTransferBankToFutureRspFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcTransferBankToFutureRspField data;
 
-    CThostFtdcTransferBankToFutureRspFieldWrapper(const CThostFtdcTransferBankToFutureRspField& _data = {0}) :data(_data) {}
-    CThostFtdcTransferBankToFutureRspFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcTransferBankToFutureRspFieldWrapper(const CThostFtdcTransferBankToFutureRspField& _data = { 0 }) :data(_data) { }
+    CThostFtdcTransferBankToFutureRspFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcTransferBankToFutureRspField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         strncpy(data.RetCode, rowValue.at("RetCode").c_str(), sizeof(TThostFtdcRetCodeType));
@@ -355,8 +403,8 @@ struct CThostFtdcTransferFutureToBankReqFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcTransferFutureToBankReqField data;
 
-    CThostFtdcTransferFutureToBankReqFieldWrapper(const CThostFtdcTransferFutureToBankReqField& _data = {0}) :data(_data) {}
-    CThostFtdcTransferFutureToBankReqFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcTransferFutureToBankReqFieldWrapper(const CThostFtdcTransferFutureToBankReqField& _data = { 0 }) :data(_data) { }
+    CThostFtdcTransferFutureToBankReqFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcTransferFutureToBankReqField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         strncpy(data.FutureAccount, rowValue.at("FutureAccount").c_str(), sizeof(TThostFtdcAccountIDType));
@@ -382,8 +430,8 @@ struct CThostFtdcTransferFutureToBankRspFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcTransferFutureToBankRspField data;
 
-    CThostFtdcTransferFutureToBankRspFieldWrapper(const CThostFtdcTransferFutureToBankRspField& _data = {0}) :data(_data) {}
-    CThostFtdcTransferFutureToBankRspFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcTransferFutureToBankRspFieldWrapper(const CThostFtdcTransferFutureToBankRspField& _data = { 0 }) :data(_data) { }
+    CThostFtdcTransferFutureToBankRspFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcTransferFutureToBankRspField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         strncpy(data.RetCode, rowValue.at("RetCode").c_str(), sizeof(TThostFtdcRetCodeType));
@@ -409,8 +457,8 @@ struct CThostFtdcTransferQryBankReqFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcTransferQryBankReqField data;
 
-    CThostFtdcTransferQryBankReqFieldWrapper(const CThostFtdcTransferQryBankReqField& _data = {0}) :data(_data) {}
-    CThostFtdcTransferQryBankReqFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcTransferQryBankReqFieldWrapper(const CThostFtdcTransferQryBankReqField& _data = { 0 }) :data(_data) { }
+    CThostFtdcTransferQryBankReqFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcTransferQryBankReqField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         strncpy(data.FutureAccount, rowValue.at("FutureAccount").c_str(), sizeof(TThostFtdcAccountIDType));
@@ -434,8 +482,8 @@ struct CThostFtdcTransferQryBankRspFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcTransferQryBankRspField data;
 
-    CThostFtdcTransferQryBankRspFieldWrapper(const CThostFtdcTransferQryBankRspField& _data = {0}) :data(_data) {}
-    CThostFtdcTransferQryBankRspFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcTransferQryBankRspFieldWrapper(const CThostFtdcTransferQryBankRspField& _data = { 0 }) :data(_data) { }
+    CThostFtdcTransferQryBankRspFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcTransferQryBankRspField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         strncpy(data.RetCode, rowValue.at("RetCode").c_str(), sizeof(TThostFtdcRetCodeType));
@@ -462,8 +510,8 @@ struct CThostFtdcTransferQryDetailReqFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcTransferQryDetailReqField data;
 
-    CThostFtdcTransferQryDetailReqFieldWrapper(const CThostFtdcTransferQryDetailReqField& _data = {0}) :data(_data) {}
-    CThostFtdcTransferQryDetailReqFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcTransferQryDetailReqFieldWrapper(const CThostFtdcTransferQryDetailReqField& _data = { 0 }) :data(_data) { }
+    CThostFtdcTransferQryDetailReqFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcTransferQryDetailReqField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         strncpy(data.FutureAccount, rowValue.at("FutureAccount").c_str(), sizeof(TThostFtdcAccountIDType));
@@ -484,8 +532,8 @@ struct CThostFtdcTransferQryDetailRspFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcTransferQryDetailRspField data;
 
-    CThostFtdcTransferQryDetailRspFieldWrapper(const CThostFtdcTransferQryDetailRspField& _data = {0}) :data(_data) {}
-    CThostFtdcTransferQryDetailRspFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcTransferQryDetailRspFieldWrapper(const CThostFtdcTransferQryDetailRspField& _data = { 0 }) :data(_data) { }
+    CThostFtdcTransferQryDetailRspFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcTransferQryDetailRspField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         strncpy(data.TradeDate, rowValue.at("TradeDate").c_str(), sizeof(TThostFtdcDateType));
@@ -519,8 +567,8 @@ struct CThostFtdcRspInfoFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcRspInfoField data;
 
-    CThostFtdcRspInfoFieldWrapper(const CThostFtdcRspInfoField& _data = {0}) :data(_data) {}
-    CThostFtdcRspInfoFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcRspInfoFieldWrapper(const CThostFtdcRspInfoField& _data = { 0 }) :data(_data) { }
+    CThostFtdcRspInfoFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcRspInfoField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         data.ErrorID = std::stoi(rowValue.at("ErrorID"));
@@ -542,8 +590,8 @@ struct CThostFtdcExchangeFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcExchangeField data;
 
-    CThostFtdcExchangeFieldWrapper(const CThostFtdcExchangeField& _data = {0}) :data(_data) {}
-    CThostFtdcExchangeFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcExchangeFieldWrapper(const CThostFtdcExchangeField& _data = { 0 }) :data(_data) { }
+    CThostFtdcExchangeFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcExchangeField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         strncpy(data.ExchangeID, rowValue.at("ExchangeID").c_str(), sizeof(TThostFtdcExchangeIDType));
@@ -566,8 +614,8 @@ struct CThostFtdcProductFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcProductField data;
 
-    CThostFtdcProductFieldWrapper(const CThostFtdcProductField& _data = {0}) :data(_data) {}
-    CThostFtdcProductFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcProductFieldWrapper(const CThostFtdcProductField& _data = { 0 }) :data(_data) { }
+    CThostFtdcProductFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcProductField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         strncpy(data.reserve1, rowValue.at("reserve1").c_str(), sizeof(TThostFtdcOldInstrumentIDType));
@@ -606,8 +654,8 @@ struct CThostFtdcInstrumentFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcInstrumentField data;
 
-    CThostFtdcInstrumentFieldWrapper(const CThostFtdcInstrumentField& _data = {0}) :data(_data) {}
-    CThostFtdcInstrumentFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcInstrumentFieldWrapper(const CThostFtdcInstrumentField& _data = { 0 }) :data(_data) { }
+    CThostFtdcInstrumentFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcInstrumentField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         strncpy(data.reserve1, rowValue.at("reserve1").c_str(), sizeof(TThostFtdcOldInstrumentIDType));
@@ -662,8 +710,8 @@ struct CThostFtdcBrokerFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcBrokerField data;
 
-    CThostFtdcBrokerFieldWrapper(const CThostFtdcBrokerField& _data = {0}) :data(_data) {}
-    CThostFtdcBrokerFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcBrokerFieldWrapper(const CThostFtdcBrokerField& _data = { 0 }) :data(_data) { }
+    CThostFtdcBrokerFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcBrokerField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         strncpy(data.BrokerID, rowValue.at("BrokerID").c_str(), sizeof(TThostFtdcBrokerIDType));
@@ -687,8 +735,8 @@ struct CThostFtdcTraderFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcTraderField data;
 
-    CThostFtdcTraderFieldWrapper(const CThostFtdcTraderField& _data = {0}) :data(_data) {}
-    CThostFtdcTraderFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcTraderFieldWrapper(const CThostFtdcTraderField& _data = { 0 }) :data(_data) { }
+    CThostFtdcTraderFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcTraderField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         strncpy(data.ExchangeID, rowValue.at("ExchangeID").c_str(), sizeof(TThostFtdcExchangeIDType));
@@ -714,8 +762,8 @@ struct CThostFtdcInvestorFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcInvestorField data;
 
-    CThostFtdcInvestorFieldWrapper(const CThostFtdcInvestorField& _data = {0}) :data(_data) {}
-    CThostFtdcInvestorFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcInvestorFieldWrapper(const CThostFtdcInvestorField& _data = { 0 }) :data(_data) { }
+    CThostFtdcInvestorFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcInvestorField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         strncpy(data.InvestorID, rowValue.at("InvestorID").c_str(), sizeof(TThostFtdcInvestorIDType));
@@ -738,6 +786,12 @@ struct CThostFtdcInvestorFieldWrapper
             + "'";
         return INSERT_SQL_PREFIX + insertSqlBody + ");";
     }
+    std::string generateSelectSqlByUserID() const {
+        return generateSelectSqlByUserID(data.BrokerID, data.InvestorID);
+    }
+    static std::string generateSelectSqlByUserID(const std::string& BrokerID, const std::string& InvestorID) {
+        return "SELECT * FROM 'CThostFtdcInvestorField' where BrokerID='" + BrokerID + "' and InvestorID='" + InvestorID + "';";
+    }
 };
 
 struct CThostFtdcTradingCodeFieldWrapper
@@ -748,8 +802,8 @@ struct CThostFtdcTradingCodeFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcTradingCodeField data;
 
-    CThostFtdcTradingCodeFieldWrapper(const CThostFtdcTradingCodeField& _data = {0}) :data(_data) {}
-    CThostFtdcTradingCodeFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcTradingCodeFieldWrapper(const CThostFtdcTradingCodeField& _data = { 0 }) :data(_data) { }
+    CThostFtdcTradingCodeFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcTradingCodeField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         strncpy(data.InvestorID, rowValue.at("InvestorID").c_str(), sizeof(TThostFtdcInvestorIDType));
@@ -768,6 +822,12 @@ struct CThostFtdcTradingCodeFieldWrapper
             + "'";
         return INSERT_SQL_PREFIX + insertSqlBody + ");";
     }
+    std::string generateSelectSqlByUserID() const {
+        return generateSelectSqlByUserID(data.BrokerID, data.InvestorID);
+    }
+    static std::string generateSelectSqlByUserID(const std::string& BrokerID, const std::string& InvestorID) {
+        return "SELECT * FROM 'CThostFtdcTradingCodeField' where BrokerID='" + BrokerID + "' and InvestorID='" + InvestorID + "';";
+    }
 };
 
 struct CThostFtdcPartBrokerFieldWrapper
@@ -778,8 +838,8 @@ struct CThostFtdcPartBrokerFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcPartBrokerField data;
 
-    CThostFtdcPartBrokerFieldWrapper(const CThostFtdcPartBrokerField& _data = {0}) :data(_data) {}
-    CThostFtdcPartBrokerFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcPartBrokerFieldWrapper(const CThostFtdcPartBrokerField& _data = { 0 }) :data(_data) { }
+    CThostFtdcPartBrokerFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcPartBrokerField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         strncpy(data.BrokerID, rowValue.at("BrokerID").c_str(), sizeof(TThostFtdcBrokerIDType));
@@ -803,8 +863,8 @@ struct CThostFtdcSuperUserFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcSuperUserField data;
 
-    CThostFtdcSuperUserFieldWrapper(const CThostFtdcSuperUserField& _data = {0}) :data(_data) {}
-    CThostFtdcSuperUserFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcSuperUserFieldWrapper(const CThostFtdcSuperUserField& _data = { 0 }) :data(_data) { }
+    CThostFtdcSuperUserFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcSuperUserField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         strncpy(data.UserID, rowValue.at("UserID").c_str(), sizeof(TThostFtdcUserIDType));
@@ -828,8 +888,8 @@ struct CThostFtdcSuperUserFunctionFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcSuperUserFunctionField data;
 
-    CThostFtdcSuperUserFunctionFieldWrapper(const CThostFtdcSuperUserFunctionField& _data = {0}) :data(_data) {}
-    CThostFtdcSuperUserFunctionFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcSuperUserFunctionFieldWrapper(const CThostFtdcSuperUserFunctionField& _data = { 0 }) :data(_data) { }
+    CThostFtdcSuperUserFunctionFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcSuperUserFunctionField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         strncpy(data.UserID, rowValue.at("UserID").c_str(), sizeof(TThostFtdcUserIDType));
@@ -851,8 +911,8 @@ struct CThostFtdcInvestorGroupFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcInvestorGroupField data;
 
-    CThostFtdcInvestorGroupFieldWrapper(const CThostFtdcInvestorGroupField& _data = {0}) :data(_data) {}
-    CThostFtdcInvestorGroupFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcInvestorGroupFieldWrapper(const CThostFtdcInvestorGroupField& _data = { 0 }) :data(_data) { }
+    CThostFtdcInvestorGroupFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcInvestorGroupField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         strncpy(data.BrokerID, rowValue.at("BrokerID").c_str(), sizeof(TThostFtdcBrokerIDType));
@@ -875,8 +935,8 @@ struct CThostFtdcTradingAccountFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcTradingAccountField data;
 
-    CThostFtdcTradingAccountFieldWrapper(const CThostFtdcTradingAccountField& _data = {0}) :data(_data) {}
-    CThostFtdcTradingAccountFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcTradingAccountFieldWrapper(const CThostFtdcTradingAccountField& _data = { 0 }) :data(_data) { }
+    CThostFtdcTradingAccountFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcTradingAccountField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         strncpy(data.BrokerID, rowValue.at("BrokerID").c_str(), sizeof(TThostFtdcBrokerIDType));
@@ -935,6 +995,12 @@ struct CThostFtdcTradingAccountFieldWrapper
             + "'";
         return INSERT_SQL_PREFIX + insertSqlBody + ");";
     }
+    std::string generateSelectSqlByUserID() const {
+        return generateSelectSqlByUserID(data.BrokerID, data.AccountID);
+    }
+    static std::string generateSelectSqlByUserID(const std::string& BrokerID, const std::string& AccountID) {
+        return "SELECT * FROM 'CThostFtdcTradingAccountField' where BrokerID='" + BrokerID + "' and AccountID='" + AccountID + "';";
+    }
 };
 
 struct CThostFtdcInvestorPositionFieldWrapper
@@ -945,8 +1011,8 @@ struct CThostFtdcInvestorPositionFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcInvestorPositionField data;
 
-    CThostFtdcInvestorPositionFieldWrapper(const CThostFtdcInvestorPositionField& _data = {0}) :data(_data) {}
-    CThostFtdcInvestorPositionFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcInvestorPositionFieldWrapper(const CThostFtdcInvestorPositionField& _data = { 0 }) :data(_data) { }
+    CThostFtdcInvestorPositionFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcInvestorPositionField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         strncpy(data.reserve1, rowValue.at("reserve1").c_str(), sizeof(TThostFtdcOldInstrumentIDType));
@@ -1006,6 +1072,12 @@ struct CThostFtdcInvestorPositionFieldWrapper
             + "'";
         return INSERT_SQL_PREFIX + insertSqlBody + ");";
     }
+    std::string generateSelectSqlByUserID() const {
+        return generateSelectSqlByUserID(data.BrokerID, data.InvestorID);
+    }
+    static std::string generateSelectSqlByUserID(const std::string& BrokerID, const std::string& InvestorID) {
+        return "SELECT * FROM 'CThostFtdcInvestorPositionField' where BrokerID='" + BrokerID + "' and InvestorID='" + InvestorID + "';";
+    }
 };
 
 struct CThostFtdcInstrumentMarginRateFieldWrapper
@@ -1016,8 +1088,8 @@ struct CThostFtdcInstrumentMarginRateFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcInstrumentMarginRateField data;
 
-    CThostFtdcInstrumentMarginRateFieldWrapper(const CThostFtdcInstrumentMarginRateField& _data = {0}) :data(_data) {}
-    CThostFtdcInstrumentMarginRateFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcInstrumentMarginRateFieldWrapper(const CThostFtdcInstrumentMarginRateField& _data = { 0 }) :data(_data) { }
+    CThostFtdcInstrumentMarginRateFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcInstrumentMarginRateField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         strncpy(data.reserve1, rowValue.at("reserve1").c_str(), sizeof(TThostFtdcOldInstrumentIDType));
@@ -1040,6 +1112,12 @@ struct CThostFtdcInstrumentMarginRateFieldWrapper
             + "'";
         return INSERT_SQL_PREFIX + insertSqlBody + ");";
     }
+    std::string generateSelectSqlByUserID() const {
+        return generateSelectSqlByUserID(data.BrokerID, data.InvestorID);
+    }
+    static std::string generateSelectSqlByUserID(const std::string& BrokerID, const std::string& InvestorID) {
+        return "SELECT * FROM 'CThostFtdcInstrumentMarginRateField' where BrokerID='" + BrokerID + "' and InvestorID='" + InvestorID + "';";
+    }
 };
 
 struct CThostFtdcInstrumentCommissionRateFieldWrapper
@@ -1050,8 +1128,8 @@ struct CThostFtdcInstrumentCommissionRateFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcInstrumentCommissionRateField data;
 
-    CThostFtdcInstrumentCommissionRateFieldWrapper(const CThostFtdcInstrumentCommissionRateField& _data = {0}) :data(_data) {}
-    CThostFtdcInstrumentCommissionRateFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcInstrumentCommissionRateFieldWrapper(const CThostFtdcInstrumentCommissionRateField& _data = { 0 }) :data(_data) { }
+    CThostFtdcInstrumentCommissionRateFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcInstrumentCommissionRateField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         strncpy(data.reserve1, rowValue.at("reserve1").c_str(), sizeof(TThostFtdcOldInstrumentIDType));
@@ -1075,6 +1153,12 @@ struct CThostFtdcInstrumentCommissionRateFieldWrapper
             + "'";
         return INSERT_SQL_PREFIX + insertSqlBody + ");";
     }
+    std::string generateSelectSqlByUserID() const {
+        return generateSelectSqlByUserID(data.BrokerID, data.InvestorID);
+    }
+    static std::string generateSelectSqlByUserID(const std::string& BrokerID, const std::string& InvestorID) {
+        return "SELECT * FROM 'CThostFtdcInstrumentCommissionRateField' where BrokerID='" + BrokerID + "' and InvestorID='" + InvestorID + "';";
+    }
 };
 
 struct CThostFtdcDepthMarketDataFieldWrapper
@@ -1085,8 +1169,8 @@ struct CThostFtdcDepthMarketDataFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcDepthMarketDataField data;
 
-    CThostFtdcDepthMarketDataFieldWrapper(const CThostFtdcDepthMarketDataField& _data = {0}) :data(_data) {}
-    CThostFtdcDepthMarketDataFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcDepthMarketDataFieldWrapper(const CThostFtdcDepthMarketDataField& _data = { 0 }) :data(_data) { }
+    CThostFtdcDepthMarketDataFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcDepthMarketDataField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         strncpy(data.TradingDay, rowValue.at("TradingDay").c_str(), sizeof(TThostFtdcDateType));
@@ -1152,8 +1236,8 @@ struct CThostFtdcInstrumentTradingRightFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcInstrumentTradingRightField data;
 
-    CThostFtdcInstrumentTradingRightFieldWrapper(const CThostFtdcInstrumentTradingRightField& _data = {0}) :data(_data) {}
-    CThostFtdcInstrumentTradingRightFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcInstrumentTradingRightFieldWrapper(const CThostFtdcInstrumentTradingRightField& _data = { 0 }) :data(_data) { }
+    CThostFtdcInstrumentTradingRightFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcInstrumentTradingRightField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         strncpy(data.reserve1, rowValue.at("reserve1").c_str(), sizeof(TThostFtdcOldInstrumentIDType));
@@ -1169,6 +1253,12 @@ struct CThostFtdcInstrumentTradingRightFieldWrapper
             + "'";
         return INSERT_SQL_PREFIX + insertSqlBody + ");";
     }
+    std::string generateSelectSqlByUserID() const {
+        return generateSelectSqlByUserID(data.BrokerID, data.InvestorID);
+    }
+    static std::string generateSelectSqlByUserID(const std::string& BrokerID, const std::string& InvestorID) {
+        return "SELECT * FROM 'CThostFtdcInstrumentTradingRightField' where BrokerID='" + BrokerID + "' and InvestorID='" + InvestorID + "';";
+    }
 };
 
 struct CThostFtdcBrokerUserFieldWrapper
@@ -1179,8 +1269,8 @@ struct CThostFtdcBrokerUserFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcBrokerUserField data;
 
-    CThostFtdcBrokerUserFieldWrapper(const CThostFtdcBrokerUserField& _data = {0}) :data(_data) {}
-    CThostFtdcBrokerUserFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcBrokerUserFieldWrapper(const CThostFtdcBrokerUserField& _data = { 0 }) :data(_data) { }
+    CThostFtdcBrokerUserFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcBrokerUserField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         strncpy(data.BrokerID, rowValue.at("BrokerID").c_str(), sizeof(TThostFtdcBrokerIDType));
@@ -1197,6 +1287,12 @@ struct CThostFtdcBrokerUserFieldWrapper
             + "'";
         return INSERT_SQL_PREFIX + insertSqlBody + ");";
     }
+    std::string generateSelectSqlByUserID() const {
+        return generateSelectSqlByUserID(data.BrokerID, data.UserID);
+    }
+    static std::string generateSelectSqlByUserID(const std::string& BrokerID, const std::string& UserID) {
+        return "SELECT * FROM 'CThostFtdcBrokerUserField' where BrokerID='" + BrokerID + "' and UserID='" + UserID + "';";
+    }
 };
 
 struct CThostFtdcBrokerUserPasswordFieldWrapper
@@ -1207,8 +1303,8 @@ struct CThostFtdcBrokerUserPasswordFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcBrokerUserPasswordField data;
 
-    CThostFtdcBrokerUserPasswordFieldWrapper(const CThostFtdcBrokerUserPasswordField& _data = {0}) :data(_data) {}
-    CThostFtdcBrokerUserPasswordFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcBrokerUserPasswordFieldWrapper(const CThostFtdcBrokerUserPasswordField& _data = { 0 }) :data(_data) { }
+    CThostFtdcBrokerUserPasswordFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcBrokerUserPasswordField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         strncpy(data.BrokerID, rowValue.at("BrokerID").c_str(), sizeof(TThostFtdcBrokerIDType));
@@ -1225,6 +1321,12 @@ struct CThostFtdcBrokerUserPasswordFieldWrapper
             + "'";
         return INSERT_SQL_PREFIX + insertSqlBody + ");";
     }
+    std::string generateSelectSqlByUserID() const {
+        return generateSelectSqlByUserID(data.BrokerID, data.UserID);
+    }
+    static std::string generateSelectSqlByUserID(const std::string& BrokerID, const std::string& UserID) {
+        return "SELECT * FROM 'CThostFtdcBrokerUserPasswordField' where BrokerID='" + BrokerID + "' and UserID='" + UserID + "';";
+    }
 };
 
 struct CThostFtdcBrokerUserFunctionFieldWrapper
@@ -1235,8 +1337,8 @@ struct CThostFtdcBrokerUserFunctionFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcBrokerUserFunctionField data;
 
-    CThostFtdcBrokerUserFunctionFieldWrapper(const CThostFtdcBrokerUserFunctionField& _data = {0}) :data(_data) {}
-    CThostFtdcBrokerUserFunctionFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcBrokerUserFunctionFieldWrapper(const CThostFtdcBrokerUserFunctionField& _data = { 0 }) :data(_data) { }
+    CThostFtdcBrokerUserFunctionFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcBrokerUserFunctionField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         strncpy(data.BrokerID, rowValue.at("BrokerID").c_str(), sizeof(TThostFtdcBrokerIDType));
@@ -1249,6 +1351,12 @@ struct CThostFtdcBrokerUserFunctionFieldWrapper
             + "'";
         return INSERT_SQL_PREFIX + insertSqlBody + ");";
     }
+    std::string generateSelectSqlByUserID() const {
+        return generateSelectSqlByUserID(data.BrokerID, data.UserID);
+    }
+    static std::string generateSelectSqlByUserID(const std::string& BrokerID, const std::string& UserID) {
+        return "SELECT * FROM 'CThostFtdcBrokerUserFunctionField' where BrokerID='" + BrokerID + "' and UserID='" + UserID + "';";
+    }
 };
 
 struct CThostFtdcTraderOfferFieldWrapper
@@ -1259,8 +1367,8 @@ struct CThostFtdcTraderOfferFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcTraderOfferField data;
 
-    CThostFtdcTraderOfferFieldWrapper(const CThostFtdcTraderOfferField& _data = {0}) :data(_data) {}
-    CThostFtdcTraderOfferFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcTraderOfferFieldWrapper(const CThostFtdcTraderOfferField& _data = { 0 }) :data(_data) { }
+    CThostFtdcTraderOfferFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcTraderOfferField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         strncpy(data.ExchangeID, rowValue.at("ExchangeID").c_str(), sizeof(TThostFtdcExchangeIDType));
@@ -1299,8 +1407,8 @@ struct CThostFtdcSettlementInfoFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcSettlementInfoField data;
 
-    CThostFtdcSettlementInfoFieldWrapper(const CThostFtdcSettlementInfoField& _data = {0}) :data(_data) {}
-    CThostFtdcSettlementInfoFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcSettlementInfoFieldWrapper(const CThostFtdcSettlementInfoField& _data = { 0 }) :data(_data) { }
+    CThostFtdcSettlementInfoFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcSettlementInfoField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         strncpy(data.TradingDay, rowValue.at("TradingDay").c_str(), sizeof(TThostFtdcDateType));
@@ -1318,6 +1426,12 @@ struct CThostFtdcSettlementInfoFieldWrapper
             + "'";
         return INSERT_SQL_PREFIX + insertSqlBody + ");";
     }
+    std::string generateSelectSqlByUserID() const {
+        return generateSelectSqlByUserID(data.BrokerID, data.InvestorID);
+    }
+    static std::string generateSelectSqlByUserID(const std::string& BrokerID, const std::string& InvestorID) {
+        return "SELECT * FROM 'CThostFtdcSettlementInfoField' where BrokerID='" + BrokerID + "' and InvestorID='" + InvestorID + "';";
+    }
 };
 
 struct CThostFtdcInstrumentMarginRateAdjustFieldWrapper
@@ -1328,8 +1442,8 @@ struct CThostFtdcInstrumentMarginRateAdjustFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcInstrumentMarginRateAdjustField data;
 
-    CThostFtdcInstrumentMarginRateAdjustFieldWrapper(const CThostFtdcInstrumentMarginRateAdjustField& _data = {0}) :data(_data) {}
-    CThostFtdcInstrumentMarginRateAdjustFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcInstrumentMarginRateAdjustFieldWrapper(const CThostFtdcInstrumentMarginRateAdjustField& _data = { 0 }) :data(_data) { }
+    CThostFtdcInstrumentMarginRateAdjustFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcInstrumentMarginRateAdjustField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         strncpy(data.reserve1, rowValue.at("reserve1").c_str(), sizeof(TThostFtdcOldInstrumentIDType));
@@ -1350,6 +1464,12 @@ struct CThostFtdcInstrumentMarginRateAdjustFieldWrapper
             + "'";
         return INSERT_SQL_PREFIX + insertSqlBody + ");";
     }
+    std::string generateSelectSqlByUserID() const {
+        return generateSelectSqlByUserID(data.BrokerID, data.InvestorID);
+    }
+    static std::string generateSelectSqlByUserID(const std::string& BrokerID, const std::string& InvestorID) {
+        return "SELECT * FROM 'CThostFtdcInstrumentMarginRateAdjustField' where BrokerID='" + BrokerID + "' and InvestorID='" + InvestorID + "';";
+    }
 };
 
 struct CThostFtdcExchangeMarginRateFieldWrapper
@@ -1360,8 +1480,8 @@ struct CThostFtdcExchangeMarginRateFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcExchangeMarginRateField data;
 
-    CThostFtdcExchangeMarginRateFieldWrapper(const CThostFtdcExchangeMarginRateField& _data = {0}) :data(_data) {}
-    CThostFtdcExchangeMarginRateFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcExchangeMarginRateFieldWrapper(const CThostFtdcExchangeMarginRateField& _data = { 0 }) :data(_data) { }
+    CThostFtdcExchangeMarginRateFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcExchangeMarginRateField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         strncpy(data.BrokerID, rowValue.at("BrokerID").c_str(), sizeof(TThostFtdcBrokerIDType));
@@ -1390,8 +1510,8 @@ struct CThostFtdcExchangeMarginRateAdjustFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcExchangeMarginRateAdjustField data;
 
-    CThostFtdcExchangeMarginRateAdjustFieldWrapper(const CThostFtdcExchangeMarginRateAdjustField& _data = {0}) :data(_data) {}
-    CThostFtdcExchangeMarginRateAdjustFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcExchangeMarginRateAdjustFieldWrapper(const CThostFtdcExchangeMarginRateAdjustField& _data = { 0 }) :data(_data) { }
+    CThostFtdcExchangeMarginRateAdjustFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcExchangeMarginRateAdjustField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         strncpy(data.BrokerID, rowValue.at("BrokerID").c_str(), sizeof(TThostFtdcBrokerIDType));
@@ -1427,8 +1547,8 @@ struct CThostFtdcExchangeRateFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcExchangeRateField data;
 
-    CThostFtdcExchangeRateFieldWrapper(const CThostFtdcExchangeRateField& _data = {0}) :data(_data) {}
-    CThostFtdcExchangeRateFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcExchangeRateFieldWrapper(const CThostFtdcExchangeRateField& _data = { 0 }) :data(_data) { }
+    CThostFtdcExchangeRateFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcExchangeRateField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         strncpy(data.BrokerID, rowValue.at("BrokerID").c_str(), sizeof(TThostFtdcBrokerIDType));
@@ -1453,8 +1573,8 @@ struct CThostFtdcSettlementRefFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcSettlementRefField data;
 
-    CThostFtdcSettlementRefFieldWrapper(const CThostFtdcSettlementRefField& _data = {0}) :data(_data) {}
-    CThostFtdcSettlementRefFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcSettlementRefFieldWrapper(const CThostFtdcSettlementRefField& _data = { 0 }) :data(_data) { }
+    CThostFtdcSettlementRefFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcSettlementRefField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         strncpy(data.TradingDay, rowValue.at("TradingDay").c_str(), sizeof(TThostFtdcDateType));
@@ -1476,8 +1596,8 @@ struct CThostFtdcCurrentTimeFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcCurrentTimeField data;
 
-    CThostFtdcCurrentTimeFieldWrapper(const CThostFtdcCurrentTimeField& _data = {0}) :data(_data) {}
-    CThostFtdcCurrentTimeFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcCurrentTimeFieldWrapper(const CThostFtdcCurrentTimeField& _data = { 0 }) :data(_data) { }
+    CThostFtdcCurrentTimeFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcCurrentTimeField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         strncpy(data.CurrDate, rowValue.at("CurrDate").c_str(), sizeof(TThostFtdcDateType));
@@ -1501,8 +1621,8 @@ struct CThostFtdcCommPhaseFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcCommPhaseField data;
 
-    CThostFtdcCommPhaseFieldWrapper(const CThostFtdcCommPhaseField& _data = {0}) :data(_data) {}
-    CThostFtdcCommPhaseFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcCommPhaseFieldWrapper(const CThostFtdcCommPhaseField& _data = { 0 }) :data(_data) { }
+    CThostFtdcCommPhaseFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcCommPhaseField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         strncpy(data.TradingDay, rowValue.at("TradingDay").c_str(), sizeof(TThostFtdcDateType));
@@ -1525,8 +1645,8 @@ struct CThostFtdcLoginInfoFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcLoginInfoField data;
 
-    CThostFtdcLoginInfoFieldWrapper(const CThostFtdcLoginInfoField& _data = {0}) :data(_data) {}
-    CThostFtdcLoginInfoFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcLoginInfoFieldWrapper(const CThostFtdcLoginInfoField& _data = { 0 }) :data(_data) { }
+    CThostFtdcLoginInfoFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcLoginInfoField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         data.FrontID = std::stoi(rowValue.at("FrontID"));
@@ -1560,6 +1680,12 @@ struct CThostFtdcLoginInfoFieldWrapper
             + "'";
         return INSERT_SQL_PREFIX + insertSqlBody + ");";
     }
+    std::string generateSelectSqlByUserID() const {
+        return generateSelectSqlByUserID(data.BrokerID, data.UserID);
+    }
+    static std::string generateSelectSqlByUserID(const std::string& BrokerID, const std::string& UserID) {
+        return "SELECT * FROM 'CThostFtdcLoginInfoField' where BrokerID='" + BrokerID + "' and UserID='" + UserID + "';";
+    }
 };
 
 struct CThostFtdcLogoutAllFieldWrapper
@@ -1570,8 +1696,8 @@ struct CThostFtdcLogoutAllFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcLogoutAllField data;
 
-    CThostFtdcLogoutAllFieldWrapper(const CThostFtdcLogoutAllField& _data = {0}) :data(_data) {}
-    CThostFtdcLogoutAllFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcLogoutAllFieldWrapper(const CThostFtdcLogoutAllField& _data = { 0 }) :data(_data) { }
+    CThostFtdcLogoutAllFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcLogoutAllField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         data.FrontID = std::stoi(rowValue.at("FrontID"));
@@ -1594,8 +1720,8 @@ struct CThostFtdcFrontStatusFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcFrontStatusField data;
 
-    CThostFtdcFrontStatusFieldWrapper(const CThostFtdcFrontStatusField& _data = {0}) :data(_data) {}
-    CThostFtdcFrontStatusFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcFrontStatusFieldWrapper(const CThostFtdcFrontStatusField& _data = { 0 }) :data(_data) { }
+    CThostFtdcFrontStatusFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcFrontStatusField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         data.FrontID = std::stoi(rowValue.at("FrontID"));
@@ -1619,8 +1745,8 @@ struct CThostFtdcUserPasswordUpdateFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcUserPasswordUpdateField data;
 
-    CThostFtdcUserPasswordUpdateFieldWrapper(const CThostFtdcUserPasswordUpdateField& _data = {0}) :data(_data) {}
-    CThostFtdcUserPasswordUpdateFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcUserPasswordUpdateFieldWrapper(const CThostFtdcUserPasswordUpdateField& _data = { 0 }) :data(_data) { }
+    CThostFtdcUserPasswordUpdateFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcUserPasswordUpdateField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         strncpy(data.BrokerID, rowValue.at("BrokerID").c_str(), sizeof(TThostFtdcBrokerIDType));
@@ -1634,6 +1760,12 @@ struct CThostFtdcUserPasswordUpdateFieldWrapper
             + "'";
         return INSERT_SQL_PREFIX + insertSqlBody + ");";
     }
+    std::string generateSelectSqlByUserID() const {
+        return generateSelectSqlByUserID(data.BrokerID, data.UserID);
+    }
+    static std::string generateSelectSqlByUserID(const std::string& BrokerID, const std::string& UserID) {
+        return "SELECT * FROM 'CThostFtdcUserPasswordUpdateField' where BrokerID='" + BrokerID + "' and UserID='" + UserID + "';";
+    }
 };
 
 struct CThostFtdcInputOrderFieldWrapper
@@ -1644,8 +1776,8 @@ struct CThostFtdcInputOrderFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcInputOrderField data;
 
-    CThostFtdcInputOrderFieldWrapper(const CThostFtdcInputOrderField& _data = {0}) :data(_data) {}
-    CThostFtdcInputOrderFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcInputOrderFieldWrapper(const CThostFtdcInputOrderField& _data = { 0 }) :data(_data) { }
+    CThostFtdcInputOrderFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcInputOrderField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         strncpy(data.BrokerID, rowValue.at("BrokerID").c_str(), sizeof(TThostFtdcBrokerIDType));
@@ -1687,6 +1819,12 @@ struct CThostFtdcInputOrderFieldWrapper
             + "'";
         return INSERT_SQL_PREFIX + insertSqlBody + ");";
     }
+    std::string generateSelectSqlByUserID() const {
+        return generateSelectSqlByUserID(data.BrokerID, data.InvestorID);
+    }
+    static std::string generateSelectSqlByUserID(const std::string& BrokerID, const std::string& InvestorID) {
+        return "SELECT * FROM 'CThostFtdcInputOrderField' where BrokerID='" + BrokerID + "' and InvestorID='" + InvestorID + "';";
+    }
 };
 
 struct CThostFtdcOrderFieldWrapper
@@ -1697,8 +1835,8 @@ struct CThostFtdcOrderFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcOrderField data;
 
-    CThostFtdcOrderFieldWrapper(const CThostFtdcOrderField& _data = {0}) :data(_data) {}
-    CThostFtdcOrderFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcOrderFieldWrapper(const CThostFtdcOrderField& _data = { 0 }) :data(_data) { }
+    CThostFtdcOrderFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcOrderField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         strncpy(data.BrokerID, rowValue.at("BrokerID").c_str(), sizeof(TThostFtdcBrokerIDType));
@@ -1774,6 +1912,12 @@ struct CThostFtdcOrderFieldWrapper
             + "'";
         return INSERT_SQL_PREFIX + insertSqlBody + ");";
     }
+    std::string generateSelectSqlByUserID() const {
+        return generateSelectSqlByUserID(data.BrokerID, data.InvestorID);
+    }
+    static std::string generateSelectSqlByUserID(const std::string& BrokerID, const std::string& InvestorID) {
+        return "SELECT * FROM 'CThostFtdcOrderField' where BrokerID='" + BrokerID + "' and InvestorID='" + InvestorID + "';";
+    }
 };
 
 struct CThostFtdcExchangeOrderFieldWrapper
@@ -1784,8 +1928,8 @@ struct CThostFtdcExchangeOrderFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcExchangeOrderField data;
 
-    CThostFtdcExchangeOrderFieldWrapper(const CThostFtdcExchangeOrderField& _data = {0}) :data(_data) {}
-    CThostFtdcExchangeOrderFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcExchangeOrderFieldWrapper(const CThostFtdcExchangeOrderField& _data = { 0 }) :data(_data) { }
+    CThostFtdcExchangeOrderFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcExchangeOrderField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         data.OrderPriceType = rowValue.at("OrderPriceType").empty() ? '0' : rowValue.at("OrderPriceType")[0];
@@ -1852,8 +1996,8 @@ struct CThostFtdcExchangeOrderInsertErrorFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcExchangeOrderInsertErrorField data;
 
-    CThostFtdcExchangeOrderInsertErrorFieldWrapper(const CThostFtdcExchangeOrderInsertErrorField& _data = {0}) :data(_data) {}
-    CThostFtdcExchangeOrderInsertErrorFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcExchangeOrderInsertErrorFieldWrapper(const CThostFtdcExchangeOrderInsertErrorField& _data = { 0 }) :data(_data) { }
+    CThostFtdcExchangeOrderInsertErrorFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcExchangeOrderInsertErrorField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         strncpy(data.ExchangeID, rowValue.at("ExchangeID").c_str(), sizeof(TThostFtdcExchangeIDType));
@@ -1880,8 +2024,8 @@ struct CThostFtdcInputOrderActionFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcInputOrderActionField data;
 
-    CThostFtdcInputOrderActionFieldWrapper(const CThostFtdcInputOrderActionField& _data = {0}) :data(_data) {}
-    CThostFtdcInputOrderActionFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcInputOrderActionFieldWrapper(const CThostFtdcInputOrderActionField& _data = { 0 }) :data(_data) { }
+    CThostFtdcInputOrderActionFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcInputOrderActionField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         strncpy(data.BrokerID, rowValue.at("BrokerID").c_str(), sizeof(TThostFtdcBrokerIDType));
@@ -1910,6 +2054,12 @@ struct CThostFtdcInputOrderActionFieldWrapper
             + "'";
         return INSERT_SQL_PREFIX + insertSqlBody + ");";
     }
+    std::string generateSelectSqlByUserID() const {
+        return generateSelectSqlByUserID(data.BrokerID, data.InvestorID);
+    }
+    static std::string generateSelectSqlByUserID(const std::string& BrokerID, const std::string& InvestorID) {
+        return "SELECT * FROM 'CThostFtdcInputOrderActionField' where BrokerID='" + BrokerID + "' and InvestorID='" + InvestorID + "';";
+    }
 };
 
 struct CThostFtdcOrderActionFieldWrapper
@@ -1920,8 +2070,8 @@ struct CThostFtdcOrderActionFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcOrderActionField data;
 
-    CThostFtdcOrderActionFieldWrapper(const CThostFtdcOrderActionField& _data = {0}) :data(_data) {}
-    CThostFtdcOrderActionFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcOrderActionFieldWrapper(const CThostFtdcOrderActionField& _data = { 0 }) :data(_data) { }
+    CThostFtdcOrderActionFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcOrderActionField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         strncpy(data.BrokerID, rowValue.at("BrokerID").c_str(), sizeof(TThostFtdcBrokerIDType));
@@ -1962,6 +2112,12 @@ struct CThostFtdcOrderActionFieldWrapper
             + "'";
         return INSERT_SQL_PREFIX + insertSqlBody + ");";
     }
+    std::string generateSelectSqlByUserID() const {
+        return generateSelectSqlByUserID(data.BrokerID, data.InvestorID);
+    }
+    static std::string generateSelectSqlByUserID(const std::string& BrokerID, const std::string& InvestorID) {
+        return "SELECT * FROM 'CThostFtdcOrderActionField' where BrokerID='" + BrokerID + "' and InvestorID='" + InvestorID + "';";
+    }
 };
 
 struct CThostFtdcExchangeOrderActionFieldWrapper
@@ -1972,8 +2128,8 @@ struct CThostFtdcExchangeOrderActionFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcExchangeOrderActionField data;
 
-    CThostFtdcExchangeOrderActionFieldWrapper(const CThostFtdcExchangeOrderActionField& _data = {0}) :data(_data) {}
-    CThostFtdcExchangeOrderActionFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcExchangeOrderActionFieldWrapper(const CThostFtdcExchangeOrderActionField& _data = { 0 }) :data(_data) { }
+    CThostFtdcExchangeOrderActionFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcExchangeOrderActionField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         strncpy(data.ExchangeID, rowValue.at("ExchangeID").c_str(), sizeof(TThostFtdcExchangeIDType));
@@ -2013,8 +2169,8 @@ struct CThostFtdcExchangeOrderActionErrorFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcExchangeOrderActionErrorField data;
 
-    CThostFtdcExchangeOrderActionErrorFieldWrapper(const CThostFtdcExchangeOrderActionErrorField& _data = {0}) :data(_data) {}
-    CThostFtdcExchangeOrderActionErrorFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcExchangeOrderActionErrorFieldWrapper(const CThostFtdcExchangeOrderActionErrorField& _data = { 0 }) :data(_data) { }
+    CThostFtdcExchangeOrderActionErrorFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcExchangeOrderActionErrorField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         strncpy(data.ExchangeID, rowValue.at("ExchangeID").c_str(), sizeof(TThostFtdcExchangeIDType));
@@ -2042,8 +2198,8 @@ struct CThostFtdcExchangeTradeFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcExchangeTradeField data;
 
-    CThostFtdcExchangeTradeFieldWrapper(const CThostFtdcExchangeTradeField& _data = {0}) :data(_data) {}
-    CThostFtdcExchangeTradeFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcExchangeTradeFieldWrapper(const CThostFtdcExchangeTradeField& _data = { 0 }) :data(_data) { }
+    CThostFtdcExchangeTradeFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcExchangeTradeField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         strncpy(data.ExchangeID, rowValue.at("ExchangeID").c_str(), sizeof(TThostFtdcExchangeIDType));
@@ -2085,9 +2241,10 @@ struct CThostFtdcTradeFieldWrapper
     static const std::string SELECT_SQL;
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcTradeField data;
+    TThostFtdcMoneyType Commission ;
 
-    CThostFtdcTradeFieldWrapper(const CThostFtdcTradeField& _data = {0}) :data(_data) {}
-    CThostFtdcTradeFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcTradeFieldWrapper(const CThostFtdcTradeField& _data = { 0 }) :data(_data) { ::memset((char*)(this) + sizeof(data), 0, sizeof(*this) - sizeof(data)); }
+    CThostFtdcTradeFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcTradeField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         strncpy(data.BrokerID, rowValue.at("BrokerID").c_str(), sizeof(TThostFtdcBrokerIDType));
@@ -2123,12 +2280,19 @@ struct CThostFtdcTradeFieldWrapper
         strncpy(data.InvestUnitID, rowValue.at("InvestUnitID").c_str(), sizeof(TThostFtdcInvestUnitIDType));
         strncpy(data.InstrumentID, rowValue.at("InstrumentID").c_str(), sizeof(TThostFtdcInstrumentIDType));
         strncpy(data.ExchangeInstID, rowValue.at("ExchangeInstID").c_str(), sizeof(TThostFtdcExchangeInstIDType));
+        Commission = std::stod(rowValue.at("Commission"));
     }
     std::string generateInsertSql() const {
         const auto insertSqlBody = std::string() + "'" +
-            data.BrokerID + "','" + data.InvestorID + "','" + data.reserve1 + "','" + data.OrderRef + "','" + data.UserID + "','" + data.ExchangeID + "','" + data.TradeID + "','" + (data.Direction == 0 ? '0' : data.Direction) + "','" + data.OrderSysID + "','" + data.ParticipantID + "','" + data.ClientID + "','" + (data.TradingRole == 0 ? '0' : data.TradingRole) + "','" + data.reserve2 + "','" + (data.OffsetFlag == 0 ? '0' : data.OffsetFlag) + "','" + (data.HedgeFlag == 0 ? '0' : data.HedgeFlag) + "','" + std::to_string(data.Price) + "','" + std::to_string(data.Volume) + "','" + data.TradeDate + "','" + data.TradeTime + "','" + (data.TradeType == 0 ? '0' : data.TradeType) + "','" + (data.PriceSource == 0 ? '0' : data.PriceSource) + "','" + data.TraderID + "','" + data.OrderLocalID + "','" + data.ClearingPartID + "','" + data.BusinessUnit + "','" + std::to_string(data.SequenceNo) + "','" + data.TradingDay + "','" + std::to_string(data.SettlementID) + "','" + std::to_string(data.BrokerOrderSeq) + "','" + (data.TradeSource == 0 ? '0' : data.TradeSource) + "','" + data.InvestUnitID + "','" + data.InstrumentID + "','" + data.ExchangeInstID
+            data.BrokerID + "','" + data.InvestorID + "','" + data.reserve1 + "','" + data.OrderRef + "','" + data.UserID + "','" + data.ExchangeID + "','" + data.TradeID + "','" + (data.Direction == 0 ? '0' : data.Direction) + "','" + data.OrderSysID + "','" + data.ParticipantID + "','" + data.ClientID + "','" + (data.TradingRole == 0 ? '0' : data.TradingRole) + "','" + data.reserve2 + "','" + (data.OffsetFlag == 0 ? '0' : data.OffsetFlag) + "','" + (data.HedgeFlag == 0 ? '0' : data.HedgeFlag) + "','" + std::to_string(data.Price) + "','" + std::to_string(data.Volume) + "','" + data.TradeDate + "','" + data.TradeTime + "','" + (data.TradeType == 0 ? '0' : data.TradeType) + "','" + (data.PriceSource == 0 ? '0' : data.PriceSource) + "','" + data.TraderID + "','" + data.OrderLocalID + "','" + data.ClearingPartID + "','" + data.BusinessUnit + "','" + std::to_string(data.SequenceNo) + "','" + data.TradingDay + "','" + std::to_string(data.SettlementID) + "','" + std::to_string(data.BrokerOrderSeq) + "','" + (data.TradeSource == 0 ? '0' : data.TradeSource) + "','" + data.InvestUnitID + "','" + data.InstrumentID + "','" + data.ExchangeInstID + "','" + std::to_string(Commission)
             + "'";
         return INSERT_SQL_PREFIX + insertSqlBody + ");";
+    }
+    std::string generateSelectSqlByUserID() const {
+        return generateSelectSqlByUserID(data.BrokerID, data.InvestorID);
+    }
+    static std::string generateSelectSqlByUserID(const std::string& BrokerID, const std::string& InvestorID) {
+        return "SELECT * FROM 'CThostFtdcTradeField' where BrokerID='" + BrokerID + "' and InvestorID='" + InvestorID + "';";
     }
 };
 
@@ -2140,8 +2304,8 @@ struct CThostFtdcUserSessionFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcUserSessionField data;
 
-    CThostFtdcUserSessionFieldWrapper(const CThostFtdcUserSessionField& _data = {0}) :data(_data) {}
-    CThostFtdcUserSessionFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcUserSessionFieldWrapper(const CThostFtdcUserSessionField& _data = { 0 }) :data(_data) { }
+    CThostFtdcUserSessionFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcUserSessionField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         data.FrontID = std::stoi(rowValue.at("FrontID"));
@@ -2164,6 +2328,12 @@ struct CThostFtdcUserSessionFieldWrapper
             + "'";
         return INSERT_SQL_PREFIX + insertSqlBody + ");";
     }
+    std::string generateSelectSqlByUserID() const {
+        return generateSelectSqlByUserID(data.BrokerID, data.UserID);
+    }
+    static std::string generateSelectSqlByUserID(const std::string& BrokerID, const std::string& UserID) {
+        return "SELECT * FROM 'CThostFtdcUserSessionField' where BrokerID='" + BrokerID + "' and UserID='" + UserID + "';";
+    }
 };
 
 struct CThostFtdcQryMaxOrderVolumeFieldWrapper
@@ -2174,8 +2344,8 @@ struct CThostFtdcQryMaxOrderVolumeFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcQryMaxOrderVolumeField data;
 
-    CThostFtdcQryMaxOrderVolumeFieldWrapper(const CThostFtdcQryMaxOrderVolumeField& _data = {0}) :data(_data) {}
-    CThostFtdcQryMaxOrderVolumeFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcQryMaxOrderVolumeFieldWrapper(const CThostFtdcQryMaxOrderVolumeField& _data = { 0 }) :data(_data) { }
+    CThostFtdcQryMaxOrderVolumeFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcQryMaxOrderVolumeField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         strncpy(data.BrokerID, rowValue.at("BrokerID").c_str(), sizeof(TThostFtdcBrokerIDType));
@@ -2195,6 +2365,12 @@ struct CThostFtdcQryMaxOrderVolumeFieldWrapper
             + "'";
         return INSERT_SQL_PREFIX + insertSqlBody + ");";
     }
+    std::string generateSelectSqlByUserID() const {
+        return generateSelectSqlByUserID(data.BrokerID, data.InvestorID);
+    }
+    static std::string generateSelectSqlByUserID(const std::string& BrokerID, const std::string& InvestorID) {
+        return "SELECT * FROM 'CThostFtdcQryMaxOrderVolumeField' where BrokerID='" + BrokerID + "' and InvestorID='" + InvestorID + "';";
+    }
 };
 
 struct CThostFtdcSettlementInfoConfirmFieldWrapper
@@ -2205,8 +2381,8 @@ struct CThostFtdcSettlementInfoConfirmFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcSettlementInfoConfirmField data;
 
-    CThostFtdcSettlementInfoConfirmFieldWrapper(const CThostFtdcSettlementInfoConfirmField& _data = {0}) :data(_data) {}
-    CThostFtdcSettlementInfoConfirmFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcSettlementInfoConfirmFieldWrapper(const CThostFtdcSettlementInfoConfirmField& _data = { 0 }) :data(_data) { }
+    CThostFtdcSettlementInfoConfirmFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcSettlementInfoConfirmField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         strncpy(data.BrokerID, rowValue.at("BrokerID").c_str(), sizeof(TThostFtdcBrokerIDType));
@@ -2223,6 +2399,12 @@ struct CThostFtdcSettlementInfoConfirmFieldWrapper
             + "'";
         return INSERT_SQL_PREFIX + insertSqlBody + ");";
     }
+    std::string generateSelectSqlByUserID() const {
+        return generateSelectSqlByUserID(data.BrokerID, data.InvestorID);
+    }
+    static std::string generateSelectSqlByUserID(const std::string& BrokerID, const std::string& InvestorID) {
+        return "SELECT * FROM 'CThostFtdcSettlementInfoConfirmField' where BrokerID='" + BrokerID + "' and InvestorID='" + InvestorID + "';";
+    }
 };
 
 struct CThostFtdcSyncDepositFieldWrapper
@@ -2233,8 +2415,8 @@ struct CThostFtdcSyncDepositFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcSyncDepositField data;
 
-    CThostFtdcSyncDepositFieldWrapper(const CThostFtdcSyncDepositField& _data = {0}) :data(_data) {}
-    CThostFtdcSyncDepositFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcSyncDepositFieldWrapper(const CThostFtdcSyncDepositField& _data = { 0 }) :data(_data) { }
+    CThostFtdcSyncDepositFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcSyncDepositField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         strncpy(data.DepositSeqNo, rowValue.at("DepositSeqNo").c_str(), sizeof(TThostFtdcDepositSeqNoType));
@@ -2250,6 +2432,12 @@ struct CThostFtdcSyncDepositFieldWrapper
             + "'";
         return INSERT_SQL_PREFIX + insertSqlBody + ");";
     }
+    std::string generateSelectSqlByUserID() const {
+        return generateSelectSqlByUserID(data.BrokerID, data.InvestorID);
+    }
+    static std::string generateSelectSqlByUserID(const std::string& BrokerID, const std::string& InvestorID) {
+        return "SELECT * FROM 'CThostFtdcSyncDepositField' where BrokerID='" + BrokerID + "' and InvestorID='" + InvestorID + "';";
+    }
 };
 
 struct CThostFtdcSyncFundMortgageFieldWrapper
@@ -2260,8 +2448,8 @@ struct CThostFtdcSyncFundMortgageFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcSyncFundMortgageField data;
 
-    CThostFtdcSyncFundMortgageFieldWrapper(const CThostFtdcSyncFundMortgageField& _data = {0}) :data(_data) {}
-    CThostFtdcSyncFundMortgageFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcSyncFundMortgageFieldWrapper(const CThostFtdcSyncFundMortgageField& _data = { 0 }) :data(_data) { }
+    CThostFtdcSyncFundMortgageFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcSyncFundMortgageField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         strncpy(data.MortgageSeqNo, rowValue.at("MortgageSeqNo").c_str(), sizeof(TThostFtdcDepositSeqNoType));
@@ -2277,6 +2465,12 @@ struct CThostFtdcSyncFundMortgageFieldWrapper
             + "'";
         return INSERT_SQL_PREFIX + insertSqlBody + ");";
     }
+    std::string generateSelectSqlByUserID() const {
+        return generateSelectSqlByUserID(data.BrokerID, data.InvestorID);
+    }
+    static std::string generateSelectSqlByUserID(const std::string& BrokerID, const std::string& InvestorID) {
+        return "SELECT * FROM 'CThostFtdcSyncFundMortgageField' where BrokerID='" + BrokerID + "' and InvestorID='" + InvestorID + "';";
+    }
 };
 
 struct CThostFtdcBrokerSyncFieldWrapper
@@ -2287,8 +2481,8 @@ struct CThostFtdcBrokerSyncFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcBrokerSyncField data;
 
-    CThostFtdcBrokerSyncFieldWrapper(const CThostFtdcBrokerSyncField& _data = {0}) :data(_data) {}
-    CThostFtdcBrokerSyncFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcBrokerSyncFieldWrapper(const CThostFtdcBrokerSyncField& _data = { 0 }) :data(_data) { }
+    CThostFtdcBrokerSyncFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcBrokerSyncField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         strncpy(data.BrokerID, rowValue.at("BrokerID").c_str(), sizeof(TThostFtdcBrokerIDType));
@@ -2309,8 +2503,8 @@ struct CThostFtdcSyncingInvestorFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcSyncingInvestorField data;
 
-    CThostFtdcSyncingInvestorFieldWrapper(const CThostFtdcSyncingInvestorField& _data = {0}) :data(_data) {}
-    CThostFtdcSyncingInvestorFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcSyncingInvestorFieldWrapper(const CThostFtdcSyncingInvestorField& _data = { 0 }) :data(_data) { }
+    CThostFtdcSyncingInvestorFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcSyncingInvestorField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         strncpy(data.InvestorID, rowValue.at("InvestorID").c_str(), sizeof(TThostFtdcInvestorIDType));
@@ -2333,6 +2527,12 @@ struct CThostFtdcSyncingInvestorFieldWrapper
             + "'";
         return INSERT_SQL_PREFIX + insertSqlBody + ");";
     }
+    std::string generateSelectSqlByUserID() const {
+        return generateSelectSqlByUserID(data.BrokerID, data.InvestorID);
+    }
+    static std::string generateSelectSqlByUserID(const std::string& BrokerID, const std::string& InvestorID) {
+        return "SELECT * FROM 'CThostFtdcSyncingInvestorField' where BrokerID='" + BrokerID + "' and InvestorID='" + InvestorID + "';";
+    }
 };
 
 struct CThostFtdcSyncingTradingCodeFieldWrapper
@@ -2343,8 +2543,8 @@ struct CThostFtdcSyncingTradingCodeFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcSyncingTradingCodeField data;
 
-    CThostFtdcSyncingTradingCodeFieldWrapper(const CThostFtdcSyncingTradingCodeField& _data = {0}) :data(_data) {}
-    CThostFtdcSyncingTradingCodeFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcSyncingTradingCodeFieldWrapper(const CThostFtdcSyncingTradingCodeField& _data = { 0 }) :data(_data) { }
+    CThostFtdcSyncingTradingCodeFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcSyncingTradingCodeField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         strncpy(data.InvestorID, rowValue.at("InvestorID").c_str(), sizeof(TThostFtdcInvestorIDType));
@@ -2360,6 +2560,12 @@ struct CThostFtdcSyncingTradingCodeFieldWrapper
             + "'";
         return INSERT_SQL_PREFIX + insertSqlBody + ");";
     }
+    std::string generateSelectSqlByUserID() const {
+        return generateSelectSqlByUserID(data.BrokerID, data.InvestorID);
+    }
+    static std::string generateSelectSqlByUserID(const std::string& BrokerID, const std::string& InvestorID) {
+        return "SELECT * FROM 'CThostFtdcSyncingTradingCodeField' where BrokerID='" + BrokerID + "' and InvestorID='" + InvestorID + "';";
+    }
 };
 
 struct CThostFtdcSyncingInvestorGroupFieldWrapper
@@ -2370,8 +2576,8 @@ struct CThostFtdcSyncingInvestorGroupFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcSyncingInvestorGroupField data;
 
-    CThostFtdcSyncingInvestorGroupFieldWrapper(const CThostFtdcSyncingInvestorGroupField& _data = {0}) :data(_data) {}
-    CThostFtdcSyncingInvestorGroupFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcSyncingInvestorGroupFieldWrapper(const CThostFtdcSyncingInvestorGroupField& _data = { 0 }) :data(_data) { }
+    CThostFtdcSyncingInvestorGroupFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcSyncingInvestorGroupField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         strncpy(data.BrokerID, rowValue.at("BrokerID").c_str(), sizeof(TThostFtdcBrokerIDType));
@@ -2394,8 +2600,8 @@ struct CThostFtdcSyncingTradingAccountFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcSyncingTradingAccountField data;
 
-    CThostFtdcSyncingTradingAccountFieldWrapper(const CThostFtdcSyncingTradingAccountField& _data = {0}) :data(_data) {}
-    CThostFtdcSyncingTradingAccountFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcSyncingTradingAccountFieldWrapper(const CThostFtdcSyncingTradingAccountField& _data = { 0 }) :data(_data) { }
+    CThostFtdcSyncingTradingAccountFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcSyncingTradingAccountField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         strncpy(data.BrokerID, rowValue.at("BrokerID").c_str(), sizeof(TThostFtdcBrokerIDType));
@@ -2453,6 +2659,12 @@ struct CThostFtdcSyncingTradingAccountFieldWrapper
             + "'";
         return INSERT_SQL_PREFIX + insertSqlBody + ");";
     }
+    std::string generateSelectSqlByUserID() const {
+        return generateSelectSqlByUserID(data.BrokerID, data.AccountID);
+    }
+    static std::string generateSelectSqlByUserID(const std::string& BrokerID, const std::string& AccountID) {
+        return "SELECT * FROM 'CThostFtdcSyncingTradingAccountField' where BrokerID='" + BrokerID + "' and AccountID='" + AccountID + "';";
+    }
 };
 
 struct CThostFtdcSyncingInvestorPositionFieldWrapper
@@ -2463,8 +2675,8 @@ struct CThostFtdcSyncingInvestorPositionFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcSyncingInvestorPositionField data;
 
-    CThostFtdcSyncingInvestorPositionFieldWrapper(const CThostFtdcSyncingInvestorPositionField& _data = {0}) :data(_data) {}
-    CThostFtdcSyncingInvestorPositionFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcSyncingInvestorPositionFieldWrapper(const CThostFtdcSyncingInvestorPositionField& _data = { 0 }) :data(_data) { }
+    CThostFtdcSyncingInvestorPositionFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcSyncingInvestorPositionField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         strncpy(data.reserve1, rowValue.at("reserve1").c_str(), sizeof(TThostFtdcOldInstrumentIDType));
@@ -2524,6 +2736,12 @@ struct CThostFtdcSyncingInvestorPositionFieldWrapper
             + "'";
         return INSERT_SQL_PREFIX + insertSqlBody + ");";
     }
+    std::string generateSelectSqlByUserID() const {
+        return generateSelectSqlByUserID(data.BrokerID, data.InvestorID);
+    }
+    static std::string generateSelectSqlByUserID(const std::string& BrokerID, const std::string& InvestorID) {
+        return "SELECT * FROM 'CThostFtdcSyncingInvestorPositionField' where BrokerID='" + BrokerID + "' and InvestorID='" + InvestorID + "';";
+    }
 };
 
 struct CThostFtdcSyncingInstrumentMarginRateFieldWrapper
@@ -2534,8 +2752,8 @@ struct CThostFtdcSyncingInstrumentMarginRateFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcSyncingInstrumentMarginRateField data;
 
-    CThostFtdcSyncingInstrumentMarginRateFieldWrapper(const CThostFtdcSyncingInstrumentMarginRateField& _data = {0}) :data(_data) {}
-    CThostFtdcSyncingInstrumentMarginRateFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcSyncingInstrumentMarginRateFieldWrapper(const CThostFtdcSyncingInstrumentMarginRateField& _data = { 0 }) :data(_data) { }
+    CThostFtdcSyncingInstrumentMarginRateFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcSyncingInstrumentMarginRateField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         strncpy(data.reserve1, rowValue.at("reserve1").c_str(), sizeof(TThostFtdcOldInstrumentIDType));
@@ -2556,6 +2774,12 @@ struct CThostFtdcSyncingInstrumentMarginRateFieldWrapper
             + "'";
         return INSERT_SQL_PREFIX + insertSqlBody + ");";
     }
+    std::string generateSelectSqlByUserID() const {
+        return generateSelectSqlByUserID(data.BrokerID, data.InvestorID);
+    }
+    static std::string generateSelectSqlByUserID(const std::string& BrokerID, const std::string& InvestorID) {
+        return "SELECT * FROM 'CThostFtdcSyncingInstrumentMarginRateField' where BrokerID='" + BrokerID + "' and InvestorID='" + InvestorID + "';";
+    }
 };
 
 struct CThostFtdcSyncingInstrumentCommissionRateFieldWrapper
@@ -2566,8 +2790,8 @@ struct CThostFtdcSyncingInstrumentCommissionRateFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcSyncingInstrumentCommissionRateField data;
 
-    CThostFtdcSyncingInstrumentCommissionRateFieldWrapper(const CThostFtdcSyncingInstrumentCommissionRateField& _data = {0}) :data(_data) {}
-    CThostFtdcSyncingInstrumentCommissionRateFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcSyncingInstrumentCommissionRateFieldWrapper(const CThostFtdcSyncingInstrumentCommissionRateField& _data = { 0 }) :data(_data) { }
+    CThostFtdcSyncingInstrumentCommissionRateFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcSyncingInstrumentCommissionRateField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         strncpy(data.reserve1, rowValue.at("reserve1").c_str(), sizeof(TThostFtdcOldInstrumentIDType));
@@ -2588,6 +2812,12 @@ struct CThostFtdcSyncingInstrumentCommissionRateFieldWrapper
             + "'";
         return INSERT_SQL_PREFIX + insertSqlBody + ");";
     }
+    std::string generateSelectSqlByUserID() const {
+        return generateSelectSqlByUserID(data.BrokerID, data.InvestorID);
+    }
+    static std::string generateSelectSqlByUserID(const std::string& BrokerID, const std::string& InvestorID) {
+        return "SELECT * FROM 'CThostFtdcSyncingInstrumentCommissionRateField' where BrokerID='" + BrokerID + "' and InvestorID='" + InvestorID + "';";
+    }
 };
 
 struct CThostFtdcSyncingInstrumentTradingRightFieldWrapper
@@ -2598,8 +2828,8 @@ struct CThostFtdcSyncingInstrumentTradingRightFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcSyncingInstrumentTradingRightField data;
 
-    CThostFtdcSyncingInstrumentTradingRightFieldWrapper(const CThostFtdcSyncingInstrumentTradingRightField& _data = {0}) :data(_data) {}
-    CThostFtdcSyncingInstrumentTradingRightFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcSyncingInstrumentTradingRightFieldWrapper(const CThostFtdcSyncingInstrumentTradingRightField& _data = { 0 }) :data(_data) { }
+    CThostFtdcSyncingInstrumentTradingRightFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcSyncingInstrumentTradingRightField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         strncpy(data.reserve1, rowValue.at("reserve1").c_str(), sizeof(TThostFtdcOldInstrumentIDType));
@@ -2615,6 +2845,12 @@ struct CThostFtdcSyncingInstrumentTradingRightFieldWrapper
             + "'";
         return INSERT_SQL_PREFIX + insertSqlBody + ");";
     }
+    std::string generateSelectSqlByUserID() const {
+        return generateSelectSqlByUserID(data.BrokerID, data.InvestorID);
+    }
+    static std::string generateSelectSqlByUserID(const std::string& BrokerID, const std::string& InvestorID) {
+        return "SELECT * FROM 'CThostFtdcSyncingInstrumentTradingRightField' where BrokerID='" + BrokerID + "' and InvestorID='" + InvestorID + "';";
+    }
 };
 
 struct CThostFtdcQryOrderFieldWrapper
@@ -2625,8 +2861,8 @@ struct CThostFtdcQryOrderFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcQryOrderField data;
 
-    CThostFtdcQryOrderFieldWrapper(const CThostFtdcQryOrderField& _data = {0}) :data(_data) {}
-    CThostFtdcQryOrderFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcQryOrderFieldWrapper(const CThostFtdcQryOrderField& _data = { 0 }) :data(_data) { }
+    CThostFtdcQryOrderFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcQryOrderField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         strncpy(data.BrokerID, rowValue.at("BrokerID").c_str(), sizeof(TThostFtdcBrokerIDType));
@@ -2645,6 +2881,12 @@ struct CThostFtdcQryOrderFieldWrapper
             + "'";
         return INSERT_SQL_PREFIX + insertSqlBody + ");";
     }
+    std::string generateSelectSqlByUserID() const {
+        return generateSelectSqlByUserID(data.BrokerID, data.InvestorID);
+    }
+    static std::string generateSelectSqlByUserID(const std::string& BrokerID, const std::string& InvestorID) {
+        return "SELECT * FROM 'CThostFtdcQryOrderField' where BrokerID='" + BrokerID + "' and InvestorID='" + InvestorID + "';";
+    }
 };
 
 struct CThostFtdcQryTradeFieldWrapper
@@ -2655,8 +2897,8 @@ struct CThostFtdcQryTradeFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcQryTradeField data;
 
-    CThostFtdcQryTradeFieldWrapper(const CThostFtdcQryTradeField& _data = {0}) :data(_data) {}
-    CThostFtdcQryTradeFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcQryTradeFieldWrapper(const CThostFtdcQryTradeField& _data = { 0 }) :data(_data) { }
+    CThostFtdcQryTradeFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcQryTradeField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         strncpy(data.BrokerID, rowValue.at("BrokerID").c_str(), sizeof(TThostFtdcBrokerIDType));
@@ -2675,6 +2917,12 @@ struct CThostFtdcQryTradeFieldWrapper
             + "'";
         return INSERT_SQL_PREFIX + insertSqlBody + ");";
     }
+    std::string generateSelectSqlByUserID() const {
+        return generateSelectSqlByUserID(data.BrokerID, data.InvestorID);
+    }
+    static std::string generateSelectSqlByUserID(const std::string& BrokerID, const std::string& InvestorID) {
+        return "SELECT * FROM 'CThostFtdcQryTradeField' where BrokerID='" + BrokerID + "' and InvestorID='" + InvestorID + "';";
+    }
 };
 
 struct CThostFtdcQryInvestorPositionFieldWrapper
@@ -2685,8 +2933,8 @@ struct CThostFtdcQryInvestorPositionFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcQryInvestorPositionField data;
 
-    CThostFtdcQryInvestorPositionFieldWrapper(const CThostFtdcQryInvestorPositionField& _data = {0}) :data(_data) {}
-    CThostFtdcQryInvestorPositionFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcQryInvestorPositionFieldWrapper(const CThostFtdcQryInvestorPositionField& _data = { 0 }) :data(_data) { }
+    CThostFtdcQryInvestorPositionFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcQryInvestorPositionField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         strncpy(data.BrokerID, rowValue.at("BrokerID").c_str(), sizeof(TThostFtdcBrokerIDType));
@@ -2702,6 +2950,12 @@ struct CThostFtdcQryInvestorPositionFieldWrapper
             + "'";
         return INSERT_SQL_PREFIX + insertSqlBody + ");";
     }
+    std::string generateSelectSqlByUserID() const {
+        return generateSelectSqlByUserID(data.BrokerID, data.InvestorID);
+    }
+    static std::string generateSelectSqlByUserID(const std::string& BrokerID, const std::string& InvestorID) {
+        return "SELECT * FROM 'CThostFtdcQryInvestorPositionField' where BrokerID='" + BrokerID + "' and InvestorID='" + InvestorID + "';";
+    }
 };
 
 struct CThostFtdcQryTradingAccountFieldWrapper
@@ -2712,8 +2966,8 @@ struct CThostFtdcQryTradingAccountFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcQryTradingAccountField data;
 
-    CThostFtdcQryTradingAccountFieldWrapper(const CThostFtdcQryTradingAccountField& _data = {0}) :data(_data) {}
-    CThostFtdcQryTradingAccountFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcQryTradingAccountFieldWrapper(const CThostFtdcQryTradingAccountField& _data = { 0 }) :data(_data) { }
+    CThostFtdcQryTradingAccountFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcQryTradingAccountField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         strncpy(data.BrokerID, rowValue.at("BrokerID").c_str(), sizeof(TThostFtdcBrokerIDType));
@@ -2728,6 +2982,12 @@ struct CThostFtdcQryTradingAccountFieldWrapper
             + "'";
         return INSERT_SQL_PREFIX + insertSqlBody + ");";
     }
+    std::string generateSelectSqlByUserID() const {
+        return generateSelectSqlByUserID(data.BrokerID, data.InvestorID);
+    }
+    static std::string generateSelectSqlByUserID(const std::string& BrokerID, const std::string& InvestorID) {
+        return "SELECT * FROM 'CThostFtdcQryTradingAccountField' where BrokerID='" + BrokerID + "' and InvestorID='" + InvestorID + "';";
+    }
 };
 
 struct CThostFtdcQryInvestorFieldWrapper
@@ -2738,8 +2998,8 @@ struct CThostFtdcQryInvestorFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcQryInvestorField data;
 
-    CThostFtdcQryInvestorFieldWrapper(const CThostFtdcQryInvestorField& _data = {0}) :data(_data) {}
-    CThostFtdcQryInvestorFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcQryInvestorFieldWrapper(const CThostFtdcQryInvestorField& _data = { 0 }) :data(_data) { }
+    CThostFtdcQryInvestorFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcQryInvestorField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         strncpy(data.BrokerID, rowValue.at("BrokerID").c_str(), sizeof(TThostFtdcBrokerIDType));
@@ -2751,6 +3011,12 @@ struct CThostFtdcQryInvestorFieldWrapper
             + "'";
         return INSERT_SQL_PREFIX + insertSqlBody + ");";
     }
+    std::string generateSelectSqlByUserID() const {
+        return generateSelectSqlByUserID(data.BrokerID, data.InvestorID);
+    }
+    static std::string generateSelectSqlByUserID(const std::string& BrokerID, const std::string& InvestorID) {
+        return "SELECT * FROM 'CThostFtdcQryInvestorField' where BrokerID='" + BrokerID + "' and InvestorID='" + InvestorID + "';";
+    }
 };
 
 struct CThostFtdcQryTradingCodeFieldWrapper
@@ -2761,8 +3027,8 @@ struct CThostFtdcQryTradingCodeFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcQryTradingCodeField data;
 
-    CThostFtdcQryTradingCodeFieldWrapper(const CThostFtdcQryTradingCodeField& _data = {0}) :data(_data) {}
-    CThostFtdcQryTradingCodeFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcQryTradingCodeFieldWrapper(const CThostFtdcQryTradingCodeField& _data = { 0 }) :data(_data) { }
+    CThostFtdcQryTradingCodeFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcQryTradingCodeField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         strncpy(data.BrokerID, rowValue.at("BrokerID").c_str(), sizeof(TThostFtdcBrokerIDType));
@@ -2778,6 +3044,12 @@ struct CThostFtdcQryTradingCodeFieldWrapper
             + "'";
         return INSERT_SQL_PREFIX + insertSqlBody + ");";
     }
+    std::string generateSelectSqlByUserID() const {
+        return generateSelectSqlByUserID(data.BrokerID, data.InvestorID);
+    }
+    static std::string generateSelectSqlByUserID(const std::string& BrokerID, const std::string& InvestorID) {
+        return "SELECT * FROM 'CThostFtdcQryTradingCodeField' where BrokerID='" + BrokerID + "' and InvestorID='" + InvestorID + "';";
+    }
 };
 
 struct CThostFtdcQryInvestorGroupFieldWrapper
@@ -2788,8 +3060,8 @@ struct CThostFtdcQryInvestorGroupFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcQryInvestorGroupField data;
 
-    CThostFtdcQryInvestorGroupFieldWrapper(const CThostFtdcQryInvestorGroupField& _data = {0}) :data(_data) {}
-    CThostFtdcQryInvestorGroupFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcQryInvestorGroupFieldWrapper(const CThostFtdcQryInvestorGroupField& _data = { 0 }) :data(_data) { }
+    CThostFtdcQryInvestorGroupFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcQryInvestorGroupField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         strncpy(data.BrokerID, rowValue.at("BrokerID").c_str(), sizeof(TThostFtdcBrokerIDType));
@@ -2810,8 +3082,8 @@ struct CThostFtdcQryInstrumentMarginRateFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcQryInstrumentMarginRateField data;
 
-    CThostFtdcQryInstrumentMarginRateFieldWrapper(const CThostFtdcQryInstrumentMarginRateField& _data = {0}) :data(_data) {}
-    CThostFtdcQryInstrumentMarginRateFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcQryInstrumentMarginRateFieldWrapper(const CThostFtdcQryInstrumentMarginRateField& _data = { 0 }) :data(_data) { }
+    CThostFtdcQryInstrumentMarginRateFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcQryInstrumentMarginRateField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         strncpy(data.BrokerID, rowValue.at("BrokerID").c_str(), sizeof(TThostFtdcBrokerIDType));
@@ -2828,6 +3100,12 @@ struct CThostFtdcQryInstrumentMarginRateFieldWrapper
             + "'";
         return INSERT_SQL_PREFIX + insertSqlBody + ");";
     }
+    std::string generateSelectSqlByUserID() const {
+        return generateSelectSqlByUserID(data.BrokerID, data.InvestorID);
+    }
+    static std::string generateSelectSqlByUserID(const std::string& BrokerID, const std::string& InvestorID) {
+        return "SELECT * FROM 'CThostFtdcQryInstrumentMarginRateField' where BrokerID='" + BrokerID + "' and InvestorID='" + InvestorID + "';";
+    }
 };
 
 struct CThostFtdcQryInstrumentCommissionRateFieldWrapper
@@ -2838,8 +3116,8 @@ struct CThostFtdcQryInstrumentCommissionRateFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcQryInstrumentCommissionRateField data;
 
-    CThostFtdcQryInstrumentCommissionRateFieldWrapper(const CThostFtdcQryInstrumentCommissionRateField& _data = {0}) :data(_data) {}
-    CThostFtdcQryInstrumentCommissionRateFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcQryInstrumentCommissionRateFieldWrapper(const CThostFtdcQryInstrumentCommissionRateField& _data = { 0 }) :data(_data) { }
+    CThostFtdcQryInstrumentCommissionRateFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcQryInstrumentCommissionRateField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         strncpy(data.BrokerID, rowValue.at("BrokerID").c_str(), sizeof(TThostFtdcBrokerIDType));
@@ -2855,6 +3133,12 @@ struct CThostFtdcQryInstrumentCommissionRateFieldWrapper
             + "'";
         return INSERT_SQL_PREFIX + insertSqlBody + ");";
     }
+    std::string generateSelectSqlByUserID() const {
+        return generateSelectSqlByUserID(data.BrokerID, data.InvestorID);
+    }
+    static std::string generateSelectSqlByUserID(const std::string& BrokerID, const std::string& InvestorID) {
+        return "SELECT * FROM 'CThostFtdcQryInstrumentCommissionRateField' where BrokerID='" + BrokerID + "' and InvestorID='" + InvestorID + "';";
+    }
 };
 
 struct CThostFtdcQryInstrumentTradingRightFieldWrapper
@@ -2865,8 +3149,8 @@ struct CThostFtdcQryInstrumentTradingRightFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcQryInstrumentTradingRightField data;
 
-    CThostFtdcQryInstrumentTradingRightFieldWrapper(const CThostFtdcQryInstrumentTradingRightField& _data = {0}) :data(_data) {}
-    CThostFtdcQryInstrumentTradingRightFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcQryInstrumentTradingRightFieldWrapper(const CThostFtdcQryInstrumentTradingRightField& _data = { 0 }) :data(_data) { }
+    CThostFtdcQryInstrumentTradingRightFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcQryInstrumentTradingRightField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         strncpy(data.BrokerID, rowValue.at("BrokerID").c_str(), sizeof(TThostFtdcBrokerIDType));
@@ -2880,6 +3164,12 @@ struct CThostFtdcQryInstrumentTradingRightFieldWrapper
             + "'";
         return INSERT_SQL_PREFIX + insertSqlBody + ");";
     }
+    std::string generateSelectSqlByUserID() const {
+        return generateSelectSqlByUserID(data.BrokerID, data.InvestorID);
+    }
+    static std::string generateSelectSqlByUserID(const std::string& BrokerID, const std::string& InvestorID) {
+        return "SELECT * FROM 'CThostFtdcQryInstrumentTradingRightField' where BrokerID='" + BrokerID + "' and InvestorID='" + InvestorID + "';";
+    }
 };
 
 struct CThostFtdcQryBrokerFieldWrapper
@@ -2890,8 +3180,8 @@ struct CThostFtdcQryBrokerFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcQryBrokerField data;
 
-    CThostFtdcQryBrokerFieldWrapper(const CThostFtdcQryBrokerField& _data = {0}) :data(_data) {}
-    CThostFtdcQryBrokerFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcQryBrokerFieldWrapper(const CThostFtdcQryBrokerField& _data = { 0 }) :data(_data) { }
+    CThostFtdcQryBrokerFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcQryBrokerField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         strncpy(data.BrokerID, rowValue.at("BrokerID").c_str(), sizeof(TThostFtdcBrokerIDType));
@@ -2912,8 +3202,8 @@ struct CThostFtdcQryTraderFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcQryTraderField data;
 
-    CThostFtdcQryTraderFieldWrapper(const CThostFtdcQryTraderField& _data = {0}) :data(_data) {}
-    CThostFtdcQryTraderFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcQryTraderFieldWrapper(const CThostFtdcQryTraderField& _data = { 0 }) :data(_data) { }
+    CThostFtdcQryTraderFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcQryTraderField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         strncpy(data.ExchangeID, rowValue.at("ExchangeID").c_str(), sizeof(TThostFtdcExchangeIDType));
@@ -2936,8 +3226,8 @@ struct CThostFtdcQrySuperUserFunctionFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcQrySuperUserFunctionField data;
 
-    CThostFtdcQrySuperUserFunctionFieldWrapper(const CThostFtdcQrySuperUserFunctionField& _data = {0}) :data(_data) {}
-    CThostFtdcQrySuperUserFunctionFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcQrySuperUserFunctionFieldWrapper(const CThostFtdcQrySuperUserFunctionField& _data = { 0 }) :data(_data) { }
+    CThostFtdcQrySuperUserFunctionFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcQrySuperUserFunctionField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         strncpy(data.UserID, rowValue.at("UserID").c_str(), sizeof(TThostFtdcUserIDType));
@@ -2958,8 +3248,8 @@ struct CThostFtdcQryUserSessionFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcQryUserSessionField data;
 
-    CThostFtdcQryUserSessionFieldWrapper(const CThostFtdcQryUserSessionField& _data = {0}) :data(_data) {}
-    CThostFtdcQryUserSessionFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcQryUserSessionFieldWrapper(const CThostFtdcQryUserSessionField& _data = { 0 }) :data(_data) { }
+    CThostFtdcQryUserSessionFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcQryUserSessionField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         data.FrontID = std::stoi(rowValue.at("FrontID"));
@@ -2973,6 +3263,12 @@ struct CThostFtdcQryUserSessionFieldWrapper
             + "'";
         return INSERT_SQL_PREFIX + insertSqlBody + ");";
     }
+    std::string generateSelectSqlByUserID() const {
+        return generateSelectSqlByUserID(data.BrokerID, data.UserID);
+    }
+    static std::string generateSelectSqlByUserID(const std::string& BrokerID, const std::string& UserID) {
+        return "SELECT * FROM 'CThostFtdcQryUserSessionField' where BrokerID='" + BrokerID + "' and UserID='" + UserID + "';";
+    }
 };
 
 struct CThostFtdcQryPartBrokerFieldWrapper
@@ -2983,8 +3279,8 @@ struct CThostFtdcQryPartBrokerFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcQryPartBrokerField data;
 
-    CThostFtdcQryPartBrokerFieldWrapper(const CThostFtdcQryPartBrokerField& _data = {0}) :data(_data) {}
-    CThostFtdcQryPartBrokerFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcQryPartBrokerFieldWrapper(const CThostFtdcQryPartBrokerField& _data = { 0 }) :data(_data) { }
+    CThostFtdcQryPartBrokerFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcQryPartBrokerField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         strncpy(data.ExchangeID, rowValue.at("ExchangeID").c_str(), sizeof(TThostFtdcExchangeIDType));
@@ -3007,8 +3303,8 @@ struct CThostFtdcQryFrontStatusFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcQryFrontStatusField data;
 
-    CThostFtdcQryFrontStatusFieldWrapper(const CThostFtdcQryFrontStatusField& _data = {0}) :data(_data) {}
-    CThostFtdcQryFrontStatusFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcQryFrontStatusFieldWrapper(const CThostFtdcQryFrontStatusField& _data = { 0 }) :data(_data) { }
+    CThostFtdcQryFrontStatusFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcQryFrontStatusField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         data.FrontID = std::stoi(rowValue.at("FrontID"));
@@ -3029,8 +3325,8 @@ struct CThostFtdcQryExchangeOrderFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcQryExchangeOrderField data;
 
-    CThostFtdcQryExchangeOrderFieldWrapper(const CThostFtdcQryExchangeOrderField& _data = {0}) :data(_data) {}
-    CThostFtdcQryExchangeOrderFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcQryExchangeOrderFieldWrapper(const CThostFtdcQryExchangeOrderField& _data = { 0 }) :data(_data) { }
+    CThostFtdcQryExchangeOrderFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcQryExchangeOrderField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         strncpy(data.ParticipantID, rowValue.at("ParticipantID").c_str(), sizeof(TThostFtdcParticipantIDType));
@@ -3056,8 +3352,8 @@ struct CThostFtdcQryOrderActionFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcQryOrderActionField data;
 
-    CThostFtdcQryOrderActionFieldWrapper(const CThostFtdcQryOrderActionField& _data = {0}) :data(_data) {}
-    CThostFtdcQryOrderActionFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcQryOrderActionFieldWrapper(const CThostFtdcQryOrderActionField& _data = { 0 }) :data(_data) { }
+    CThostFtdcQryOrderActionFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcQryOrderActionField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         strncpy(data.BrokerID, rowValue.at("BrokerID").c_str(), sizeof(TThostFtdcBrokerIDType));
@@ -3070,6 +3366,12 @@ struct CThostFtdcQryOrderActionFieldWrapper
             + "'";
         return INSERT_SQL_PREFIX + insertSqlBody + ");";
     }
+    std::string generateSelectSqlByUserID() const {
+        return generateSelectSqlByUserID(data.BrokerID, data.InvestorID);
+    }
+    static std::string generateSelectSqlByUserID(const std::string& BrokerID, const std::string& InvestorID) {
+        return "SELECT * FROM 'CThostFtdcQryOrderActionField' where BrokerID='" + BrokerID + "' and InvestorID='" + InvestorID + "';";
+    }
 };
 
 struct CThostFtdcQryExchangeOrderActionFieldWrapper
@@ -3080,8 +3382,8 @@ struct CThostFtdcQryExchangeOrderActionFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcQryExchangeOrderActionField data;
 
-    CThostFtdcQryExchangeOrderActionFieldWrapper(const CThostFtdcQryExchangeOrderActionField& _data = {0}) :data(_data) {}
-    CThostFtdcQryExchangeOrderActionFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcQryExchangeOrderActionFieldWrapper(const CThostFtdcQryExchangeOrderActionField& _data = { 0 }) :data(_data) { }
+    CThostFtdcQryExchangeOrderActionFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcQryExchangeOrderActionField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         strncpy(data.ParticipantID, rowValue.at("ParticipantID").c_str(), sizeof(TThostFtdcParticipantIDType));
@@ -3105,8 +3407,8 @@ struct CThostFtdcQrySuperUserFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcQrySuperUserField data;
 
-    CThostFtdcQrySuperUserFieldWrapper(const CThostFtdcQrySuperUserField& _data = {0}) :data(_data) {}
-    CThostFtdcQrySuperUserFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcQrySuperUserFieldWrapper(const CThostFtdcQrySuperUserField& _data = { 0 }) :data(_data) { }
+    CThostFtdcQrySuperUserFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcQrySuperUserField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         strncpy(data.UserID, rowValue.at("UserID").c_str(), sizeof(TThostFtdcUserIDType));
@@ -3127,8 +3429,8 @@ struct CThostFtdcQryExchangeFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcQryExchangeField data;
 
-    CThostFtdcQryExchangeFieldWrapper(const CThostFtdcQryExchangeField& _data = {0}) :data(_data) {}
-    CThostFtdcQryExchangeFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcQryExchangeFieldWrapper(const CThostFtdcQryExchangeField& _data = { 0 }) :data(_data) { }
+    CThostFtdcQryExchangeFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcQryExchangeField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         strncpy(data.ExchangeID, rowValue.at("ExchangeID").c_str(), sizeof(TThostFtdcExchangeIDType));
@@ -3149,8 +3451,8 @@ struct CThostFtdcQryProductFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcQryProductField data;
 
-    CThostFtdcQryProductFieldWrapper(const CThostFtdcQryProductField& _data = {0}) :data(_data) {}
-    CThostFtdcQryProductFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcQryProductFieldWrapper(const CThostFtdcQryProductField& _data = { 0 }) :data(_data) { }
+    CThostFtdcQryProductFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcQryProductField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         strncpy(data.reserve1, rowValue.at("reserve1").c_str(), sizeof(TThostFtdcOldInstrumentIDType));
@@ -3174,8 +3476,8 @@ struct CThostFtdcQryInstrumentFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcQryInstrumentField data;
 
-    CThostFtdcQryInstrumentFieldWrapper(const CThostFtdcQryInstrumentField& _data = {0}) :data(_data) {}
-    CThostFtdcQryInstrumentFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcQryInstrumentFieldWrapper(const CThostFtdcQryInstrumentField& _data = { 0 }) :data(_data) { }
+    CThostFtdcQryInstrumentFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcQryInstrumentField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         strncpy(data.reserve1, rowValue.at("reserve1").c_str(), sizeof(TThostFtdcOldInstrumentIDType));
@@ -3202,8 +3504,8 @@ struct CThostFtdcQryDepthMarketDataFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcQryDepthMarketDataField data;
 
-    CThostFtdcQryDepthMarketDataFieldWrapper(const CThostFtdcQryDepthMarketDataField& _data = {0}) :data(_data) {}
-    CThostFtdcQryDepthMarketDataFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcQryDepthMarketDataFieldWrapper(const CThostFtdcQryDepthMarketDataField& _data = { 0 }) :data(_data) { }
+    CThostFtdcQryDepthMarketDataFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcQryDepthMarketDataField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         strncpy(data.reserve1, rowValue.at("reserve1").c_str(), sizeof(TThostFtdcOldInstrumentIDType));
@@ -3226,8 +3528,8 @@ struct CThostFtdcQryBrokerUserFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcQryBrokerUserField data;
 
-    CThostFtdcQryBrokerUserFieldWrapper(const CThostFtdcQryBrokerUserField& _data = {0}) :data(_data) {}
-    CThostFtdcQryBrokerUserFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcQryBrokerUserFieldWrapper(const CThostFtdcQryBrokerUserField& _data = { 0 }) :data(_data) { }
+    CThostFtdcQryBrokerUserFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcQryBrokerUserField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         strncpy(data.BrokerID, rowValue.at("BrokerID").c_str(), sizeof(TThostFtdcBrokerIDType));
@@ -3239,6 +3541,12 @@ struct CThostFtdcQryBrokerUserFieldWrapper
             + "'";
         return INSERT_SQL_PREFIX + insertSqlBody + ");";
     }
+    std::string generateSelectSqlByUserID() const {
+        return generateSelectSqlByUserID(data.BrokerID, data.UserID);
+    }
+    static std::string generateSelectSqlByUserID(const std::string& BrokerID, const std::string& UserID) {
+        return "SELECT * FROM 'CThostFtdcQryBrokerUserField' where BrokerID='" + BrokerID + "' and UserID='" + UserID + "';";
+    }
 };
 
 struct CThostFtdcQryBrokerUserFunctionFieldWrapper
@@ -3249,8 +3557,8 @@ struct CThostFtdcQryBrokerUserFunctionFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcQryBrokerUserFunctionField data;
 
-    CThostFtdcQryBrokerUserFunctionFieldWrapper(const CThostFtdcQryBrokerUserFunctionField& _data = {0}) :data(_data) {}
-    CThostFtdcQryBrokerUserFunctionFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcQryBrokerUserFunctionFieldWrapper(const CThostFtdcQryBrokerUserFunctionField& _data = { 0 }) :data(_data) { }
+    CThostFtdcQryBrokerUserFunctionFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcQryBrokerUserFunctionField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         strncpy(data.BrokerID, rowValue.at("BrokerID").c_str(), sizeof(TThostFtdcBrokerIDType));
@@ -3262,6 +3570,12 @@ struct CThostFtdcQryBrokerUserFunctionFieldWrapper
             + "'";
         return INSERT_SQL_PREFIX + insertSqlBody + ");";
     }
+    std::string generateSelectSqlByUserID() const {
+        return generateSelectSqlByUserID(data.BrokerID, data.UserID);
+    }
+    static std::string generateSelectSqlByUserID(const std::string& BrokerID, const std::string& UserID) {
+        return "SELECT * FROM 'CThostFtdcQryBrokerUserFunctionField' where BrokerID='" + BrokerID + "' and UserID='" + UserID + "';";
+    }
 };
 
 struct CThostFtdcQryTraderOfferFieldWrapper
@@ -3272,8 +3586,8 @@ struct CThostFtdcQryTraderOfferFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcQryTraderOfferField data;
 
-    CThostFtdcQryTraderOfferFieldWrapper(const CThostFtdcQryTraderOfferField& _data = {0}) :data(_data) {}
-    CThostFtdcQryTraderOfferFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcQryTraderOfferFieldWrapper(const CThostFtdcQryTraderOfferField& _data = { 0 }) :data(_data) { }
+    CThostFtdcQryTraderOfferFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcQryTraderOfferField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         strncpy(data.ExchangeID, rowValue.at("ExchangeID").c_str(), sizeof(TThostFtdcExchangeIDType));
@@ -3296,8 +3610,8 @@ struct CThostFtdcQrySyncDepositFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcQrySyncDepositField data;
 
-    CThostFtdcQrySyncDepositFieldWrapper(const CThostFtdcQrySyncDepositField& _data = {0}) :data(_data) {}
-    CThostFtdcQrySyncDepositFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcQrySyncDepositFieldWrapper(const CThostFtdcQrySyncDepositField& _data = { 0 }) :data(_data) { }
+    CThostFtdcQrySyncDepositFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcQrySyncDepositField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         strncpy(data.BrokerID, rowValue.at("BrokerID").c_str(), sizeof(TThostFtdcBrokerIDType));
@@ -3319,8 +3633,8 @@ struct CThostFtdcQrySettlementInfoFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcQrySettlementInfoField data;
 
-    CThostFtdcQrySettlementInfoFieldWrapper(const CThostFtdcQrySettlementInfoField& _data = {0}) :data(_data) {}
-    CThostFtdcQrySettlementInfoFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcQrySettlementInfoFieldWrapper(const CThostFtdcQrySettlementInfoField& _data = { 0 }) :data(_data) { }
+    CThostFtdcQrySettlementInfoFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcQrySettlementInfoField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         strncpy(data.BrokerID, rowValue.at("BrokerID").c_str(), sizeof(TThostFtdcBrokerIDType));
@@ -3335,6 +3649,12 @@ struct CThostFtdcQrySettlementInfoFieldWrapper
             + "'";
         return INSERT_SQL_PREFIX + insertSqlBody + ");";
     }
+    std::string generateSelectSqlByUserID() const {
+        return generateSelectSqlByUserID(data.BrokerID, data.InvestorID);
+    }
+    static std::string generateSelectSqlByUserID(const std::string& BrokerID, const std::string& InvestorID) {
+        return "SELECT * FROM 'CThostFtdcQrySettlementInfoField' where BrokerID='" + BrokerID + "' and InvestorID='" + InvestorID + "';";
+    }
 };
 
 struct CThostFtdcQryExchangeMarginRateFieldWrapper
@@ -3345,8 +3665,8 @@ struct CThostFtdcQryExchangeMarginRateFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcQryExchangeMarginRateField data;
 
-    CThostFtdcQryExchangeMarginRateFieldWrapper(const CThostFtdcQryExchangeMarginRateField& _data = {0}) :data(_data) {}
-    CThostFtdcQryExchangeMarginRateFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcQryExchangeMarginRateFieldWrapper(const CThostFtdcQryExchangeMarginRateField& _data = { 0 }) :data(_data) { }
+    CThostFtdcQryExchangeMarginRateFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcQryExchangeMarginRateField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         strncpy(data.BrokerID, rowValue.at("BrokerID").c_str(), sizeof(TThostFtdcBrokerIDType));
@@ -3371,8 +3691,8 @@ struct CThostFtdcQryExchangeMarginRateAdjustFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcQryExchangeMarginRateAdjustField data;
 
-    CThostFtdcQryExchangeMarginRateAdjustFieldWrapper(const CThostFtdcQryExchangeMarginRateAdjustField& _data = {0}) :data(_data) {}
-    CThostFtdcQryExchangeMarginRateAdjustFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcQryExchangeMarginRateAdjustFieldWrapper(const CThostFtdcQryExchangeMarginRateAdjustField& _data = { 0 }) :data(_data) { }
+    CThostFtdcQryExchangeMarginRateAdjustFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcQryExchangeMarginRateAdjustField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         strncpy(data.BrokerID, rowValue.at("BrokerID").c_str(), sizeof(TThostFtdcBrokerIDType));
@@ -3396,8 +3716,8 @@ struct CThostFtdcQryExchangeRateFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcQryExchangeRateField data;
 
-    CThostFtdcQryExchangeRateFieldWrapper(const CThostFtdcQryExchangeRateField& _data = {0}) :data(_data) {}
-    CThostFtdcQryExchangeRateFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcQryExchangeRateFieldWrapper(const CThostFtdcQryExchangeRateField& _data = { 0 }) :data(_data) { }
+    CThostFtdcQryExchangeRateFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcQryExchangeRateField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         strncpy(data.BrokerID, rowValue.at("BrokerID").c_str(), sizeof(TThostFtdcBrokerIDType));
@@ -3420,8 +3740,8 @@ struct CThostFtdcQrySyncFundMortgageFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcQrySyncFundMortgageField data;
 
-    CThostFtdcQrySyncFundMortgageFieldWrapper(const CThostFtdcQrySyncFundMortgageField& _data = {0}) :data(_data) {}
-    CThostFtdcQrySyncFundMortgageFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcQrySyncFundMortgageFieldWrapper(const CThostFtdcQrySyncFundMortgageField& _data = { 0 }) :data(_data) { }
+    CThostFtdcQrySyncFundMortgageFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcQrySyncFundMortgageField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         strncpy(data.BrokerID, rowValue.at("BrokerID").c_str(), sizeof(TThostFtdcBrokerIDType));
@@ -3443,8 +3763,8 @@ struct CThostFtdcQryHisOrderFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcQryHisOrderField data;
 
-    CThostFtdcQryHisOrderFieldWrapper(const CThostFtdcQryHisOrderField& _data = {0}) :data(_data) {}
-    CThostFtdcQryHisOrderFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcQryHisOrderFieldWrapper(const CThostFtdcQryHisOrderField& _data = { 0 }) :data(_data) { }
+    CThostFtdcQryHisOrderFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcQryHisOrderField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         strncpy(data.BrokerID, rowValue.at("BrokerID").c_str(), sizeof(TThostFtdcBrokerIDType));
@@ -3464,6 +3784,12 @@ struct CThostFtdcQryHisOrderFieldWrapper
             + "'";
         return INSERT_SQL_PREFIX + insertSqlBody + ");";
     }
+    std::string generateSelectSqlByUserID() const {
+        return generateSelectSqlByUserID(data.BrokerID, data.InvestorID);
+    }
+    static std::string generateSelectSqlByUserID(const std::string& BrokerID, const std::string& InvestorID) {
+        return "SELECT * FROM 'CThostFtdcQryHisOrderField' where BrokerID='" + BrokerID + "' and InvestorID='" + InvestorID + "';";
+    }
 };
 
 struct CThostFtdcOptionInstrMiniMarginFieldWrapper
@@ -3474,8 +3800,8 @@ struct CThostFtdcOptionInstrMiniMarginFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcOptionInstrMiniMarginField data;
 
-    CThostFtdcOptionInstrMiniMarginFieldWrapper(const CThostFtdcOptionInstrMiniMarginField& _data = {0}) :data(_data) {}
-    CThostFtdcOptionInstrMiniMarginFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcOptionInstrMiniMarginFieldWrapper(const CThostFtdcOptionInstrMiniMarginField& _data = { 0 }) :data(_data) { }
+    CThostFtdcOptionInstrMiniMarginFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcOptionInstrMiniMarginField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         strncpy(data.reserve1, rowValue.at("reserve1").c_str(), sizeof(TThostFtdcOldInstrumentIDType));
@@ -3493,6 +3819,12 @@ struct CThostFtdcOptionInstrMiniMarginFieldWrapper
             + "'";
         return INSERT_SQL_PREFIX + insertSqlBody + ");";
     }
+    std::string generateSelectSqlByUserID() const {
+        return generateSelectSqlByUserID(data.BrokerID, data.InvestorID);
+    }
+    static std::string generateSelectSqlByUserID(const std::string& BrokerID, const std::string& InvestorID) {
+        return "SELECT * FROM 'CThostFtdcOptionInstrMiniMarginField' where BrokerID='" + BrokerID + "' and InvestorID='" + InvestorID + "';";
+    }
 };
 
 struct CThostFtdcOptionInstrMarginAdjustFieldWrapper
@@ -3503,8 +3835,8 @@ struct CThostFtdcOptionInstrMarginAdjustFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcOptionInstrMarginAdjustField data;
 
-    CThostFtdcOptionInstrMarginAdjustFieldWrapper(const CThostFtdcOptionInstrMarginAdjustField& _data = {0}) :data(_data) {}
-    CThostFtdcOptionInstrMarginAdjustFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcOptionInstrMarginAdjustFieldWrapper(const CThostFtdcOptionInstrMarginAdjustField& _data = { 0 }) :data(_data) { }
+    CThostFtdcOptionInstrMarginAdjustFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcOptionInstrMarginAdjustField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         strncpy(data.reserve1, rowValue.at("reserve1").c_str(), sizeof(TThostFtdcOldInstrumentIDType));
@@ -3528,6 +3860,12 @@ struct CThostFtdcOptionInstrMarginAdjustFieldWrapper
             + "'";
         return INSERT_SQL_PREFIX + insertSqlBody + ");";
     }
+    std::string generateSelectSqlByUserID() const {
+        return generateSelectSqlByUserID(data.BrokerID, data.InvestorID);
+    }
+    static std::string generateSelectSqlByUserID(const std::string& BrokerID, const std::string& InvestorID) {
+        return "SELECT * FROM 'CThostFtdcOptionInstrMarginAdjustField' where BrokerID='" + BrokerID + "' and InvestorID='" + InvestorID + "';";
+    }
 };
 
 struct CThostFtdcOptionInstrCommRateFieldWrapper
@@ -3538,8 +3876,8 @@ struct CThostFtdcOptionInstrCommRateFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcOptionInstrCommRateField data;
 
-    CThostFtdcOptionInstrCommRateFieldWrapper(const CThostFtdcOptionInstrCommRateField& _data = {0}) :data(_data) {}
-    CThostFtdcOptionInstrCommRateFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcOptionInstrCommRateFieldWrapper(const CThostFtdcOptionInstrCommRateField& _data = { 0 }) :data(_data) { }
+    CThostFtdcOptionInstrCommRateFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcOptionInstrCommRateField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         strncpy(data.reserve1, rowValue.at("reserve1").c_str(), sizeof(TThostFtdcOldInstrumentIDType));
@@ -3564,6 +3902,12 @@ struct CThostFtdcOptionInstrCommRateFieldWrapper
             + "'";
         return INSERT_SQL_PREFIX + insertSqlBody + ");";
     }
+    std::string generateSelectSqlByUserID() const {
+        return generateSelectSqlByUserID(data.BrokerID, data.InvestorID);
+    }
+    static std::string generateSelectSqlByUserID(const std::string& BrokerID, const std::string& InvestorID) {
+        return "SELECT * FROM 'CThostFtdcOptionInstrCommRateField' where BrokerID='" + BrokerID + "' and InvestorID='" + InvestorID + "';";
+    }
 };
 
 struct CThostFtdcOptionInstrTradeCostFieldWrapper
@@ -3574,8 +3918,8 @@ struct CThostFtdcOptionInstrTradeCostFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcOptionInstrTradeCostField data;
 
-    CThostFtdcOptionInstrTradeCostFieldWrapper(const CThostFtdcOptionInstrTradeCostField& _data = {0}) :data(_data) {}
-    CThostFtdcOptionInstrTradeCostFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcOptionInstrTradeCostFieldWrapper(const CThostFtdcOptionInstrTradeCostField& _data = { 0 }) :data(_data) { }
+    CThostFtdcOptionInstrTradeCostFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcOptionInstrTradeCostField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         strncpy(data.BrokerID, rowValue.at("BrokerID").c_str(), sizeof(TThostFtdcBrokerIDType));
@@ -3597,6 +3941,12 @@ struct CThostFtdcOptionInstrTradeCostFieldWrapper
             + "'";
         return INSERT_SQL_PREFIX + insertSqlBody + ");";
     }
+    std::string generateSelectSqlByUserID() const {
+        return generateSelectSqlByUserID(data.BrokerID, data.InvestorID);
+    }
+    static std::string generateSelectSqlByUserID(const std::string& BrokerID, const std::string& InvestorID) {
+        return "SELECT * FROM 'CThostFtdcOptionInstrTradeCostField' where BrokerID='" + BrokerID + "' and InvestorID='" + InvestorID + "';";
+    }
 };
 
 struct CThostFtdcQryOptionInstrTradeCostFieldWrapper
@@ -3607,8 +3957,8 @@ struct CThostFtdcQryOptionInstrTradeCostFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcQryOptionInstrTradeCostField data;
 
-    CThostFtdcQryOptionInstrTradeCostFieldWrapper(const CThostFtdcQryOptionInstrTradeCostField& _data = {0}) :data(_data) {}
-    CThostFtdcQryOptionInstrTradeCostFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcQryOptionInstrTradeCostFieldWrapper(const CThostFtdcQryOptionInstrTradeCostField& _data = { 0 }) :data(_data) { }
+    CThostFtdcQryOptionInstrTradeCostFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcQryOptionInstrTradeCostField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         strncpy(data.BrokerID, rowValue.at("BrokerID").c_str(), sizeof(TThostFtdcBrokerIDType));
@@ -3627,6 +3977,12 @@ struct CThostFtdcQryOptionInstrTradeCostFieldWrapper
             + "'";
         return INSERT_SQL_PREFIX + insertSqlBody + ");";
     }
+    std::string generateSelectSqlByUserID() const {
+        return generateSelectSqlByUserID(data.BrokerID, data.InvestorID);
+    }
+    static std::string generateSelectSqlByUserID(const std::string& BrokerID, const std::string& InvestorID) {
+        return "SELECT * FROM 'CThostFtdcQryOptionInstrTradeCostField' where BrokerID='" + BrokerID + "' and InvestorID='" + InvestorID + "';";
+    }
 };
 
 struct CThostFtdcQryOptionInstrCommRateFieldWrapper
@@ -3637,8 +3993,8 @@ struct CThostFtdcQryOptionInstrCommRateFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcQryOptionInstrCommRateField data;
 
-    CThostFtdcQryOptionInstrCommRateFieldWrapper(const CThostFtdcQryOptionInstrCommRateField& _data = {0}) :data(_data) {}
-    CThostFtdcQryOptionInstrCommRateFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcQryOptionInstrCommRateFieldWrapper(const CThostFtdcQryOptionInstrCommRateField& _data = { 0 }) :data(_data) { }
+    CThostFtdcQryOptionInstrCommRateFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcQryOptionInstrCommRateField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         strncpy(data.BrokerID, rowValue.at("BrokerID").c_str(), sizeof(TThostFtdcBrokerIDType));
@@ -3654,6 +4010,12 @@ struct CThostFtdcQryOptionInstrCommRateFieldWrapper
             + "'";
         return INSERT_SQL_PREFIX + insertSqlBody + ");";
     }
+    std::string generateSelectSqlByUserID() const {
+        return generateSelectSqlByUserID(data.BrokerID, data.InvestorID);
+    }
+    static std::string generateSelectSqlByUserID(const std::string& BrokerID, const std::string& InvestorID) {
+        return "SELECT * FROM 'CThostFtdcQryOptionInstrCommRateField' where BrokerID='" + BrokerID + "' and InvestorID='" + InvestorID + "';";
+    }
 };
 
 struct CThostFtdcIndexPriceFieldWrapper
@@ -3664,8 +4026,8 @@ struct CThostFtdcIndexPriceFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcIndexPriceField data;
 
-    CThostFtdcIndexPriceFieldWrapper(const CThostFtdcIndexPriceField& _data = {0}) :data(_data) {}
-    CThostFtdcIndexPriceFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcIndexPriceFieldWrapper(const CThostFtdcIndexPriceField& _data = { 0 }) :data(_data) { }
+    CThostFtdcIndexPriceFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcIndexPriceField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         strncpy(data.BrokerID, rowValue.at("BrokerID").c_str(), sizeof(TThostFtdcBrokerIDType));
@@ -3689,8 +4051,8 @@ struct CThostFtdcInputExecOrderFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcInputExecOrderField data;
 
-    CThostFtdcInputExecOrderFieldWrapper(const CThostFtdcInputExecOrderField& _data = {0}) :data(_data) {}
-    CThostFtdcInputExecOrderFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcInputExecOrderFieldWrapper(const CThostFtdcInputExecOrderField& _data = { 0 }) :data(_data) { }
+    CThostFtdcInputExecOrderFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcInputExecOrderField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         strncpy(data.BrokerID, rowValue.at("BrokerID").c_str(), sizeof(TThostFtdcBrokerIDType));
@@ -3723,6 +4085,12 @@ struct CThostFtdcInputExecOrderFieldWrapper
             + "'";
         return INSERT_SQL_PREFIX + insertSqlBody + ");";
     }
+    std::string generateSelectSqlByUserID() const {
+        return generateSelectSqlByUserID(data.BrokerID, data.InvestorID);
+    }
+    static std::string generateSelectSqlByUserID(const std::string& BrokerID, const std::string& InvestorID) {
+        return "SELECT * FROM 'CThostFtdcInputExecOrderField' where BrokerID='" + BrokerID + "' and InvestorID='" + InvestorID + "';";
+    }
 };
 
 struct CThostFtdcInputExecOrderActionFieldWrapper
@@ -3733,8 +4101,8 @@ struct CThostFtdcInputExecOrderActionFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcInputExecOrderActionField data;
 
-    CThostFtdcInputExecOrderActionFieldWrapper(const CThostFtdcInputExecOrderActionField& _data = {0}) :data(_data) {}
-    CThostFtdcInputExecOrderActionFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcInputExecOrderActionFieldWrapper(const CThostFtdcInputExecOrderActionField& _data = { 0 }) :data(_data) { }
+    CThostFtdcInputExecOrderActionFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcInputExecOrderActionField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         strncpy(data.BrokerID, rowValue.at("BrokerID").c_str(), sizeof(TThostFtdcBrokerIDType));
@@ -3761,6 +4129,12 @@ struct CThostFtdcInputExecOrderActionFieldWrapper
             + "'";
         return INSERT_SQL_PREFIX + insertSqlBody + ");";
     }
+    std::string generateSelectSqlByUserID() const {
+        return generateSelectSqlByUserID(data.BrokerID, data.InvestorID);
+    }
+    static std::string generateSelectSqlByUserID(const std::string& BrokerID, const std::string& InvestorID) {
+        return "SELECT * FROM 'CThostFtdcInputExecOrderActionField' where BrokerID='" + BrokerID + "' and InvestorID='" + InvestorID + "';";
+    }
 };
 
 struct CThostFtdcExecOrderFieldWrapper
@@ -3771,8 +4145,8 @@ struct CThostFtdcExecOrderFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcExecOrderField data;
 
-    CThostFtdcExecOrderFieldWrapper(const CThostFtdcExecOrderField& _data = {0}) :data(_data) {}
-    CThostFtdcExecOrderFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcExecOrderFieldWrapper(const CThostFtdcExecOrderField& _data = { 0 }) :data(_data) { }
+    CThostFtdcExecOrderFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcExecOrderField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         strncpy(data.BrokerID, rowValue.at("BrokerID").c_str(), sizeof(TThostFtdcBrokerIDType));
@@ -3829,6 +4203,12 @@ struct CThostFtdcExecOrderFieldWrapper
             + "'";
         return INSERT_SQL_PREFIX + insertSqlBody + ");";
     }
+    std::string generateSelectSqlByUserID() const {
+        return generateSelectSqlByUserID(data.BrokerID, data.InvestorID);
+    }
+    static std::string generateSelectSqlByUserID(const std::string& BrokerID, const std::string& InvestorID) {
+        return "SELECT * FROM 'CThostFtdcExecOrderField' where BrokerID='" + BrokerID + "' and InvestorID='" + InvestorID + "';";
+    }
 };
 
 struct CThostFtdcExecOrderActionFieldWrapper
@@ -3839,8 +4219,8 @@ struct CThostFtdcExecOrderActionFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcExecOrderActionField data;
 
-    CThostFtdcExecOrderActionFieldWrapper(const CThostFtdcExecOrderActionField& _data = {0}) :data(_data) {}
-    CThostFtdcExecOrderActionFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcExecOrderActionFieldWrapper(const CThostFtdcExecOrderActionField& _data = { 0 }) :data(_data) { }
+    CThostFtdcExecOrderActionFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcExecOrderActionField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         strncpy(data.BrokerID, rowValue.at("BrokerID").c_str(), sizeof(TThostFtdcBrokerIDType));
@@ -3880,6 +4260,12 @@ struct CThostFtdcExecOrderActionFieldWrapper
             + "'";
         return INSERT_SQL_PREFIX + insertSqlBody + ");";
     }
+    std::string generateSelectSqlByUserID() const {
+        return generateSelectSqlByUserID(data.BrokerID, data.InvestorID);
+    }
+    static std::string generateSelectSqlByUserID(const std::string& BrokerID, const std::string& InvestorID) {
+        return "SELECT * FROM 'CThostFtdcExecOrderActionField' where BrokerID='" + BrokerID + "' and InvestorID='" + InvestorID + "';";
+    }
 };
 
 struct CThostFtdcQryExecOrderFieldWrapper
@@ -3890,8 +4276,8 @@ struct CThostFtdcQryExecOrderFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcQryExecOrderField data;
 
-    CThostFtdcQryExecOrderFieldWrapper(const CThostFtdcQryExecOrderField& _data = {0}) :data(_data) {}
-    CThostFtdcQryExecOrderFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcQryExecOrderFieldWrapper(const CThostFtdcQryExecOrderField& _data = { 0 }) :data(_data) { }
+    CThostFtdcQryExecOrderFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcQryExecOrderField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         strncpy(data.BrokerID, rowValue.at("BrokerID").c_str(), sizeof(TThostFtdcBrokerIDType));
@@ -3909,6 +4295,12 @@ struct CThostFtdcQryExecOrderFieldWrapper
             + "'";
         return INSERT_SQL_PREFIX + insertSqlBody + ");";
     }
+    std::string generateSelectSqlByUserID() const {
+        return generateSelectSqlByUserID(data.BrokerID, data.InvestorID);
+    }
+    static std::string generateSelectSqlByUserID(const std::string& BrokerID, const std::string& InvestorID) {
+        return "SELECT * FROM 'CThostFtdcQryExecOrderField' where BrokerID='" + BrokerID + "' and InvestorID='" + InvestorID + "';";
+    }
 };
 
 struct CThostFtdcExchangeExecOrderFieldWrapper
@@ -3919,8 +4311,8 @@ struct CThostFtdcExchangeExecOrderFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcExchangeExecOrderField data;
 
-    CThostFtdcExchangeExecOrderFieldWrapper(const CThostFtdcExchangeExecOrderField& _data = {0}) :data(_data) {}
-    CThostFtdcExchangeExecOrderFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcExchangeExecOrderFieldWrapper(const CThostFtdcExchangeExecOrderField& _data = { 0 }) :data(_data) { }
+    CThostFtdcExchangeExecOrderFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcExchangeExecOrderField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         data.Volume = std::stoi(rowValue.at("Volume"));
@@ -3972,8 +4364,8 @@ struct CThostFtdcQryExchangeExecOrderFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcQryExchangeExecOrderField data;
 
-    CThostFtdcQryExchangeExecOrderFieldWrapper(const CThostFtdcQryExchangeExecOrderField& _data = {0}) :data(_data) {}
-    CThostFtdcQryExchangeExecOrderFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcQryExchangeExecOrderFieldWrapper(const CThostFtdcQryExchangeExecOrderField& _data = { 0 }) :data(_data) { }
+    CThostFtdcQryExchangeExecOrderFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcQryExchangeExecOrderField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         strncpy(data.ParticipantID, rowValue.at("ParticipantID").c_str(), sizeof(TThostFtdcParticipantIDType));
@@ -3999,8 +4391,8 @@ struct CThostFtdcQryExecOrderActionFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcQryExecOrderActionField data;
 
-    CThostFtdcQryExecOrderActionFieldWrapper(const CThostFtdcQryExecOrderActionField& _data = {0}) :data(_data) {}
-    CThostFtdcQryExecOrderActionFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcQryExecOrderActionFieldWrapper(const CThostFtdcQryExecOrderActionField& _data = { 0 }) :data(_data) { }
+    CThostFtdcQryExecOrderActionFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcQryExecOrderActionField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         strncpy(data.BrokerID, rowValue.at("BrokerID").c_str(), sizeof(TThostFtdcBrokerIDType));
@@ -4013,6 +4405,12 @@ struct CThostFtdcQryExecOrderActionFieldWrapper
             + "'";
         return INSERT_SQL_PREFIX + insertSqlBody + ");";
     }
+    std::string generateSelectSqlByUserID() const {
+        return generateSelectSqlByUserID(data.BrokerID, data.InvestorID);
+    }
+    static std::string generateSelectSqlByUserID(const std::string& BrokerID, const std::string& InvestorID) {
+        return "SELECT * FROM 'CThostFtdcQryExecOrderActionField' where BrokerID='" + BrokerID + "' and InvestorID='" + InvestorID + "';";
+    }
 };
 
 struct CThostFtdcExchangeExecOrderActionFieldWrapper
@@ -4023,8 +4421,8 @@ struct CThostFtdcExchangeExecOrderActionFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcExchangeExecOrderActionField data;
 
-    CThostFtdcExchangeExecOrderActionFieldWrapper(const CThostFtdcExchangeExecOrderActionField& _data = {0}) :data(_data) {}
-    CThostFtdcExchangeExecOrderActionFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcExchangeExecOrderActionFieldWrapper(const CThostFtdcExchangeExecOrderActionField& _data = { 0 }) :data(_data) { }
+    CThostFtdcExchangeExecOrderActionFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcExchangeExecOrderActionField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         strncpy(data.ExchangeID, rowValue.at("ExchangeID").c_str(), sizeof(TThostFtdcExchangeIDType));
@@ -4066,8 +4464,8 @@ struct CThostFtdcQryExchangeExecOrderActionFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcQryExchangeExecOrderActionField data;
 
-    CThostFtdcQryExchangeExecOrderActionFieldWrapper(const CThostFtdcQryExchangeExecOrderActionField& _data = {0}) :data(_data) {}
-    CThostFtdcQryExchangeExecOrderActionFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcQryExchangeExecOrderActionFieldWrapper(const CThostFtdcQryExchangeExecOrderActionField& _data = { 0 }) :data(_data) { }
+    CThostFtdcQryExchangeExecOrderActionFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcQryExchangeExecOrderActionField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         strncpy(data.ParticipantID, rowValue.at("ParticipantID").c_str(), sizeof(TThostFtdcParticipantIDType));
@@ -4091,8 +4489,8 @@ struct CThostFtdcErrExecOrderFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcErrExecOrderField data;
 
-    CThostFtdcErrExecOrderFieldWrapper(const CThostFtdcErrExecOrderField& _data = {0}) :data(_data) {}
-    CThostFtdcErrExecOrderFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcErrExecOrderFieldWrapper(const CThostFtdcErrExecOrderField& _data = { 0 }) :data(_data) { }
+    CThostFtdcErrExecOrderFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcErrExecOrderField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         strncpy(data.BrokerID, rowValue.at("BrokerID").c_str(), sizeof(TThostFtdcBrokerIDType));
@@ -4127,6 +4525,12 @@ struct CThostFtdcErrExecOrderFieldWrapper
             + "'";
         return INSERT_SQL_PREFIX + insertSqlBody + ");";
     }
+    std::string generateSelectSqlByUserID() const {
+        return generateSelectSqlByUserID(data.BrokerID, data.InvestorID);
+    }
+    static std::string generateSelectSqlByUserID(const std::string& BrokerID, const std::string& InvestorID) {
+        return "SELECT * FROM 'CThostFtdcErrExecOrderField' where BrokerID='" + BrokerID + "' and InvestorID='" + InvestorID + "';";
+    }
 };
 
 struct CThostFtdcQryErrExecOrderFieldWrapper
@@ -4137,8 +4541,8 @@ struct CThostFtdcQryErrExecOrderFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcQryErrExecOrderField data;
 
-    CThostFtdcQryErrExecOrderFieldWrapper(const CThostFtdcQryErrExecOrderField& _data = {0}) :data(_data) {}
-    CThostFtdcQryErrExecOrderFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcQryErrExecOrderFieldWrapper(const CThostFtdcQryErrExecOrderField& _data = { 0 }) :data(_data) { }
+    CThostFtdcQryErrExecOrderFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcQryErrExecOrderField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         strncpy(data.BrokerID, rowValue.at("BrokerID").c_str(), sizeof(TThostFtdcBrokerIDType));
@@ -4150,6 +4554,12 @@ struct CThostFtdcQryErrExecOrderFieldWrapper
             + "'";
         return INSERT_SQL_PREFIX + insertSqlBody + ");";
     }
+    std::string generateSelectSqlByUserID() const {
+        return generateSelectSqlByUserID(data.BrokerID, data.InvestorID);
+    }
+    static std::string generateSelectSqlByUserID(const std::string& BrokerID, const std::string& InvestorID) {
+        return "SELECT * FROM 'CThostFtdcQryErrExecOrderField' where BrokerID='" + BrokerID + "' and InvestorID='" + InvestorID + "';";
+    }
 };
 
 struct CThostFtdcErrExecOrderActionFieldWrapper
@@ -4160,8 +4570,8 @@ struct CThostFtdcErrExecOrderActionFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcErrExecOrderActionField data;
 
-    CThostFtdcErrExecOrderActionFieldWrapper(const CThostFtdcErrExecOrderActionField& _data = {0}) :data(_data) {}
-    CThostFtdcErrExecOrderActionFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcErrExecOrderActionFieldWrapper(const CThostFtdcErrExecOrderActionField& _data = { 0 }) :data(_data) { }
+    CThostFtdcErrExecOrderActionFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcErrExecOrderActionField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         strncpy(data.BrokerID, rowValue.at("BrokerID").c_str(), sizeof(TThostFtdcBrokerIDType));
@@ -4190,6 +4600,12 @@ struct CThostFtdcErrExecOrderActionFieldWrapper
             + "'";
         return INSERT_SQL_PREFIX + insertSqlBody + ");";
     }
+    std::string generateSelectSqlByUserID() const {
+        return generateSelectSqlByUserID(data.BrokerID, data.InvestorID);
+    }
+    static std::string generateSelectSqlByUserID(const std::string& BrokerID, const std::string& InvestorID) {
+        return "SELECT * FROM 'CThostFtdcErrExecOrderActionField' where BrokerID='" + BrokerID + "' and InvestorID='" + InvestorID + "';";
+    }
 };
 
 struct CThostFtdcQryErrExecOrderActionFieldWrapper
@@ -4200,8 +4616,8 @@ struct CThostFtdcQryErrExecOrderActionFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcQryErrExecOrderActionField data;
 
-    CThostFtdcQryErrExecOrderActionFieldWrapper(const CThostFtdcQryErrExecOrderActionField& _data = {0}) :data(_data) {}
-    CThostFtdcQryErrExecOrderActionFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcQryErrExecOrderActionFieldWrapper(const CThostFtdcQryErrExecOrderActionField& _data = { 0 }) :data(_data) { }
+    CThostFtdcQryErrExecOrderActionFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcQryErrExecOrderActionField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         strncpy(data.BrokerID, rowValue.at("BrokerID").c_str(), sizeof(TThostFtdcBrokerIDType));
@@ -4213,6 +4629,12 @@ struct CThostFtdcQryErrExecOrderActionFieldWrapper
             + "'";
         return INSERT_SQL_PREFIX + insertSqlBody + ");";
     }
+    std::string generateSelectSqlByUserID() const {
+        return generateSelectSqlByUserID(data.BrokerID, data.InvestorID);
+    }
+    static std::string generateSelectSqlByUserID(const std::string& BrokerID, const std::string& InvestorID) {
+        return "SELECT * FROM 'CThostFtdcQryErrExecOrderActionField' where BrokerID='" + BrokerID + "' and InvestorID='" + InvestorID + "';";
+    }
 };
 
 struct CThostFtdcOptionInstrTradingRightFieldWrapper
@@ -4223,8 +4645,8 @@ struct CThostFtdcOptionInstrTradingRightFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcOptionInstrTradingRightField data;
 
-    CThostFtdcOptionInstrTradingRightFieldWrapper(const CThostFtdcOptionInstrTradingRightField& _data = {0}) :data(_data) {}
-    CThostFtdcOptionInstrTradingRightFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcOptionInstrTradingRightFieldWrapper(const CThostFtdcOptionInstrTradingRightField& _data = { 0 }) :data(_data) { }
+    CThostFtdcOptionInstrTradingRightFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcOptionInstrTradingRightField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         strncpy(data.reserve1, rowValue.at("reserve1").c_str(), sizeof(TThostFtdcOldInstrumentIDType));
@@ -4241,6 +4663,12 @@ struct CThostFtdcOptionInstrTradingRightFieldWrapper
             + "'";
         return INSERT_SQL_PREFIX + insertSqlBody + ");";
     }
+    std::string generateSelectSqlByUserID() const {
+        return generateSelectSqlByUserID(data.BrokerID, data.InvestorID);
+    }
+    static std::string generateSelectSqlByUserID(const std::string& BrokerID, const std::string& InvestorID) {
+        return "SELECT * FROM 'CThostFtdcOptionInstrTradingRightField' where BrokerID='" + BrokerID + "' and InvestorID='" + InvestorID + "';";
+    }
 };
 
 struct CThostFtdcQryOptionInstrTradingRightFieldWrapper
@@ -4251,8 +4679,8 @@ struct CThostFtdcQryOptionInstrTradingRightFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcQryOptionInstrTradingRightField data;
 
-    CThostFtdcQryOptionInstrTradingRightFieldWrapper(const CThostFtdcQryOptionInstrTradingRightField& _data = {0}) :data(_data) {}
-    CThostFtdcQryOptionInstrTradingRightFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcQryOptionInstrTradingRightFieldWrapper(const CThostFtdcQryOptionInstrTradingRightField& _data = { 0 }) :data(_data) { }
+    CThostFtdcQryOptionInstrTradingRightFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcQryOptionInstrTradingRightField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         strncpy(data.BrokerID, rowValue.at("BrokerID").c_str(), sizeof(TThostFtdcBrokerIDType));
@@ -4267,6 +4695,12 @@ struct CThostFtdcQryOptionInstrTradingRightFieldWrapper
             + "'";
         return INSERT_SQL_PREFIX + insertSqlBody + ");";
     }
+    std::string generateSelectSqlByUserID() const {
+        return generateSelectSqlByUserID(data.BrokerID, data.InvestorID);
+    }
+    static std::string generateSelectSqlByUserID(const std::string& BrokerID, const std::string& InvestorID) {
+        return "SELECT * FROM 'CThostFtdcQryOptionInstrTradingRightField' where BrokerID='" + BrokerID + "' and InvestorID='" + InvestorID + "';";
+    }
 };
 
 struct CThostFtdcInputForQuoteFieldWrapper
@@ -4277,8 +4711,8 @@ struct CThostFtdcInputForQuoteFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcInputForQuoteField data;
 
-    CThostFtdcInputForQuoteFieldWrapper(const CThostFtdcInputForQuoteField& _data = {0}) :data(_data) {}
-    CThostFtdcInputForQuoteFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcInputForQuoteFieldWrapper(const CThostFtdcInputForQuoteField& _data = { 0 }) :data(_data) { }
+    CThostFtdcInputForQuoteFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcInputForQuoteField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         strncpy(data.BrokerID, rowValue.at("BrokerID").c_str(), sizeof(TThostFtdcBrokerIDType));
@@ -4299,6 +4733,12 @@ struct CThostFtdcInputForQuoteFieldWrapper
             + "'";
         return INSERT_SQL_PREFIX + insertSqlBody + ");";
     }
+    std::string generateSelectSqlByUserID() const {
+        return generateSelectSqlByUserID(data.BrokerID, data.InvestorID);
+    }
+    static std::string generateSelectSqlByUserID(const std::string& BrokerID, const std::string& InvestorID) {
+        return "SELECT * FROM 'CThostFtdcInputForQuoteField' where BrokerID='" + BrokerID + "' and InvestorID='" + InvestorID + "';";
+    }
 };
 
 struct CThostFtdcForQuoteFieldWrapper
@@ -4309,8 +4749,8 @@ struct CThostFtdcForQuoteFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcForQuoteField data;
 
-    CThostFtdcForQuoteFieldWrapper(const CThostFtdcForQuoteField& _data = {0}) :data(_data) {}
-    CThostFtdcForQuoteFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcForQuoteFieldWrapper(const CThostFtdcForQuoteField& _data = { 0 }) :data(_data) { }
+    CThostFtdcForQuoteFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcForQuoteField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         strncpy(data.BrokerID, rowValue.at("BrokerID").c_str(), sizeof(TThostFtdcBrokerIDType));
@@ -4346,6 +4786,12 @@ struct CThostFtdcForQuoteFieldWrapper
             + "'";
         return INSERT_SQL_PREFIX + insertSqlBody + ");";
     }
+    std::string generateSelectSqlByUserID() const {
+        return generateSelectSqlByUserID(data.BrokerID, data.InvestorID);
+    }
+    static std::string generateSelectSqlByUserID(const std::string& BrokerID, const std::string& InvestorID) {
+        return "SELECT * FROM 'CThostFtdcForQuoteField' where BrokerID='" + BrokerID + "' and InvestorID='" + InvestorID + "';";
+    }
 };
 
 struct CThostFtdcQryForQuoteFieldWrapper
@@ -4356,8 +4802,8 @@ struct CThostFtdcQryForQuoteFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcQryForQuoteField data;
 
-    CThostFtdcQryForQuoteFieldWrapper(const CThostFtdcQryForQuoteField& _data = {0}) :data(_data) {}
-    CThostFtdcQryForQuoteFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcQryForQuoteFieldWrapper(const CThostFtdcQryForQuoteField& _data = { 0 }) :data(_data) { }
+    CThostFtdcQryForQuoteFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcQryForQuoteField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         strncpy(data.BrokerID, rowValue.at("BrokerID").c_str(), sizeof(TThostFtdcBrokerIDType));
@@ -4375,6 +4821,12 @@ struct CThostFtdcQryForQuoteFieldWrapper
             + "'";
         return INSERT_SQL_PREFIX + insertSqlBody + ");";
     }
+    std::string generateSelectSqlByUserID() const {
+        return generateSelectSqlByUserID(data.BrokerID, data.InvestorID);
+    }
+    static std::string generateSelectSqlByUserID(const std::string& BrokerID, const std::string& InvestorID) {
+        return "SELECT * FROM 'CThostFtdcQryForQuoteField' where BrokerID='" + BrokerID + "' and InvestorID='" + InvestorID + "';";
+    }
 };
 
 struct CThostFtdcExchangeForQuoteFieldWrapper
@@ -4385,8 +4837,8 @@ struct CThostFtdcExchangeForQuoteFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcExchangeForQuoteField data;
 
-    CThostFtdcExchangeForQuoteFieldWrapper(const CThostFtdcExchangeForQuoteField& _data = {0}) :data(_data) {}
-    CThostFtdcExchangeForQuoteFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcExchangeForQuoteFieldWrapper(const CThostFtdcExchangeForQuoteField& _data = { 0 }) :data(_data) { }
+    CThostFtdcExchangeForQuoteFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcExchangeForQuoteField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         strncpy(data.ForQuoteLocalID, rowValue.at("ForQuoteLocalID").c_str(), sizeof(TThostFtdcOrderLocalIDType));
@@ -4420,8 +4872,8 @@ struct CThostFtdcQryExchangeForQuoteFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcQryExchangeForQuoteField data;
 
-    CThostFtdcQryExchangeForQuoteFieldWrapper(const CThostFtdcQryExchangeForQuoteField& _data = {0}) :data(_data) {}
-    CThostFtdcQryExchangeForQuoteFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcQryExchangeForQuoteFieldWrapper(const CThostFtdcQryExchangeForQuoteField& _data = { 0 }) :data(_data) { }
+    CThostFtdcQryExchangeForQuoteFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcQryExchangeForQuoteField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         strncpy(data.ParticipantID, rowValue.at("ParticipantID").c_str(), sizeof(TThostFtdcParticipantIDType));
@@ -4447,8 +4899,8 @@ struct CThostFtdcInputQuoteFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcInputQuoteField data;
 
-    CThostFtdcInputQuoteFieldWrapper(const CThostFtdcInputQuoteField& _data = {0}) :data(_data) {}
-    CThostFtdcInputQuoteFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcInputQuoteFieldWrapper(const CThostFtdcInputQuoteField& _data = { 0 }) :data(_data) { }
+    CThostFtdcInputQuoteFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcInputQuoteField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         strncpy(data.BrokerID, rowValue.at("BrokerID").c_str(), sizeof(TThostFtdcBrokerIDType));
@@ -4483,6 +4935,12 @@ struct CThostFtdcInputQuoteFieldWrapper
             + "'";
         return INSERT_SQL_PREFIX + insertSqlBody + ");";
     }
+    std::string generateSelectSqlByUserID() const {
+        return generateSelectSqlByUserID(data.BrokerID, data.InvestorID);
+    }
+    static std::string generateSelectSqlByUserID(const std::string& BrokerID, const std::string& InvestorID) {
+        return "SELECT * FROM 'CThostFtdcInputQuoteField' where BrokerID='" + BrokerID + "' and InvestorID='" + InvestorID + "';";
+    }
 };
 
 struct CThostFtdcInputQuoteActionFieldWrapper
@@ -4493,8 +4951,8 @@ struct CThostFtdcInputQuoteActionFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcInputQuoteActionField data;
 
-    CThostFtdcInputQuoteActionFieldWrapper(const CThostFtdcInputQuoteActionField& _data = {0}) :data(_data) {}
-    CThostFtdcInputQuoteActionFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcInputQuoteActionFieldWrapper(const CThostFtdcInputQuoteActionField& _data = { 0 }) :data(_data) { }
+    CThostFtdcInputQuoteActionFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcInputQuoteActionField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         strncpy(data.BrokerID, rowValue.at("BrokerID").c_str(), sizeof(TThostFtdcBrokerIDType));
@@ -4522,6 +4980,12 @@ struct CThostFtdcInputQuoteActionFieldWrapper
             + "'";
         return INSERT_SQL_PREFIX + insertSqlBody + ");";
     }
+    std::string generateSelectSqlByUserID() const {
+        return generateSelectSqlByUserID(data.BrokerID, data.InvestorID);
+    }
+    static std::string generateSelectSqlByUserID(const std::string& BrokerID, const std::string& InvestorID) {
+        return "SELECT * FROM 'CThostFtdcInputQuoteActionField' where BrokerID='" + BrokerID + "' and InvestorID='" + InvestorID + "';";
+    }
 };
 
 struct CThostFtdcQuoteFieldWrapper
@@ -4532,8 +4996,8 @@ struct CThostFtdcQuoteFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcQuoteField data;
 
-    CThostFtdcQuoteFieldWrapper(const CThostFtdcQuoteField& _data = {0}) :data(_data) {}
-    CThostFtdcQuoteFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcQuoteFieldWrapper(const CThostFtdcQuoteField& _data = { 0 }) :data(_data) { }
+    CThostFtdcQuoteFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcQuoteField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         strncpy(data.BrokerID, rowValue.at("BrokerID").c_str(), sizeof(TThostFtdcBrokerIDType));
@@ -4596,6 +5060,12 @@ struct CThostFtdcQuoteFieldWrapper
             + "'";
         return INSERT_SQL_PREFIX + insertSqlBody + ");";
     }
+    std::string generateSelectSqlByUserID() const {
+        return generateSelectSqlByUserID(data.BrokerID, data.InvestorID);
+    }
+    static std::string generateSelectSqlByUserID(const std::string& BrokerID, const std::string& InvestorID) {
+        return "SELECT * FROM 'CThostFtdcQuoteField' where BrokerID='" + BrokerID + "' and InvestorID='" + InvestorID + "';";
+    }
 };
 
 struct CThostFtdcQuoteActionFieldWrapper
@@ -4606,8 +5076,8 @@ struct CThostFtdcQuoteActionFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcQuoteActionField data;
 
-    CThostFtdcQuoteActionFieldWrapper(const CThostFtdcQuoteActionField& _data = {0}) :data(_data) {}
-    CThostFtdcQuoteActionFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcQuoteActionFieldWrapper(const CThostFtdcQuoteActionField& _data = { 0 }) :data(_data) { }
+    CThostFtdcQuoteActionFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcQuoteActionField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         strncpy(data.BrokerID, rowValue.at("BrokerID").c_str(), sizeof(TThostFtdcBrokerIDType));
@@ -4646,6 +5116,12 @@ struct CThostFtdcQuoteActionFieldWrapper
             + "'";
         return INSERT_SQL_PREFIX + insertSqlBody + ");";
     }
+    std::string generateSelectSqlByUserID() const {
+        return generateSelectSqlByUserID(data.BrokerID, data.InvestorID);
+    }
+    static std::string generateSelectSqlByUserID(const std::string& BrokerID, const std::string& InvestorID) {
+        return "SELECT * FROM 'CThostFtdcQuoteActionField' where BrokerID='" + BrokerID + "' and InvestorID='" + InvestorID + "';";
+    }
 };
 
 struct CThostFtdcQryQuoteFieldWrapper
@@ -4656,8 +5132,8 @@ struct CThostFtdcQryQuoteFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcQryQuoteField data;
 
-    CThostFtdcQryQuoteFieldWrapper(const CThostFtdcQryQuoteField& _data = {0}) :data(_data) {}
-    CThostFtdcQryQuoteFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcQryQuoteFieldWrapper(const CThostFtdcQryQuoteField& _data = { 0 }) :data(_data) { }
+    CThostFtdcQryQuoteFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcQryQuoteField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         strncpy(data.BrokerID, rowValue.at("BrokerID").c_str(), sizeof(TThostFtdcBrokerIDType));
@@ -4676,6 +5152,12 @@ struct CThostFtdcQryQuoteFieldWrapper
             + "'";
         return INSERT_SQL_PREFIX + insertSqlBody + ");";
     }
+    std::string generateSelectSqlByUserID() const {
+        return generateSelectSqlByUserID(data.BrokerID, data.InvestorID);
+    }
+    static std::string generateSelectSqlByUserID(const std::string& BrokerID, const std::string& InvestorID) {
+        return "SELECT * FROM 'CThostFtdcQryQuoteField' where BrokerID='" + BrokerID + "' and InvestorID='" + InvestorID + "';";
+    }
 };
 
 struct CThostFtdcExchangeQuoteFieldWrapper
@@ -4686,8 +5168,8 @@ struct CThostFtdcExchangeQuoteFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcExchangeQuoteField data;
 
-    CThostFtdcExchangeQuoteFieldWrapper(const CThostFtdcExchangeQuoteField& _data = {0}) :data(_data) {}
-    CThostFtdcExchangeQuoteFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcExchangeQuoteFieldWrapper(const CThostFtdcExchangeQuoteField& _data = { 0 }) :data(_data) { }
+    CThostFtdcExchangeQuoteFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcExchangeQuoteField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         data.AskPrice = std::stod(rowValue.at("AskPrice"));
@@ -4743,8 +5225,8 @@ struct CThostFtdcQryExchangeQuoteFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcQryExchangeQuoteField data;
 
-    CThostFtdcQryExchangeQuoteFieldWrapper(const CThostFtdcQryExchangeQuoteField& _data = {0}) :data(_data) {}
-    CThostFtdcQryExchangeQuoteFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcQryExchangeQuoteFieldWrapper(const CThostFtdcQryExchangeQuoteField& _data = { 0 }) :data(_data) { }
+    CThostFtdcQryExchangeQuoteFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcQryExchangeQuoteField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         strncpy(data.ParticipantID, rowValue.at("ParticipantID").c_str(), sizeof(TThostFtdcParticipantIDType));
@@ -4770,8 +5252,8 @@ struct CThostFtdcQryQuoteActionFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcQryQuoteActionField data;
 
-    CThostFtdcQryQuoteActionFieldWrapper(const CThostFtdcQryQuoteActionField& _data = {0}) :data(_data) {}
-    CThostFtdcQryQuoteActionFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcQryQuoteActionFieldWrapper(const CThostFtdcQryQuoteActionField& _data = { 0 }) :data(_data) { }
+    CThostFtdcQryQuoteActionFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcQryQuoteActionField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         strncpy(data.BrokerID, rowValue.at("BrokerID").c_str(), sizeof(TThostFtdcBrokerIDType));
@@ -4784,6 +5266,12 @@ struct CThostFtdcQryQuoteActionFieldWrapper
             + "'";
         return INSERT_SQL_PREFIX + insertSqlBody + ");";
     }
+    std::string generateSelectSqlByUserID() const {
+        return generateSelectSqlByUserID(data.BrokerID, data.InvestorID);
+    }
+    static std::string generateSelectSqlByUserID(const std::string& BrokerID, const std::string& InvestorID) {
+        return "SELECT * FROM 'CThostFtdcQryQuoteActionField' where BrokerID='" + BrokerID + "' and InvestorID='" + InvestorID + "';";
+    }
 };
 
 struct CThostFtdcExchangeQuoteActionFieldWrapper
@@ -4794,8 +5282,8 @@ struct CThostFtdcExchangeQuoteActionFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcExchangeQuoteActionField data;
 
-    CThostFtdcExchangeQuoteActionFieldWrapper(const CThostFtdcExchangeQuoteActionField& _data = {0}) :data(_data) {}
-    CThostFtdcExchangeQuoteActionFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcExchangeQuoteActionFieldWrapper(const CThostFtdcExchangeQuoteActionField& _data = { 0 }) :data(_data) { }
+    CThostFtdcExchangeQuoteActionFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcExchangeQuoteActionField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         strncpy(data.ExchangeID, rowValue.at("ExchangeID").c_str(), sizeof(TThostFtdcExchangeIDType));
@@ -4832,8 +5320,8 @@ struct CThostFtdcQryExchangeQuoteActionFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcQryExchangeQuoteActionField data;
 
-    CThostFtdcQryExchangeQuoteActionFieldWrapper(const CThostFtdcQryExchangeQuoteActionField& _data = {0}) :data(_data) {}
-    CThostFtdcQryExchangeQuoteActionFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcQryExchangeQuoteActionFieldWrapper(const CThostFtdcQryExchangeQuoteActionField& _data = { 0 }) :data(_data) { }
+    CThostFtdcQryExchangeQuoteActionFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcQryExchangeQuoteActionField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         strncpy(data.ParticipantID, rowValue.at("ParticipantID").c_str(), sizeof(TThostFtdcParticipantIDType));
@@ -4857,8 +5345,8 @@ struct CThostFtdcOptionInstrDeltaFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcOptionInstrDeltaField data;
 
-    CThostFtdcOptionInstrDeltaFieldWrapper(const CThostFtdcOptionInstrDeltaField& _data = {0}) :data(_data) {}
-    CThostFtdcOptionInstrDeltaFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcOptionInstrDeltaFieldWrapper(const CThostFtdcOptionInstrDeltaField& _data = { 0 }) :data(_data) { }
+    CThostFtdcOptionInstrDeltaFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcOptionInstrDeltaField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         strncpy(data.reserve1, rowValue.at("reserve1").c_str(), sizeof(TThostFtdcOldInstrumentIDType));
@@ -4874,6 +5362,12 @@ struct CThostFtdcOptionInstrDeltaFieldWrapper
             + "'";
         return INSERT_SQL_PREFIX + insertSqlBody + ");";
     }
+    std::string generateSelectSqlByUserID() const {
+        return generateSelectSqlByUserID(data.BrokerID, data.InvestorID);
+    }
+    static std::string generateSelectSqlByUserID(const std::string& BrokerID, const std::string& InvestorID) {
+        return "SELECT * FROM 'CThostFtdcOptionInstrDeltaField' where BrokerID='" + BrokerID + "' and InvestorID='" + InvestorID + "';";
+    }
 };
 
 struct CThostFtdcForQuoteRspFieldWrapper
@@ -4884,8 +5378,8 @@ struct CThostFtdcForQuoteRspFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcForQuoteRspField data;
 
-    CThostFtdcForQuoteRspFieldWrapper(const CThostFtdcForQuoteRspField& _data = {0}) :data(_data) {}
-    CThostFtdcForQuoteRspFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcForQuoteRspFieldWrapper(const CThostFtdcForQuoteRspField& _data = { 0 }) :data(_data) { }
+    CThostFtdcForQuoteRspFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcForQuoteRspField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         strncpy(data.TradingDay, rowValue.at("TradingDay").c_str(), sizeof(TThostFtdcDateType));
@@ -4912,8 +5406,8 @@ struct CThostFtdcStrikeOffsetFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcStrikeOffsetField data;
 
-    CThostFtdcStrikeOffsetFieldWrapper(const CThostFtdcStrikeOffsetField& _data = {0}) :data(_data) {}
-    CThostFtdcStrikeOffsetFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcStrikeOffsetFieldWrapper(const CThostFtdcStrikeOffsetField& _data = { 0 }) :data(_data) { }
+    CThostFtdcStrikeOffsetFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcStrikeOffsetField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         strncpy(data.reserve1, rowValue.at("reserve1").c_str(), sizeof(TThostFtdcOldInstrumentIDType));
@@ -4930,6 +5424,12 @@ struct CThostFtdcStrikeOffsetFieldWrapper
             + "'";
         return INSERT_SQL_PREFIX + insertSqlBody + ");";
     }
+    std::string generateSelectSqlByUserID() const {
+        return generateSelectSqlByUserID(data.BrokerID, data.InvestorID);
+    }
+    static std::string generateSelectSqlByUserID(const std::string& BrokerID, const std::string& InvestorID) {
+        return "SELECT * FROM 'CThostFtdcStrikeOffsetField' where BrokerID='" + BrokerID + "' and InvestorID='" + InvestorID + "';";
+    }
 };
 
 struct CThostFtdcQryStrikeOffsetFieldWrapper
@@ -4940,8 +5440,8 @@ struct CThostFtdcQryStrikeOffsetFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcQryStrikeOffsetField data;
 
-    CThostFtdcQryStrikeOffsetFieldWrapper(const CThostFtdcQryStrikeOffsetField& _data = {0}) :data(_data) {}
-    CThostFtdcQryStrikeOffsetFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcQryStrikeOffsetFieldWrapper(const CThostFtdcQryStrikeOffsetField& _data = { 0 }) :data(_data) { }
+    CThostFtdcQryStrikeOffsetFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcQryStrikeOffsetField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         strncpy(data.BrokerID, rowValue.at("BrokerID").c_str(), sizeof(TThostFtdcBrokerIDType));
@@ -4955,6 +5455,12 @@ struct CThostFtdcQryStrikeOffsetFieldWrapper
             + "'";
         return INSERT_SQL_PREFIX + insertSqlBody + ");";
     }
+    std::string generateSelectSqlByUserID() const {
+        return generateSelectSqlByUserID(data.BrokerID, data.InvestorID);
+    }
+    static std::string generateSelectSqlByUserID(const std::string& BrokerID, const std::string& InvestorID) {
+        return "SELECT * FROM 'CThostFtdcQryStrikeOffsetField' where BrokerID='" + BrokerID + "' and InvestorID='" + InvestorID + "';";
+    }
 };
 
 struct CThostFtdcInputBatchOrderActionFieldWrapper
@@ -4965,8 +5471,8 @@ struct CThostFtdcInputBatchOrderActionFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcInputBatchOrderActionField data;
 
-    CThostFtdcInputBatchOrderActionFieldWrapper(const CThostFtdcInputBatchOrderActionField& _data = {0}) :data(_data) {}
-    CThostFtdcInputBatchOrderActionFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcInputBatchOrderActionFieldWrapper(const CThostFtdcInputBatchOrderActionField& _data = { 0 }) :data(_data) { }
+    CThostFtdcInputBatchOrderActionFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcInputBatchOrderActionField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         strncpy(data.BrokerID, rowValue.at("BrokerID").c_str(), sizeof(TThostFtdcBrokerIDType));
@@ -4988,6 +5494,12 @@ struct CThostFtdcInputBatchOrderActionFieldWrapper
             + "'";
         return INSERT_SQL_PREFIX + insertSqlBody + ");";
     }
+    std::string generateSelectSqlByUserID() const {
+        return generateSelectSqlByUserID(data.BrokerID, data.InvestorID);
+    }
+    static std::string generateSelectSqlByUserID(const std::string& BrokerID, const std::string& InvestorID) {
+        return "SELECT * FROM 'CThostFtdcInputBatchOrderActionField' where BrokerID='" + BrokerID + "' and InvestorID='" + InvestorID + "';";
+    }
 };
 
 struct CThostFtdcBatchOrderActionFieldWrapper
@@ -4998,8 +5510,8 @@ struct CThostFtdcBatchOrderActionFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcBatchOrderActionField data;
 
-    CThostFtdcBatchOrderActionFieldWrapper(const CThostFtdcBatchOrderActionField& _data = {0}) :data(_data) {}
-    CThostFtdcBatchOrderActionFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcBatchOrderActionFieldWrapper(const CThostFtdcBatchOrderActionField& _data = { 0 }) :data(_data) { }
+    CThostFtdcBatchOrderActionFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcBatchOrderActionField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         strncpy(data.BrokerID, rowValue.at("BrokerID").c_str(), sizeof(TThostFtdcBrokerIDType));
@@ -5031,6 +5543,12 @@ struct CThostFtdcBatchOrderActionFieldWrapper
             + "'";
         return INSERT_SQL_PREFIX + insertSqlBody + ");";
     }
+    std::string generateSelectSqlByUserID() const {
+        return generateSelectSqlByUserID(data.BrokerID, data.InvestorID);
+    }
+    static std::string generateSelectSqlByUserID(const std::string& BrokerID, const std::string& InvestorID) {
+        return "SELECT * FROM 'CThostFtdcBatchOrderActionField' where BrokerID='" + BrokerID + "' and InvestorID='" + InvestorID + "';";
+    }
 };
 
 struct CThostFtdcExchangeBatchOrderActionFieldWrapper
@@ -5041,8 +5559,8 @@ struct CThostFtdcExchangeBatchOrderActionFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcExchangeBatchOrderActionField data;
 
-    CThostFtdcExchangeBatchOrderActionFieldWrapper(const CThostFtdcExchangeBatchOrderActionField& _data = {0}) :data(_data) {}
-    CThostFtdcExchangeBatchOrderActionFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcExchangeBatchOrderActionFieldWrapper(const CThostFtdcExchangeBatchOrderActionField& _data = { 0 }) :data(_data) { }
+    CThostFtdcExchangeBatchOrderActionFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcExchangeBatchOrderActionField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         strncpy(data.ExchangeID, rowValue.at("ExchangeID").c_str(), sizeof(TThostFtdcExchangeIDType));
@@ -5076,8 +5594,8 @@ struct CThostFtdcQryBatchOrderActionFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcQryBatchOrderActionField data;
 
-    CThostFtdcQryBatchOrderActionFieldWrapper(const CThostFtdcQryBatchOrderActionField& _data = {0}) :data(_data) {}
-    CThostFtdcQryBatchOrderActionFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcQryBatchOrderActionFieldWrapper(const CThostFtdcQryBatchOrderActionField& _data = { 0 }) :data(_data) { }
+    CThostFtdcQryBatchOrderActionFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcQryBatchOrderActionField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         strncpy(data.BrokerID, rowValue.at("BrokerID").c_str(), sizeof(TThostFtdcBrokerIDType));
@@ -5090,6 +5608,12 @@ struct CThostFtdcQryBatchOrderActionFieldWrapper
             + "'";
         return INSERT_SQL_PREFIX + insertSqlBody + ");";
     }
+    std::string generateSelectSqlByUserID() const {
+        return generateSelectSqlByUserID(data.BrokerID, data.InvestorID);
+    }
+    static std::string generateSelectSqlByUserID(const std::string& BrokerID, const std::string& InvestorID) {
+        return "SELECT * FROM 'CThostFtdcQryBatchOrderActionField' where BrokerID='" + BrokerID + "' and InvestorID='" + InvestorID + "';";
+    }
 };
 
 struct CThostFtdcCombInstrumentGuardFieldWrapper
@@ -5100,8 +5624,8 @@ struct CThostFtdcCombInstrumentGuardFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcCombInstrumentGuardField data;
 
-    CThostFtdcCombInstrumentGuardFieldWrapper(const CThostFtdcCombInstrumentGuardField& _data = {0}) :data(_data) {}
-    CThostFtdcCombInstrumentGuardFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcCombInstrumentGuardFieldWrapper(const CThostFtdcCombInstrumentGuardField& _data = { 0 }) :data(_data) { }
+    CThostFtdcCombInstrumentGuardFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcCombInstrumentGuardField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         strncpy(data.BrokerID, rowValue.at("BrokerID").c_str(), sizeof(TThostFtdcBrokerIDType));
@@ -5126,8 +5650,8 @@ struct CThostFtdcQryCombInstrumentGuardFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcQryCombInstrumentGuardField data;
 
-    CThostFtdcQryCombInstrumentGuardFieldWrapper(const CThostFtdcQryCombInstrumentGuardField& _data = {0}) :data(_data) {}
-    CThostFtdcQryCombInstrumentGuardFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcQryCombInstrumentGuardFieldWrapper(const CThostFtdcQryCombInstrumentGuardField& _data = { 0 }) :data(_data) { }
+    CThostFtdcQryCombInstrumentGuardFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcQryCombInstrumentGuardField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         strncpy(data.BrokerID, rowValue.at("BrokerID").c_str(), sizeof(TThostFtdcBrokerIDType));
@@ -5151,8 +5675,8 @@ struct CThostFtdcInputCombActionFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcInputCombActionField data;
 
-    CThostFtdcInputCombActionFieldWrapper(const CThostFtdcInputCombActionField& _data = {0}) :data(_data) {}
-    CThostFtdcInputCombActionFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcInputCombActionFieldWrapper(const CThostFtdcInputCombActionField& _data = { 0 }) :data(_data) { }
+    CThostFtdcInputCombActionFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcInputCombActionField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         strncpy(data.BrokerID, rowValue.at("BrokerID").c_str(), sizeof(TThostFtdcBrokerIDType));
@@ -5179,6 +5703,12 @@ struct CThostFtdcInputCombActionFieldWrapper
             + "'";
         return INSERT_SQL_PREFIX + insertSqlBody + ");";
     }
+    std::string generateSelectSqlByUserID() const {
+        return generateSelectSqlByUserID(data.BrokerID, data.InvestorID);
+    }
+    static std::string generateSelectSqlByUserID(const std::string& BrokerID, const std::string& InvestorID) {
+        return "SELECT * FROM 'CThostFtdcInputCombActionField' where BrokerID='" + BrokerID + "' and InvestorID='" + InvestorID + "';";
+    }
 };
 
 struct CThostFtdcCombActionFieldWrapper
@@ -5189,8 +5719,8 @@ struct CThostFtdcCombActionFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcCombActionField data;
 
-    CThostFtdcCombActionFieldWrapper(const CThostFtdcCombActionField& _data = {0}) :data(_data) {}
-    CThostFtdcCombActionFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcCombActionFieldWrapper(const CThostFtdcCombActionField& _data = { 0 }) :data(_data) { }
+    CThostFtdcCombActionFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcCombActionField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         strncpy(data.BrokerID, rowValue.at("BrokerID").c_str(), sizeof(TThostFtdcBrokerIDType));
@@ -5233,6 +5763,12 @@ struct CThostFtdcCombActionFieldWrapper
             + "'";
         return INSERT_SQL_PREFIX + insertSqlBody + ");";
     }
+    std::string generateSelectSqlByUserID() const {
+        return generateSelectSqlByUserID(data.BrokerID, data.InvestorID);
+    }
+    static std::string generateSelectSqlByUserID(const std::string& BrokerID, const std::string& InvestorID) {
+        return "SELECT * FROM 'CThostFtdcCombActionField' where BrokerID='" + BrokerID + "' and InvestorID='" + InvestorID + "';";
+    }
 };
 
 struct CThostFtdcQryCombActionFieldWrapper
@@ -5243,8 +5779,8 @@ struct CThostFtdcQryCombActionFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcQryCombActionField data;
 
-    CThostFtdcQryCombActionFieldWrapper(const CThostFtdcQryCombActionField& _data = {0}) :data(_data) {}
-    CThostFtdcQryCombActionFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcQryCombActionFieldWrapper(const CThostFtdcQryCombActionField& _data = { 0 }) :data(_data) { }
+    CThostFtdcQryCombActionFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcQryCombActionField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         strncpy(data.BrokerID, rowValue.at("BrokerID").c_str(), sizeof(TThostFtdcBrokerIDType));
@@ -5260,6 +5796,12 @@ struct CThostFtdcQryCombActionFieldWrapper
             + "'";
         return INSERT_SQL_PREFIX + insertSqlBody + ");";
     }
+    std::string generateSelectSqlByUserID() const {
+        return generateSelectSqlByUserID(data.BrokerID, data.InvestorID);
+    }
+    static std::string generateSelectSqlByUserID(const std::string& BrokerID, const std::string& InvestorID) {
+        return "SELECT * FROM 'CThostFtdcQryCombActionField' where BrokerID='" + BrokerID + "' and InvestorID='" + InvestorID + "';";
+    }
 };
 
 struct CThostFtdcExchangeCombActionFieldWrapper
@@ -5270,8 +5812,8 @@ struct CThostFtdcExchangeCombActionFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcExchangeCombActionField data;
 
-    CThostFtdcExchangeCombActionFieldWrapper(const CThostFtdcExchangeCombActionField& _data = {0}) :data(_data) {}
-    CThostFtdcExchangeCombActionFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcExchangeCombActionFieldWrapper(const CThostFtdcExchangeCombActionField& _data = { 0 }) :data(_data) { }
+    CThostFtdcExchangeCombActionFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcExchangeCombActionField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         data.Direction = rowValue.at("Direction").empty() ? '0' : rowValue.at("Direction")[0];
@@ -5313,8 +5855,8 @@ struct CThostFtdcQryExchangeCombActionFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcQryExchangeCombActionField data;
 
-    CThostFtdcQryExchangeCombActionFieldWrapper(const CThostFtdcQryExchangeCombActionField& _data = {0}) :data(_data) {}
-    CThostFtdcQryExchangeCombActionFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcQryExchangeCombActionFieldWrapper(const CThostFtdcQryExchangeCombActionField& _data = { 0 }) :data(_data) { }
+    CThostFtdcQryExchangeCombActionFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcQryExchangeCombActionField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         strncpy(data.ParticipantID, rowValue.at("ParticipantID").c_str(), sizeof(TThostFtdcParticipantIDType));
@@ -5340,8 +5882,8 @@ struct CThostFtdcProductExchRateFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcProductExchRateField data;
 
-    CThostFtdcProductExchRateFieldWrapper(const CThostFtdcProductExchRateField& _data = {0}) :data(_data) {}
-    CThostFtdcProductExchRateFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcProductExchRateFieldWrapper(const CThostFtdcProductExchRateField& _data = { 0 }) :data(_data) { }
+    CThostFtdcProductExchRateFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcProductExchRateField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         strncpy(data.reserve1, rowValue.at("reserve1").c_str(), sizeof(TThostFtdcOldInstrumentIDType));
@@ -5366,8 +5908,8 @@ struct CThostFtdcQryProductExchRateFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcQryProductExchRateField data;
 
-    CThostFtdcQryProductExchRateFieldWrapper(const CThostFtdcQryProductExchRateField& _data = {0}) :data(_data) {}
-    CThostFtdcQryProductExchRateFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcQryProductExchRateFieldWrapper(const CThostFtdcQryProductExchRateField& _data = { 0 }) :data(_data) { }
+    CThostFtdcQryProductExchRateFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcQryProductExchRateField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         strncpy(data.reserve1, rowValue.at("reserve1").c_str(), sizeof(TThostFtdcOldInstrumentIDType));
@@ -5390,8 +5932,8 @@ struct CThostFtdcQryForQuoteParamFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcQryForQuoteParamField data;
 
-    CThostFtdcQryForQuoteParamFieldWrapper(const CThostFtdcQryForQuoteParamField& _data = {0}) :data(_data) {}
-    CThostFtdcQryForQuoteParamFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcQryForQuoteParamFieldWrapper(const CThostFtdcQryForQuoteParamField& _data = { 0 }) :data(_data) { }
+    CThostFtdcQryForQuoteParamFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcQryForQuoteParamField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         strncpy(data.BrokerID, rowValue.at("BrokerID").c_str(), sizeof(TThostFtdcBrokerIDType));
@@ -5415,8 +5957,8 @@ struct CThostFtdcForQuoteParamFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcForQuoteParamField data;
 
-    CThostFtdcForQuoteParamFieldWrapper(const CThostFtdcForQuoteParamField& _data = {0}) :data(_data) {}
-    CThostFtdcForQuoteParamFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcForQuoteParamFieldWrapper(const CThostFtdcForQuoteParamField& _data = { 0 }) :data(_data) { }
+    CThostFtdcForQuoteParamFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcForQuoteParamField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         strncpy(data.BrokerID, rowValue.at("BrokerID").c_str(), sizeof(TThostFtdcBrokerIDType));
@@ -5442,8 +5984,8 @@ struct CThostFtdcMMOptionInstrCommRateFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcMMOptionInstrCommRateField data;
 
-    CThostFtdcMMOptionInstrCommRateFieldWrapper(const CThostFtdcMMOptionInstrCommRateField& _data = {0}) :data(_data) {}
-    CThostFtdcMMOptionInstrCommRateFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcMMOptionInstrCommRateFieldWrapper(const CThostFtdcMMOptionInstrCommRateField& _data = { 0 }) :data(_data) { }
+    CThostFtdcMMOptionInstrCommRateFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcMMOptionInstrCommRateField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         strncpy(data.reserve1, rowValue.at("reserve1").c_str(), sizeof(TThostFtdcOldInstrumentIDType));
@@ -5466,6 +6008,12 @@ struct CThostFtdcMMOptionInstrCommRateFieldWrapper
             + "'";
         return INSERT_SQL_PREFIX + insertSqlBody + ");";
     }
+    std::string generateSelectSqlByUserID() const {
+        return generateSelectSqlByUserID(data.BrokerID, data.InvestorID);
+    }
+    static std::string generateSelectSqlByUserID(const std::string& BrokerID, const std::string& InvestorID) {
+        return "SELECT * FROM 'CThostFtdcMMOptionInstrCommRateField' where BrokerID='" + BrokerID + "' and InvestorID='" + InvestorID + "';";
+    }
 };
 
 struct CThostFtdcQryMMOptionInstrCommRateFieldWrapper
@@ -5476,8 +6024,8 @@ struct CThostFtdcQryMMOptionInstrCommRateFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcQryMMOptionInstrCommRateField data;
 
-    CThostFtdcQryMMOptionInstrCommRateFieldWrapper(const CThostFtdcQryMMOptionInstrCommRateField& _data = {0}) :data(_data) {}
-    CThostFtdcQryMMOptionInstrCommRateFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcQryMMOptionInstrCommRateFieldWrapper(const CThostFtdcQryMMOptionInstrCommRateField& _data = { 0 }) :data(_data) { }
+    CThostFtdcQryMMOptionInstrCommRateFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcQryMMOptionInstrCommRateField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         strncpy(data.BrokerID, rowValue.at("BrokerID").c_str(), sizeof(TThostFtdcBrokerIDType));
@@ -5491,6 +6039,12 @@ struct CThostFtdcQryMMOptionInstrCommRateFieldWrapper
             + "'";
         return INSERT_SQL_PREFIX + insertSqlBody + ");";
     }
+    std::string generateSelectSqlByUserID() const {
+        return generateSelectSqlByUserID(data.BrokerID, data.InvestorID);
+    }
+    static std::string generateSelectSqlByUserID(const std::string& BrokerID, const std::string& InvestorID) {
+        return "SELECT * FROM 'CThostFtdcQryMMOptionInstrCommRateField' where BrokerID='" + BrokerID + "' and InvestorID='" + InvestorID + "';";
+    }
 };
 
 struct CThostFtdcMMInstrumentCommissionRateFieldWrapper
@@ -5501,8 +6055,8 @@ struct CThostFtdcMMInstrumentCommissionRateFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcMMInstrumentCommissionRateField data;
 
-    CThostFtdcMMInstrumentCommissionRateFieldWrapper(const CThostFtdcMMInstrumentCommissionRateField& _data = {0}) :data(_data) {}
-    CThostFtdcMMInstrumentCommissionRateFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcMMInstrumentCommissionRateFieldWrapper(const CThostFtdcMMInstrumentCommissionRateField& _data = { 0 }) :data(_data) { }
+    CThostFtdcMMInstrumentCommissionRateFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcMMInstrumentCommissionRateField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         strncpy(data.reserve1, rowValue.at("reserve1").c_str(), sizeof(TThostFtdcOldInstrumentIDType));
@@ -5523,6 +6077,12 @@ struct CThostFtdcMMInstrumentCommissionRateFieldWrapper
             + "'";
         return INSERT_SQL_PREFIX + insertSqlBody + ");";
     }
+    std::string generateSelectSqlByUserID() const {
+        return generateSelectSqlByUserID(data.BrokerID, data.InvestorID);
+    }
+    static std::string generateSelectSqlByUserID(const std::string& BrokerID, const std::string& InvestorID) {
+        return "SELECT * FROM 'CThostFtdcMMInstrumentCommissionRateField' where BrokerID='" + BrokerID + "' and InvestorID='" + InvestorID + "';";
+    }
 };
 
 struct CThostFtdcQryMMInstrumentCommissionRateFieldWrapper
@@ -5533,8 +6093,8 @@ struct CThostFtdcQryMMInstrumentCommissionRateFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcQryMMInstrumentCommissionRateField data;
 
-    CThostFtdcQryMMInstrumentCommissionRateFieldWrapper(const CThostFtdcQryMMInstrumentCommissionRateField& _data = {0}) :data(_data) {}
-    CThostFtdcQryMMInstrumentCommissionRateFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcQryMMInstrumentCommissionRateFieldWrapper(const CThostFtdcQryMMInstrumentCommissionRateField& _data = { 0 }) :data(_data) { }
+    CThostFtdcQryMMInstrumentCommissionRateFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcQryMMInstrumentCommissionRateField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         strncpy(data.BrokerID, rowValue.at("BrokerID").c_str(), sizeof(TThostFtdcBrokerIDType));
@@ -5548,6 +6108,12 @@ struct CThostFtdcQryMMInstrumentCommissionRateFieldWrapper
             + "'";
         return INSERT_SQL_PREFIX + insertSqlBody + ");";
     }
+    std::string generateSelectSqlByUserID() const {
+        return generateSelectSqlByUserID(data.BrokerID, data.InvestorID);
+    }
+    static std::string generateSelectSqlByUserID(const std::string& BrokerID, const std::string& InvestorID) {
+        return "SELECT * FROM 'CThostFtdcQryMMInstrumentCommissionRateField' where BrokerID='" + BrokerID + "' and InvestorID='" + InvestorID + "';";
+    }
 };
 
 struct CThostFtdcInstrumentOrderCommRateFieldWrapper
@@ -5558,8 +6124,8 @@ struct CThostFtdcInstrumentOrderCommRateFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcInstrumentOrderCommRateField data;
 
-    CThostFtdcInstrumentOrderCommRateFieldWrapper(const CThostFtdcInstrumentOrderCommRateField& _data = {0}) :data(_data) {}
-    CThostFtdcInstrumentOrderCommRateFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcInstrumentOrderCommRateFieldWrapper(const CThostFtdcInstrumentOrderCommRateField& _data = { 0 }) :data(_data) { }
+    CThostFtdcInstrumentOrderCommRateFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcInstrumentOrderCommRateField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         strncpy(data.reserve1, rowValue.at("reserve1").c_str(), sizeof(TThostFtdcOldInstrumentIDType));
@@ -5579,6 +6145,12 @@ struct CThostFtdcInstrumentOrderCommRateFieldWrapper
             + "'";
         return INSERT_SQL_PREFIX + insertSqlBody + ");";
     }
+    std::string generateSelectSqlByUserID() const {
+        return generateSelectSqlByUserID(data.BrokerID, data.InvestorID);
+    }
+    static std::string generateSelectSqlByUserID(const std::string& BrokerID, const std::string& InvestorID) {
+        return "SELECT * FROM 'CThostFtdcInstrumentOrderCommRateField' where BrokerID='" + BrokerID + "' and InvestorID='" + InvestorID + "';";
+    }
 };
 
 struct CThostFtdcQryInstrumentOrderCommRateFieldWrapper
@@ -5589,8 +6161,8 @@ struct CThostFtdcQryInstrumentOrderCommRateFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcQryInstrumentOrderCommRateField data;
 
-    CThostFtdcQryInstrumentOrderCommRateFieldWrapper(const CThostFtdcQryInstrumentOrderCommRateField& _data = {0}) :data(_data) {}
-    CThostFtdcQryInstrumentOrderCommRateFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcQryInstrumentOrderCommRateFieldWrapper(const CThostFtdcQryInstrumentOrderCommRateField& _data = { 0 }) :data(_data) { }
+    CThostFtdcQryInstrumentOrderCommRateFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcQryInstrumentOrderCommRateField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         strncpy(data.BrokerID, rowValue.at("BrokerID").c_str(), sizeof(TThostFtdcBrokerIDType));
@@ -5604,6 +6176,12 @@ struct CThostFtdcQryInstrumentOrderCommRateFieldWrapper
             + "'";
         return INSERT_SQL_PREFIX + insertSqlBody + ");";
     }
+    std::string generateSelectSqlByUserID() const {
+        return generateSelectSqlByUserID(data.BrokerID, data.InvestorID);
+    }
+    static std::string generateSelectSqlByUserID(const std::string& BrokerID, const std::string& InvestorID) {
+        return "SELECT * FROM 'CThostFtdcQryInstrumentOrderCommRateField' where BrokerID='" + BrokerID + "' and InvestorID='" + InvestorID + "';";
+    }
 };
 
 struct CThostFtdcTradeParamFieldWrapper
@@ -5614,8 +6192,8 @@ struct CThostFtdcTradeParamFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcTradeParamField data;
 
-    CThostFtdcTradeParamFieldWrapper(const CThostFtdcTradeParamField& _data = {0}) :data(_data) {}
-    CThostFtdcTradeParamFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcTradeParamFieldWrapper(const CThostFtdcTradeParamField& _data = { 0 }) :data(_data) { }
+    CThostFtdcTradeParamFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcTradeParamField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         strncpy(data.BrokerID, rowValue.at("BrokerID").c_str(), sizeof(TThostFtdcBrokerIDType));
@@ -5639,8 +6217,8 @@ struct CThostFtdcInstrumentMarginRateULFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcInstrumentMarginRateULField data;
 
-    CThostFtdcInstrumentMarginRateULFieldWrapper(const CThostFtdcInstrumentMarginRateULField& _data = {0}) :data(_data) {}
-    CThostFtdcInstrumentMarginRateULFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcInstrumentMarginRateULFieldWrapper(const CThostFtdcInstrumentMarginRateULField& _data = { 0 }) :data(_data) { }
+    CThostFtdcInstrumentMarginRateULFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcInstrumentMarginRateULField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         strncpy(data.reserve1, rowValue.at("reserve1").c_str(), sizeof(TThostFtdcOldInstrumentIDType));
@@ -5660,6 +6238,12 @@ struct CThostFtdcInstrumentMarginRateULFieldWrapper
             + "'";
         return INSERT_SQL_PREFIX + insertSqlBody + ");";
     }
+    std::string generateSelectSqlByUserID() const {
+        return generateSelectSqlByUserID(data.BrokerID, data.InvestorID);
+    }
+    static std::string generateSelectSqlByUserID(const std::string& BrokerID, const std::string& InvestorID) {
+        return "SELECT * FROM 'CThostFtdcInstrumentMarginRateULField' where BrokerID='" + BrokerID + "' and InvestorID='" + InvestorID + "';";
+    }
 };
 
 struct CThostFtdcFutureLimitPosiParamFieldWrapper
@@ -5670,8 +6254,8 @@ struct CThostFtdcFutureLimitPosiParamFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcFutureLimitPosiParamField data;
 
-    CThostFtdcFutureLimitPosiParamFieldWrapper(const CThostFtdcFutureLimitPosiParamField& _data = {0}) :data(_data) {}
-    CThostFtdcFutureLimitPosiParamFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcFutureLimitPosiParamFieldWrapper(const CThostFtdcFutureLimitPosiParamField& _data = { 0 }) :data(_data) { }
+    CThostFtdcFutureLimitPosiParamFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcFutureLimitPosiParamField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         data.InvestorRange = rowValue.at("InvestorRange").empty() ? '0' : rowValue.at("InvestorRange")[0];
@@ -5689,6 +6273,12 @@ struct CThostFtdcFutureLimitPosiParamFieldWrapper
             + "'";
         return INSERT_SQL_PREFIX + insertSqlBody + ");";
     }
+    std::string generateSelectSqlByUserID() const {
+        return generateSelectSqlByUserID(data.BrokerID, data.InvestorID);
+    }
+    static std::string generateSelectSqlByUserID(const std::string& BrokerID, const std::string& InvestorID) {
+        return "SELECT * FROM 'CThostFtdcFutureLimitPosiParamField' where BrokerID='" + BrokerID + "' and InvestorID='" + InvestorID + "';";
+    }
 };
 
 struct CThostFtdcLoginForbiddenIPFieldWrapper
@@ -5699,8 +6289,8 @@ struct CThostFtdcLoginForbiddenIPFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcLoginForbiddenIPField data;
 
-    CThostFtdcLoginForbiddenIPFieldWrapper(const CThostFtdcLoginForbiddenIPField& _data = {0}) :data(_data) {}
-    CThostFtdcLoginForbiddenIPFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcLoginForbiddenIPFieldWrapper(const CThostFtdcLoginForbiddenIPField& _data = { 0 }) :data(_data) { }
+    CThostFtdcLoginForbiddenIPFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcLoginForbiddenIPField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         strncpy(data.reserve1, rowValue.at("reserve1").c_str(), sizeof(TThostFtdcOldIPAddressType));
@@ -5722,8 +6312,8 @@ struct CThostFtdcIPListFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcIPListField data;
 
-    CThostFtdcIPListFieldWrapper(const CThostFtdcIPListField& _data = {0}) :data(_data) {}
-    CThostFtdcIPListFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcIPListFieldWrapper(const CThostFtdcIPListField& _data = { 0 }) :data(_data) { }
+    CThostFtdcIPListFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcIPListField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         strncpy(data.reserve1, rowValue.at("reserve1").c_str(), sizeof(TThostFtdcOldIPAddressType));
@@ -5746,8 +6336,8 @@ struct CThostFtdcInputOptionSelfCloseFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcInputOptionSelfCloseField data;
 
-    CThostFtdcInputOptionSelfCloseFieldWrapper(const CThostFtdcInputOptionSelfCloseField& _data = {0}) :data(_data) {}
-    CThostFtdcInputOptionSelfCloseFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcInputOptionSelfCloseFieldWrapper(const CThostFtdcInputOptionSelfCloseField& _data = { 0 }) :data(_data) { }
+    CThostFtdcInputOptionSelfCloseFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcInputOptionSelfCloseField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         strncpy(data.BrokerID, rowValue.at("BrokerID").c_str(), sizeof(TThostFtdcBrokerIDType));
@@ -5776,6 +6366,12 @@ struct CThostFtdcInputOptionSelfCloseFieldWrapper
             + "'";
         return INSERT_SQL_PREFIX + insertSqlBody + ");";
     }
+    std::string generateSelectSqlByUserID() const {
+        return generateSelectSqlByUserID(data.BrokerID, data.InvestorID);
+    }
+    static std::string generateSelectSqlByUserID(const std::string& BrokerID, const std::string& InvestorID) {
+        return "SELECT * FROM 'CThostFtdcInputOptionSelfCloseField' where BrokerID='" + BrokerID + "' and InvestorID='" + InvestorID + "';";
+    }
 };
 
 struct CThostFtdcInputOptionSelfCloseActionFieldWrapper
@@ -5786,8 +6382,8 @@ struct CThostFtdcInputOptionSelfCloseActionFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcInputOptionSelfCloseActionField data;
 
-    CThostFtdcInputOptionSelfCloseActionFieldWrapper(const CThostFtdcInputOptionSelfCloseActionField& _data = {0}) :data(_data) {}
-    CThostFtdcInputOptionSelfCloseActionFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcInputOptionSelfCloseActionFieldWrapper(const CThostFtdcInputOptionSelfCloseActionField& _data = { 0 }) :data(_data) { }
+    CThostFtdcInputOptionSelfCloseActionFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcInputOptionSelfCloseActionField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         strncpy(data.BrokerID, rowValue.at("BrokerID").c_str(), sizeof(TThostFtdcBrokerIDType));
@@ -5814,6 +6410,12 @@ struct CThostFtdcInputOptionSelfCloseActionFieldWrapper
             + "'";
         return INSERT_SQL_PREFIX + insertSqlBody + ");";
     }
+    std::string generateSelectSqlByUserID() const {
+        return generateSelectSqlByUserID(data.BrokerID, data.InvestorID);
+    }
+    static std::string generateSelectSqlByUserID(const std::string& BrokerID, const std::string& InvestorID) {
+        return "SELECT * FROM 'CThostFtdcInputOptionSelfCloseActionField' where BrokerID='" + BrokerID + "' and InvestorID='" + InvestorID + "';";
+    }
 };
 
 struct CThostFtdcOptionSelfCloseFieldWrapper
@@ -5824,8 +6426,8 @@ struct CThostFtdcOptionSelfCloseFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcOptionSelfCloseField data;
 
-    CThostFtdcOptionSelfCloseFieldWrapper(const CThostFtdcOptionSelfCloseField& _data = {0}) :data(_data) {}
-    CThostFtdcOptionSelfCloseFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcOptionSelfCloseFieldWrapper(const CThostFtdcOptionSelfCloseField& _data = { 0 }) :data(_data) { }
+    CThostFtdcOptionSelfCloseFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcOptionSelfCloseField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         strncpy(data.BrokerID, rowValue.at("BrokerID").c_str(), sizeof(TThostFtdcBrokerIDType));
@@ -5878,6 +6480,12 @@ struct CThostFtdcOptionSelfCloseFieldWrapper
             + "'";
         return INSERT_SQL_PREFIX + insertSqlBody + ");";
     }
+    std::string generateSelectSqlByUserID() const {
+        return generateSelectSqlByUserID(data.BrokerID, data.InvestorID);
+    }
+    static std::string generateSelectSqlByUserID(const std::string& BrokerID, const std::string& InvestorID) {
+        return "SELECT * FROM 'CThostFtdcOptionSelfCloseField' where BrokerID='" + BrokerID + "' and InvestorID='" + InvestorID + "';";
+    }
 };
 
 struct CThostFtdcOptionSelfCloseActionFieldWrapper
@@ -5888,8 +6496,8 @@ struct CThostFtdcOptionSelfCloseActionFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcOptionSelfCloseActionField data;
 
-    CThostFtdcOptionSelfCloseActionFieldWrapper(const CThostFtdcOptionSelfCloseActionField& _data = {0}) :data(_data) {}
-    CThostFtdcOptionSelfCloseActionFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcOptionSelfCloseActionFieldWrapper(const CThostFtdcOptionSelfCloseActionField& _data = { 0 }) :data(_data) { }
+    CThostFtdcOptionSelfCloseActionFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcOptionSelfCloseActionField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         strncpy(data.BrokerID, rowValue.at("BrokerID").c_str(), sizeof(TThostFtdcBrokerIDType));
@@ -5928,6 +6536,12 @@ struct CThostFtdcOptionSelfCloseActionFieldWrapper
             + "'";
         return INSERT_SQL_PREFIX + insertSqlBody + ");";
     }
+    std::string generateSelectSqlByUserID() const {
+        return generateSelectSqlByUserID(data.BrokerID, data.InvestorID);
+    }
+    static std::string generateSelectSqlByUserID(const std::string& BrokerID, const std::string& InvestorID) {
+        return "SELECT * FROM 'CThostFtdcOptionSelfCloseActionField' where BrokerID='" + BrokerID + "' and InvestorID='" + InvestorID + "';";
+    }
 };
 
 struct CThostFtdcQryOptionSelfCloseFieldWrapper
@@ -5938,8 +6552,8 @@ struct CThostFtdcQryOptionSelfCloseFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcQryOptionSelfCloseField data;
 
-    CThostFtdcQryOptionSelfCloseFieldWrapper(const CThostFtdcQryOptionSelfCloseField& _data = {0}) :data(_data) {}
-    CThostFtdcQryOptionSelfCloseFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcQryOptionSelfCloseFieldWrapper(const CThostFtdcQryOptionSelfCloseField& _data = { 0 }) :data(_data) { }
+    CThostFtdcQryOptionSelfCloseFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcQryOptionSelfCloseField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         strncpy(data.BrokerID, rowValue.at("BrokerID").c_str(), sizeof(TThostFtdcBrokerIDType));
@@ -5957,6 +6571,12 @@ struct CThostFtdcQryOptionSelfCloseFieldWrapper
             + "'";
         return INSERT_SQL_PREFIX + insertSqlBody + ");";
     }
+    std::string generateSelectSqlByUserID() const {
+        return generateSelectSqlByUserID(data.BrokerID, data.InvestorID);
+    }
+    static std::string generateSelectSqlByUserID(const std::string& BrokerID, const std::string& InvestorID) {
+        return "SELECT * FROM 'CThostFtdcQryOptionSelfCloseField' where BrokerID='" + BrokerID + "' and InvestorID='" + InvestorID + "';";
+    }
 };
 
 struct CThostFtdcExchangeOptionSelfCloseFieldWrapper
@@ -5967,8 +6587,8 @@ struct CThostFtdcExchangeOptionSelfCloseFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcExchangeOptionSelfCloseField data;
 
-    CThostFtdcExchangeOptionSelfCloseFieldWrapper(const CThostFtdcExchangeOptionSelfCloseField& _data = {0}) :data(_data) {}
-    CThostFtdcExchangeOptionSelfCloseFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcExchangeOptionSelfCloseFieldWrapper(const CThostFtdcExchangeOptionSelfCloseField& _data = { 0 }) :data(_data) { }
+    CThostFtdcExchangeOptionSelfCloseFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcExchangeOptionSelfCloseField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         data.Volume = std::stoi(rowValue.at("Volume"));
@@ -6016,8 +6636,8 @@ struct CThostFtdcQryOptionSelfCloseActionFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcQryOptionSelfCloseActionField data;
 
-    CThostFtdcQryOptionSelfCloseActionFieldWrapper(const CThostFtdcQryOptionSelfCloseActionField& _data = {0}) :data(_data) {}
-    CThostFtdcQryOptionSelfCloseActionFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcQryOptionSelfCloseActionFieldWrapper(const CThostFtdcQryOptionSelfCloseActionField& _data = { 0 }) :data(_data) { }
+    CThostFtdcQryOptionSelfCloseActionFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcQryOptionSelfCloseActionField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         strncpy(data.BrokerID, rowValue.at("BrokerID").c_str(), sizeof(TThostFtdcBrokerIDType));
@@ -6030,6 +6650,12 @@ struct CThostFtdcQryOptionSelfCloseActionFieldWrapper
             + "'";
         return INSERT_SQL_PREFIX + insertSqlBody + ");";
     }
+    std::string generateSelectSqlByUserID() const {
+        return generateSelectSqlByUserID(data.BrokerID, data.InvestorID);
+    }
+    static std::string generateSelectSqlByUserID(const std::string& BrokerID, const std::string& InvestorID) {
+        return "SELECT * FROM 'CThostFtdcQryOptionSelfCloseActionField' where BrokerID='" + BrokerID + "' and InvestorID='" + InvestorID + "';";
+    }
 };
 
 struct CThostFtdcExchangeOptionSelfCloseActionFieldWrapper
@@ -6040,8 +6666,8 @@ struct CThostFtdcExchangeOptionSelfCloseActionFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcExchangeOptionSelfCloseActionField data;
 
-    CThostFtdcExchangeOptionSelfCloseActionFieldWrapper(const CThostFtdcExchangeOptionSelfCloseActionField& _data = {0}) :data(_data) {}
-    CThostFtdcExchangeOptionSelfCloseActionFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcExchangeOptionSelfCloseActionFieldWrapper(const CThostFtdcExchangeOptionSelfCloseActionField& _data = { 0 }) :data(_data) { }
+    CThostFtdcExchangeOptionSelfCloseActionFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcExchangeOptionSelfCloseActionField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         strncpy(data.ExchangeID, rowValue.at("ExchangeID").c_str(), sizeof(TThostFtdcExchangeIDType));
@@ -6082,8 +6708,8 @@ struct CThostFtdcSyncDelaySwapFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcSyncDelaySwapField data;
 
-    CThostFtdcSyncDelaySwapFieldWrapper(const CThostFtdcSyncDelaySwapField& _data = {0}) :data(_data) {}
-    CThostFtdcSyncDelaySwapFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcSyncDelaySwapFieldWrapper(const CThostFtdcSyncDelaySwapField& _data = { 0 }) :data(_data) { }
+    CThostFtdcSyncDelaySwapFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcSyncDelaySwapField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         strncpy(data.DelaySwapSeqNo, rowValue.at("DelaySwapSeqNo").c_str(), sizeof(TThostFtdcDepositSeqNoType));
@@ -6104,6 +6730,12 @@ struct CThostFtdcSyncDelaySwapFieldWrapper
             + "'";
         return INSERT_SQL_PREFIX + insertSqlBody + ");";
     }
+    std::string generateSelectSqlByUserID() const {
+        return generateSelectSqlByUserID(data.BrokerID, data.InvestorID);
+    }
+    static std::string generateSelectSqlByUserID(const std::string& BrokerID, const std::string& InvestorID) {
+        return "SELECT * FROM 'CThostFtdcSyncDelaySwapField' where BrokerID='" + BrokerID + "' and InvestorID='" + InvestorID + "';";
+    }
 };
 
 struct CThostFtdcQrySyncDelaySwapFieldWrapper
@@ -6114,8 +6746,8 @@ struct CThostFtdcQrySyncDelaySwapFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcQrySyncDelaySwapField data;
 
-    CThostFtdcQrySyncDelaySwapFieldWrapper(const CThostFtdcQrySyncDelaySwapField& _data = {0}) :data(_data) {}
-    CThostFtdcQrySyncDelaySwapFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcQrySyncDelaySwapFieldWrapper(const CThostFtdcQrySyncDelaySwapField& _data = { 0 }) :data(_data) { }
+    CThostFtdcQrySyncDelaySwapFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcQrySyncDelaySwapField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         strncpy(data.BrokerID, rowValue.at("BrokerID").c_str(), sizeof(TThostFtdcBrokerIDType));
@@ -6137,8 +6769,8 @@ struct CThostFtdcInvestUnitFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcInvestUnitField data;
 
-    CThostFtdcInvestUnitFieldWrapper(const CThostFtdcInvestUnitField& _data = {0}) :data(_data) {}
-    CThostFtdcInvestUnitFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcInvestUnitFieldWrapper(const CThostFtdcInvestUnitField& _data = { 0 }) :data(_data) { }
+    CThostFtdcInvestUnitFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcInvestUnitField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         strncpy(data.BrokerID, rowValue.at("BrokerID").c_str(), sizeof(TThostFtdcBrokerIDType));
@@ -6157,6 +6789,12 @@ struct CThostFtdcInvestUnitFieldWrapper
             + "'";
         return INSERT_SQL_PREFIX + insertSqlBody + ");";
     }
+    std::string generateSelectSqlByUserID() const {
+        return generateSelectSqlByUserID(data.BrokerID, data.InvestorID);
+    }
+    static std::string generateSelectSqlByUserID(const std::string& BrokerID, const std::string& InvestorID) {
+        return "SELECT * FROM 'CThostFtdcInvestUnitField' where BrokerID='" + BrokerID + "' and InvestorID='" + InvestorID + "';";
+    }
 };
 
 struct CThostFtdcQryInvestUnitFieldWrapper
@@ -6167,8 +6805,8 @@ struct CThostFtdcQryInvestUnitFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcQryInvestUnitField data;
 
-    CThostFtdcQryInvestUnitFieldWrapper(const CThostFtdcQryInvestUnitField& _data = {0}) :data(_data) {}
-    CThostFtdcQryInvestUnitFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcQryInvestUnitFieldWrapper(const CThostFtdcQryInvestUnitField& _data = { 0 }) :data(_data) { }
+    CThostFtdcQryInvestUnitFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcQryInvestUnitField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         strncpy(data.BrokerID, rowValue.at("BrokerID").c_str(), sizeof(TThostFtdcBrokerIDType));
@@ -6181,6 +6819,12 @@ struct CThostFtdcQryInvestUnitFieldWrapper
             + "'";
         return INSERT_SQL_PREFIX + insertSqlBody + ");";
     }
+    std::string generateSelectSqlByUserID() const {
+        return generateSelectSqlByUserID(data.BrokerID, data.InvestorID);
+    }
+    static std::string generateSelectSqlByUserID(const std::string& BrokerID, const std::string& InvestorID) {
+        return "SELECT * FROM 'CThostFtdcQryInvestUnitField' where BrokerID='" + BrokerID + "' and InvestorID='" + InvestorID + "';";
+    }
 };
 
 struct CThostFtdcSecAgentCheckModeFieldWrapper
@@ -6191,8 +6835,8 @@ struct CThostFtdcSecAgentCheckModeFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcSecAgentCheckModeField data;
 
-    CThostFtdcSecAgentCheckModeFieldWrapper(const CThostFtdcSecAgentCheckModeField& _data = {0}) :data(_data) {}
-    CThostFtdcSecAgentCheckModeFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcSecAgentCheckModeFieldWrapper(const CThostFtdcSecAgentCheckModeField& _data = { 0 }) :data(_data) { }
+    CThostFtdcSecAgentCheckModeFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcSecAgentCheckModeField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         strncpy(data.InvestorID, rowValue.at("InvestorID").c_str(), sizeof(TThostFtdcInvestorIDType));
@@ -6207,6 +6851,12 @@ struct CThostFtdcSecAgentCheckModeFieldWrapper
             + "'";
         return INSERT_SQL_PREFIX + insertSqlBody + ");";
     }
+    std::string generateSelectSqlByUserID() const {
+        return generateSelectSqlByUserID(data.BrokerID, data.InvestorID);
+    }
+    static std::string generateSelectSqlByUserID(const std::string& BrokerID, const std::string& InvestorID) {
+        return "SELECT * FROM 'CThostFtdcSecAgentCheckModeField' where BrokerID='" + BrokerID + "' and InvestorID='" + InvestorID + "';";
+    }
 };
 
 struct CThostFtdcSecAgentTradeInfoFieldWrapper
@@ -6217,8 +6867,8 @@ struct CThostFtdcSecAgentTradeInfoFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcSecAgentTradeInfoField data;
 
-    CThostFtdcSecAgentTradeInfoFieldWrapper(const CThostFtdcSecAgentTradeInfoField& _data = {0}) :data(_data) {}
-    CThostFtdcSecAgentTradeInfoFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcSecAgentTradeInfoFieldWrapper(const CThostFtdcSecAgentTradeInfoField& _data = { 0 }) :data(_data) { }
+    CThostFtdcSecAgentTradeInfoFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcSecAgentTradeInfoField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         strncpy(data.BrokerID, rowValue.at("BrokerID").c_str(), sizeof(TThostFtdcBrokerIDType));
@@ -6232,6 +6882,12 @@ struct CThostFtdcSecAgentTradeInfoFieldWrapper
             + "'";
         return INSERT_SQL_PREFIX + insertSqlBody + ");";
     }
+    std::string generateSelectSqlByUserID() const {
+        return generateSelectSqlByUserID(data.BrokerID, data.InvestorID);
+    }
+    static std::string generateSelectSqlByUserID(const std::string& BrokerID, const std::string& InvestorID) {
+        return "SELECT * FROM 'CThostFtdcSecAgentTradeInfoField' where BrokerID='" + BrokerID + "' and InvestorID='" + InvestorID + "';";
+    }
 };
 
 struct CThostFtdcMarketDataFieldWrapper
@@ -6242,8 +6898,8 @@ struct CThostFtdcMarketDataFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcMarketDataField data;
 
-    CThostFtdcMarketDataFieldWrapper(const CThostFtdcMarketDataField& _data = {0}) :data(_data) {}
-    CThostFtdcMarketDataFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcMarketDataFieldWrapper(const CThostFtdcMarketDataField& _data = { 0 }) :data(_data) { }
+    CThostFtdcMarketDataFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcMarketDataField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         strncpy(data.TradingDay, rowValue.at("TradingDay").c_str(), sizeof(TThostFtdcDateType));
@@ -6288,8 +6944,8 @@ struct CThostFtdcMarketDataBaseFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcMarketDataBaseField data;
 
-    CThostFtdcMarketDataBaseFieldWrapper(const CThostFtdcMarketDataBaseField& _data = {0}) :data(_data) {}
-    CThostFtdcMarketDataBaseFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcMarketDataBaseFieldWrapper(const CThostFtdcMarketDataBaseField& _data = { 0 }) :data(_data) { }
+    CThostFtdcMarketDataBaseFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcMarketDataBaseField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         strncpy(data.TradingDay, rowValue.at("TradingDay").c_str(), sizeof(TThostFtdcDateType));
@@ -6314,8 +6970,8 @@ struct CThostFtdcMarketDataStaticFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcMarketDataStaticField data;
 
-    CThostFtdcMarketDataStaticFieldWrapper(const CThostFtdcMarketDataStaticField& _data = {0}) :data(_data) {}
-    CThostFtdcMarketDataStaticFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcMarketDataStaticFieldWrapper(const CThostFtdcMarketDataStaticField& _data = { 0 }) :data(_data) { }
+    CThostFtdcMarketDataStaticFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcMarketDataStaticField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         data.OpenPrice = std::stod(rowValue.at("OpenPrice"));
@@ -6343,8 +6999,8 @@ struct CThostFtdcMarketDataLastMatchFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcMarketDataLastMatchField data;
 
-    CThostFtdcMarketDataLastMatchFieldWrapper(const CThostFtdcMarketDataLastMatchField& _data = {0}) :data(_data) {}
-    CThostFtdcMarketDataLastMatchFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcMarketDataLastMatchFieldWrapper(const CThostFtdcMarketDataLastMatchField& _data = { 0 }) :data(_data) { }
+    CThostFtdcMarketDataLastMatchFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcMarketDataLastMatchField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         data.LastPrice = std::stod(rowValue.at("LastPrice"));
@@ -6368,8 +7024,8 @@ struct CThostFtdcMarketDataBestPriceFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcMarketDataBestPriceField data;
 
-    CThostFtdcMarketDataBestPriceFieldWrapper(const CThostFtdcMarketDataBestPriceField& _data = {0}) :data(_data) {}
-    CThostFtdcMarketDataBestPriceFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcMarketDataBestPriceFieldWrapper(const CThostFtdcMarketDataBestPriceField& _data = { 0 }) :data(_data) { }
+    CThostFtdcMarketDataBestPriceFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcMarketDataBestPriceField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         data.BidPrice1 = std::stod(rowValue.at("BidPrice1"));
@@ -6393,8 +7049,8 @@ struct CThostFtdcMarketDataBid23FieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcMarketDataBid23Field data;
 
-    CThostFtdcMarketDataBid23FieldWrapper(const CThostFtdcMarketDataBid23Field& _data = {0}) :data(_data) {}
-    CThostFtdcMarketDataBid23FieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcMarketDataBid23FieldWrapper(const CThostFtdcMarketDataBid23Field& _data = { 0 }) :data(_data) { }
+    CThostFtdcMarketDataBid23FieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcMarketDataBid23Field() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         data.BidPrice2 = std::stod(rowValue.at("BidPrice2"));
@@ -6418,8 +7074,8 @@ struct CThostFtdcMarketDataAsk23FieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcMarketDataAsk23Field data;
 
-    CThostFtdcMarketDataAsk23FieldWrapper(const CThostFtdcMarketDataAsk23Field& _data = {0}) :data(_data) {}
-    CThostFtdcMarketDataAsk23FieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcMarketDataAsk23FieldWrapper(const CThostFtdcMarketDataAsk23Field& _data = { 0 }) :data(_data) { }
+    CThostFtdcMarketDataAsk23FieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcMarketDataAsk23Field() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         data.AskPrice2 = std::stod(rowValue.at("AskPrice2"));
@@ -6443,8 +7099,8 @@ struct CThostFtdcMarketDataBid45FieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcMarketDataBid45Field data;
 
-    CThostFtdcMarketDataBid45FieldWrapper(const CThostFtdcMarketDataBid45Field& _data = {0}) :data(_data) {}
-    CThostFtdcMarketDataBid45FieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcMarketDataBid45FieldWrapper(const CThostFtdcMarketDataBid45Field& _data = { 0 }) :data(_data) { }
+    CThostFtdcMarketDataBid45FieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcMarketDataBid45Field() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         data.BidPrice4 = std::stod(rowValue.at("BidPrice4"));
@@ -6468,8 +7124,8 @@ struct CThostFtdcMarketDataAsk45FieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcMarketDataAsk45Field data;
 
-    CThostFtdcMarketDataAsk45FieldWrapper(const CThostFtdcMarketDataAsk45Field& _data = {0}) :data(_data) {}
-    CThostFtdcMarketDataAsk45FieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcMarketDataAsk45FieldWrapper(const CThostFtdcMarketDataAsk45Field& _data = { 0 }) :data(_data) { }
+    CThostFtdcMarketDataAsk45FieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcMarketDataAsk45Field() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         data.AskPrice4 = std::stod(rowValue.at("AskPrice4"));
@@ -6493,8 +7149,8 @@ struct CThostFtdcMarketDataUpdateTimeFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcMarketDataUpdateTimeField data;
 
-    CThostFtdcMarketDataUpdateTimeFieldWrapper(const CThostFtdcMarketDataUpdateTimeField& _data = {0}) :data(_data) {}
-    CThostFtdcMarketDataUpdateTimeFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcMarketDataUpdateTimeFieldWrapper(const CThostFtdcMarketDataUpdateTimeField& _data = { 0 }) :data(_data) { }
+    CThostFtdcMarketDataUpdateTimeFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcMarketDataUpdateTimeField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         strncpy(data.reserve1, rowValue.at("reserve1").c_str(), sizeof(TThostFtdcOldInstrumentIDType));
@@ -6519,8 +7175,8 @@ struct CThostFtdcMarketDataExchangeFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcMarketDataExchangeField data;
 
-    CThostFtdcMarketDataExchangeFieldWrapper(const CThostFtdcMarketDataExchangeField& _data = {0}) :data(_data) {}
-    CThostFtdcMarketDataExchangeFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcMarketDataExchangeFieldWrapper(const CThostFtdcMarketDataExchangeField& _data = { 0 }) :data(_data) { }
+    CThostFtdcMarketDataExchangeFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcMarketDataExchangeField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         strncpy(data.ExchangeID, rowValue.at("ExchangeID").c_str(), sizeof(TThostFtdcExchangeIDType));
@@ -6541,8 +7197,8 @@ struct CThostFtdcSpecificInstrumentFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcSpecificInstrumentField data;
 
-    CThostFtdcSpecificInstrumentFieldWrapper(const CThostFtdcSpecificInstrumentField& _data = {0}) :data(_data) {}
-    CThostFtdcSpecificInstrumentFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcSpecificInstrumentFieldWrapper(const CThostFtdcSpecificInstrumentField& _data = { 0 }) :data(_data) { }
+    CThostFtdcSpecificInstrumentFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcSpecificInstrumentField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         strncpy(data.reserve1, rowValue.at("reserve1").c_str(), sizeof(TThostFtdcOldInstrumentIDType));
@@ -6564,8 +7220,8 @@ struct CThostFtdcInstrumentStatusFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcInstrumentStatusField data;
 
-    CThostFtdcInstrumentStatusFieldWrapper(const CThostFtdcInstrumentStatusField& _data = {0}) :data(_data) {}
-    CThostFtdcInstrumentStatusFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcInstrumentStatusFieldWrapper(const CThostFtdcInstrumentStatusField& _data = { 0 }) :data(_data) { }
+    CThostFtdcInstrumentStatusFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcInstrumentStatusField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         strncpy(data.ExchangeID, rowValue.at("ExchangeID").c_str(), sizeof(TThostFtdcExchangeIDType));
@@ -6595,8 +7251,8 @@ struct CThostFtdcQryInstrumentStatusFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcQryInstrumentStatusField data;
 
-    CThostFtdcQryInstrumentStatusFieldWrapper(const CThostFtdcQryInstrumentStatusField& _data = {0}) :data(_data) {}
-    CThostFtdcQryInstrumentStatusFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcQryInstrumentStatusFieldWrapper(const CThostFtdcQryInstrumentStatusField& _data = { 0 }) :data(_data) { }
+    CThostFtdcQryInstrumentStatusFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcQryInstrumentStatusField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         strncpy(data.ExchangeID, rowValue.at("ExchangeID").c_str(), sizeof(TThostFtdcExchangeIDType));
@@ -6619,8 +7275,8 @@ struct CThostFtdcInvestorAccountFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcInvestorAccountField data;
 
-    CThostFtdcInvestorAccountFieldWrapper(const CThostFtdcInvestorAccountField& _data = {0}) :data(_data) {}
-    CThostFtdcInvestorAccountFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcInvestorAccountFieldWrapper(const CThostFtdcInvestorAccountField& _data = { 0 }) :data(_data) { }
+    CThostFtdcInvestorAccountFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcInvestorAccountField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         strncpy(data.BrokerID, rowValue.at("BrokerID").c_str(), sizeof(TThostFtdcBrokerIDType));
@@ -6634,6 +7290,12 @@ struct CThostFtdcInvestorAccountFieldWrapper
             + "'";
         return INSERT_SQL_PREFIX + insertSqlBody + ");";
     }
+    std::string generateSelectSqlByUserID() const {
+        return generateSelectSqlByUserID(data.BrokerID, data.InvestorID);
+    }
+    static std::string generateSelectSqlByUserID(const std::string& BrokerID, const std::string& InvestorID) {
+        return "SELECT * FROM 'CThostFtdcInvestorAccountField' where BrokerID='" + BrokerID + "' and InvestorID='" + InvestorID + "';";
+    }
 };
 
 struct CThostFtdcPositionProfitAlgorithmFieldWrapper
@@ -6644,8 +7306,8 @@ struct CThostFtdcPositionProfitAlgorithmFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcPositionProfitAlgorithmField data;
 
-    CThostFtdcPositionProfitAlgorithmFieldWrapper(const CThostFtdcPositionProfitAlgorithmField& _data = {0}) :data(_data) {}
-    CThostFtdcPositionProfitAlgorithmFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcPositionProfitAlgorithmFieldWrapper(const CThostFtdcPositionProfitAlgorithmField& _data = { 0 }) :data(_data) { }
+    CThostFtdcPositionProfitAlgorithmFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcPositionProfitAlgorithmField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         strncpy(data.BrokerID, rowValue.at("BrokerID").c_str(), sizeof(TThostFtdcBrokerIDType));
@@ -6660,6 +7322,12 @@ struct CThostFtdcPositionProfitAlgorithmFieldWrapper
             + "'";
         return INSERT_SQL_PREFIX + insertSqlBody + ");";
     }
+    std::string generateSelectSqlByUserID() const {
+        return generateSelectSqlByUserID(data.BrokerID, data.AccountID);
+    }
+    static std::string generateSelectSqlByUserID(const std::string& BrokerID, const std::string& AccountID) {
+        return "SELECT * FROM 'CThostFtdcPositionProfitAlgorithmField' where BrokerID='" + BrokerID + "' and AccountID='" + AccountID + "';";
+    }
 };
 
 struct CThostFtdcDiscountFieldWrapper
@@ -6670,8 +7338,8 @@ struct CThostFtdcDiscountFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcDiscountField data;
 
-    CThostFtdcDiscountFieldWrapper(const CThostFtdcDiscountField& _data = {0}) :data(_data) {}
-    CThostFtdcDiscountFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcDiscountFieldWrapper(const CThostFtdcDiscountField& _data = { 0 }) :data(_data) { }
+    CThostFtdcDiscountFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcDiscountField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         strncpy(data.BrokerID, rowValue.at("BrokerID").c_str(), sizeof(TThostFtdcBrokerIDType));
@@ -6685,6 +7353,12 @@ struct CThostFtdcDiscountFieldWrapper
             + "'";
         return INSERT_SQL_PREFIX + insertSqlBody + ");";
     }
+    std::string generateSelectSqlByUserID() const {
+        return generateSelectSqlByUserID(data.BrokerID, data.InvestorID);
+    }
+    static std::string generateSelectSqlByUserID(const std::string& BrokerID, const std::string& InvestorID) {
+        return "SELECT * FROM 'CThostFtdcDiscountField' where BrokerID='" + BrokerID + "' and InvestorID='" + InvestorID + "';";
+    }
 };
 
 struct CThostFtdcQryTransferBankFieldWrapper
@@ -6695,8 +7369,8 @@ struct CThostFtdcQryTransferBankFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcQryTransferBankField data;
 
-    CThostFtdcQryTransferBankFieldWrapper(const CThostFtdcQryTransferBankField& _data = {0}) :data(_data) {}
-    CThostFtdcQryTransferBankFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcQryTransferBankFieldWrapper(const CThostFtdcQryTransferBankField& _data = { 0 }) :data(_data) { }
+    CThostFtdcQryTransferBankFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcQryTransferBankField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         strncpy(data.BankID, rowValue.at("BankID").c_str(), sizeof(TThostFtdcBankIDType));
@@ -6718,8 +7392,8 @@ struct CThostFtdcTransferBankFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcTransferBankField data;
 
-    CThostFtdcTransferBankFieldWrapper(const CThostFtdcTransferBankField& _data = {0}) :data(_data) {}
-    CThostFtdcTransferBankFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcTransferBankFieldWrapper(const CThostFtdcTransferBankField& _data = { 0 }) :data(_data) { }
+    CThostFtdcTransferBankFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcTransferBankField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         strncpy(data.BankID, rowValue.at("BankID").c_str(), sizeof(TThostFtdcBankIDType));
@@ -6743,8 +7417,8 @@ struct CThostFtdcQryInvestorPositionDetailFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcQryInvestorPositionDetailField data;
 
-    CThostFtdcQryInvestorPositionDetailFieldWrapper(const CThostFtdcQryInvestorPositionDetailField& _data = {0}) :data(_data) {}
-    CThostFtdcQryInvestorPositionDetailFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcQryInvestorPositionDetailFieldWrapper(const CThostFtdcQryInvestorPositionDetailField& _data = { 0 }) :data(_data) { }
+    CThostFtdcQryInvestorPositionDetailFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcQryInvestorPositionDetailField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         strncpy(data.BrokerID, rowValue.at("BrokerID").c_str(), sizeof(TThostFtdcBrokerIDType));
@@ -6760,6 +7434,12 @@ struct CThostFtdcQryInvestorPositionDetailFieldWrapper
             + "'";
         return INSERT_SQL_PREFIX + insertSqlBody + ");";
     }
+    std::string generateSelectSqlByUserID() const {
+        return generateSelectSqlByUserID(data.BrokerID, data.InvestorID);
+    }
+    static std::string generateSelectSqlByUserID(const std::string& BrokerID, const std::string& InvestorID) {
+        return "SELECT * FROM 'CThostFtdcQryInvestorPositionDetailField' where BrokerID='" + BrokerID + "' and InvestorID='" + InvestorID + "';";
+    }
 };
 
 struct CThostFtdcInvestorPositionDetailFieldWrapper
@@ -6770,8 +7450,8 @@ struct CThostFtdcInvestorPositionDetailFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcInvestorPositionDetailField data;
 
-    CThostFtdcInvestorPositionDetailFieldWrapper(const CThostFtdcInvestorPositionDetailField& _data = {0}) :data(_data) {}
-    CThostFtdcInvestorPositionDetailFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcInvestorPositionDetailFieldWrapper(const CThostFtdcInvestorPositionDetailField& _data = { 0 }) :data(_data) { }
+    CThostFtdcInvestorPositionDetailFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcInvestorPositionDetailField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         strncpy(data.reserve1, rowValue.at("reserve1").c_str(), sizeof(TThostFtdcOldInstrumentIDType));
@@ -6812,6 +7492,12 @@ struct CThostFtdcInvestorPositionDetailFieldWrapper
             + "'";
         return INSERT_SQL_PREFIX + insertSqlBody + ");";
     }
+    std::string generateSelectSqlByUserID() const {
+        return generateSelectSqlByUserID(data.BrokerID, data.InvestorID);
+    }
+    static std::string generateSelectSqlByUserID(const std::string& BrokerID, const std::string& InvestorID) {
+        return "SELECT * FROM 'CThostFtdcInvestorPositionDetailField' where BrokerID='" + BrokerID + "' and InvestorID='" + InvestorID + "';";
+    }
 };
 
 struct CThostFtdcTradingAccountPasswordFieldWrapper
@@ -6822,8 +7508,8 @@ struct CThostFtdcTradingAccountPasswordFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcTradingAccountPasswordField data;
 
-    CThostFtdcTradingAccountPasswordFieldWrapper(const CThostFtdcTradingAccountPasswordField& _data = {0}) :data(_data) {}
-    CThostFtdcTradingAccountPasswordFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcTradingAccountPasswordFieldWrapper(const CThostFtdcTradingAccountPasswordField& _data = { 0 }) :data(_data) { }
+    CThostFtdcTradingAccountPasswordFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcTradingAccountPasswordField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         strncpy(data.BrokerID, rowValue.at("BrokerID").c_str(), sizeof(TThostFtdcBrokerIDType));
@@ -6837,6 +7523,12 @@ struct CThostFtdcTradingAccountPasswordFieldWrapper
             + "'";
         return INSERT_SQL_PREFIX + insertSqlBody + ");";
     }
+    std::string generateSelectSqlByUserID() const {
+        return generateSelectSqlByUserID(data.BrokerID, data.AccountID);
+    }
+    static std::string generateSelectSqlByUserID(const std::string& BrokerID, const std::string& AccountID) {
+        return "SELECT * FROM 'CThostFtdcTradingAccountPasswordField' where BrokerID='" + BrokerID + "' and AccountID='" + AccountID + "';";
+    }
 };
 
 struct CThostFtdcMDTraderOfferFieldWrapper
@@ -6847,8 +7539,8 @@ struct CThostFtdcMDTraderOfferFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcMDTraderOfferField data;
 
-    CThostFtdcMDTraderOfferFieldWrapper(const CThostFtdcMDTraderOfferField& _data = {0}) :data(_data) {}
-    CThostFtdcMDTraderOfferFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcMDTraderOfferFieldWrapper(const CThostFtdcMDTraderOfferField& _data = { 0 }) :data(_data) { }
+    CThostFtdcMDTraderOfferFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcMDTraderOfferField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         strncpy(data.ExchangeID, rowValue.at("ExchangeID").c_str(), sizeof(TThostFtdcExchangeIDType));
@@ -6887,8 +7579,8 @@ struct CThostFtdcQryMDTraderOfferFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcQryMDTraderOfferField data;
 
-    CThostFtdcQryMDTraderOfferFieldWrapper(const CThostFtdcQryMDTraderOfferField& _data = {0}) :data(_data) {}
-    CThostFtdcQryMDTraderOfferFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcQryMDTraderOfferFieldWrapper(const CThostFtdcQryMDTraderOfferField& _data = { 0 }) :data(_data) { }
+    CThostFtdcQryMDTraderOfferFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcQryMDTraderOfferField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         strncpy(data.ExchangeID, rowValue.at("ExchangeID").c_str(), sizeof(TThostFtdcExchangeIDType));
@@ -6911,8 +7603,8 @@ struct CThostFtdcQryNoticeFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcQryNoticeField data;
 
-    CThostFtdcQryNoticeFieldWrapper(const CThostFtdcQryNoticeField& _data = {0}) :data(_data) {}
-    CThostFtdcQryNoticeFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcQryNoticeFieldWrapper(const CThostFtdcQryNoticeField& _data = { 0 }) :data(_data) { }
+    CThostFtdcQryNoticeFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcQryNoticeField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         strncpy(data.BrokerID, rowValue.at("BrokerID").c_str(), sizeof(TThostFtdcBrokerIDType));
@@ -6933,8 +7625,8 @@ struct CThostFtdcNoticeFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcNoticeField data;
 
-    CThostFtdcNoticeFieldWrapper(const CThostFtdcNoticeField& _data = {0}) :data(_data) {}
-    CThostFtdcNoticeFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcNoticeFieldWrapper(const CThostFtdcNoticeField& _data = { 0 }) :data(_data) { }
+    CThostFtdcNoticeFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcNoticeField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         strncpy(data.BrokerID, rowValue.at("BrokerID").c_str(), sizeof(TThostFtdcBrokerIDType));
@@ -6957,8 +7649,8 @@ struct CThostFtdcUserRightFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcUserRightField data;
 
-    CThostFtdcUserRightFieldWrapper(const CThostFtdcUserRightField& _data = {0}) :data(_data) {}
-    CThostFtdcUserRightFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcUserRightFieldWrapper(const CThostFtdcUserRightField& _data = { 0 }) :data(_data) { }
+    CThostFtdcUserRightFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcUserRightField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         strncpy(data.BrokerID, rowValue.at("BrokerID").c_str(), sizeof(TThostFtdcBrokerIDType));
@@ -6972,6 +7664,12 @@ struct CThostFtdcUserRightFieldWrapper
             + "'";
         return INSERT_SQL_PREFIX + insertSqlBody + ");";
     }
+    std::string generateSelectSqlByUserID() const {
+        return generateSelectSqlByUserID(data.BrokerID, data.UserID);
+    }
+    static std::string generateSelectSqlByUserID(const std::string& BrokerID, const std::string& UserID) {
+        return "SELECT * FROM 'CThostFtdcUserRightField' where BrokerID='" + BrokerID + "' and UserID='" + UserID + "';";
+    }
 };
 
 struct CThostFtdcQrySettlementInfoConfirmFieldWrapper
@@ -6982,8 +7680,8 @@ struct CThostFtdcQrySettlementInfoConfirmFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcQrySettlementInfoConfirmField data;
 
-    CThostFtdcQrySettlementInfoConfirmFieldWrapper(const CThostFtdcQrySettlementInfoConfirmField& _data = {0}) :data(_data) {}
-    CThostFtdcQrySettlementInfoConfirmFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcQrySettlementInfoConfirmFieldWrapper(const CThostFtdcQrySettlementInfoConfirmField& _data = { 0 }) :data(_data) { }
+    CThostFtdcQrySettlementInfoConfirmFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcQrySettlementInfoConfirmField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         strncpy(data.BrokerID, rowValue.at("BrokerID").c_str(), sizeof(TThostFtdcBrokerIDType));
@@ -6997,6 +7695,12 @@ struct CThostFtdcQrySettlementInfoConfirmFieldWrapper
             + "'";
         return INSERT_SQL_PREFIX + insertSqlBody + ");";
     }
+    std::string generateSelectSqlByUserID() const {
+        return generateSelectSqlByUserID(data.BrokerID, data.InvestorID);
+    }
+    static std::string generateSelectSqlByUserID(const std::string& BrokerID, const std::string& InvestorID) {
+        return "SELECT * FROM 'CThostFtdcQrySettlementInfoConfirmField' where BrokerID='" + BrokerID + "' and InvestorID='" + InvestorID + "';";
+    }
 };
 
 struct CThostFtdcLoadSettlementInfoFieldWrapper
@@ -7007,8 +7711,8 @@ struct CThostFtdcLoadSettlementInfoFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcLoadSettlementInfoField data;
 
-    CThostFtdcLoadSettlementInfoFieldWrapper(const CThostFtdcLoadSettlementInfoField& _data = {0}) :data(_data) {}
-    CThostFtdcLoadSettlementInfoFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcLoadSettlementInfoFieldWrapper(const CThostFtdcLoadSettlementInfoField& _data = { 0 }) :data(_data) { }
+    CThostFtdcLoadSettlementInfoFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcLoadSettlementInfoField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         strncpy(data.BrokerID, rowValue.at("BrokerID").c_str(), sizeof(TThostFtdcBrokerIDType));
@@ -7029,8 +7733,8 @@ struct CThostFtdcBrokerWithdrawAlgorithmFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcBrokerWithdrawAlgorithmField data;
 
-    CThostFtdcBrokerWithdrawAlgorithmFieldWrapper(const CThostFtdcBrokerWithdrawAlgorithmField& _data = {0}) :data(_data) {}
-    CThostFtdcBrokerWithdrawAlgorithmFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcBrokerWithdrawAlgorithmFieldWrapper(const CThostFtdcBrokerWithdrawAlgorithmField& _data = { 0 }) :data(_data) { }
+    CThostFtdcBrokerWithdrawAlgorithmFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcBrokerWithdrawAlgorithmField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         strncpy(data.BrokerID, rowValue.at("BrokerID").c_str(), sizeof(TThostFtdcBrokerIDType));
@@ -7060,8 +7764,8 @@ struct CThostFtdcTradingAccountPasswordUpdateV1FieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcTradingAccountPasswordUpdateV1Field data;
 
-    CThostFtdcTradingAccountPasswordUpdateV1FieldWrapper(const CThostFtdcTradingAccountPasswordUpdateV1Field& _data = {0}) :data(_data) {}
-    CThostFtdcTradingAccountPasswordUpdateV1FieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcTradingAccountPasswordUpdateV1FieldWrapper(const CThostFtdcTradingAccountPasswordUpdateV1Field& _data = { 0 }) :data(_data) { }
+    CThostFtdcTradingAccountPasswordUpdateV1FieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcTradingAccountPasswordUpdateV1Field() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         strncpy(data.BrokerID, rowValue.at("BrokerID").c_str(), sizeof(TThostFtdcBrokerIDType));
@@ -7075,6 +7779,12 @@ struct CThostFtdcTradingAccountPasswordUpdateV1FieldWrapper
             + "'";
         return INSERT_SQL_PREFIX + insertSqlBody + ");";
     }
+    std::string generateSelectSqlByUserID() const {
+        return generateSelectSqlByUserID(data.BrokerID, data.InvestorID);
+    }
+    static std::string generateSelectSqlByUserID(const std::string& BrokerID, const std::string& InvestorID) {
+        return "SELECT * FROM 'CThostFtdcTradingAccountPasswordUpdateV1Field' where BrokerID='" + BrokerID + "' and InvestorID='" + InvestorID + "';";
+    }
 };
 
 struct CThostFtdcTradingAccountPasswordUpdateFieldWrapper
@@ -7085,8 +7795,8 @@ struct CThostFtdcTradingAccountPasswordUpdateFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcTradingAccountPasswordUpdateField data;
 
-    CThostFtdcTradingAccountPasswordUpdateFieldWrapper(const CThostFtdcTradingAccountPasswordUpdateField& _data = {0}) :data(_data) {}
-    CThostFtdcTradingAccountPasswordUpdateFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcTradingAccountPasswordUpdateFieldWrapper(const CThostFtdcTradingAccountPasswordUpdateField& _data = { 0 }) :data(_data) { }
+    CThostFtdcTradingAccountPasswordUpdateFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcTradingAccountPasswordUpdateField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         strncpy(data.BrokerID, rowValue.at("BrokerID").c_str(), sizeof(TThostFtdcBrokerIDType));
@@ -7101,6 +7811,12 @@ struct CThostFtdcTradingAccountPasswordUpdateFieldWrapper
             + "'";
         return INSERT_SQL_PREFIX + insertSqlBody + ");";
     }
+    std::string generateSelectSqlByUserID() const {
+        return generateSelectSqlByUserID(data.BrokerID, data.AccountID);
+    }
+    static std::string generateSelectSqlByUserID(const std::string& BrokerID, const std::string& AccountID) {
+        return "SELECT * FROM 'CThostFtdcTradingAccountPasswordUpdateField' where BrokerID='" + BrokerID + "' and AccountID='" + AccountID + "';";
+    }
 };
 
 struct CThostFtdcQryCombinationLegFieldWrapper
@@ -7111,8 +7827,8 @@ struct CThostFtdcQryCombinationLegFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcQryCombinationLegField data;
 
-    CThostFtdcQryCombinationLegFieldWrapper(const CThostFtdcQryCombinationLegField& _data = {0}) :data(_data) {}
-    CThostFtdcQryCombinationLegFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcQryCombinationLegFieldWrapper(const CThostFtdcQryCombinationLegField& _data = { 0 }) :data(_data) { }
+    CThostFtdcQryCombinationLegFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcQryCombinationLegField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         strncpy(data.reserve1, rowValue.at("reserve1").c_str(), sizeof(TThostFtdcOldInstrumentIDType));
@@ -7137,8 +7853,8 @@ struct CThostFtdcQrySyncStatusFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcQrySyncStatusField data;
 
-    CThostFtdcQrySyncStatusFieldWrapper(const CThostFtdcQrySyncStatusField& _data = {0}) :data(_data) {}
-    CThostFtdcQrySyncStatusFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcQrySyncStatusFieldWrapper(const CThostFtdcQrySyncStatusField& _data = { 0 }) :data(_data) { }
+    CThostFtdcQrySyncStatusFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcQrySyncStatusField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         strncpy(data.TradingDay, rowValue.at("TradingDay").c_str(), sizeof(TThostFtdcDateType));
@@ -7159,8 +7875,8 @@ struct CThostFtdcCombinationLegFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcCombinationLegField data;
 
-    CThostFtdcCombinationLegFieldWrapper(const CThostFtdcCombinationLegField& _data = {0}) :data(_data) {}
-    CThostFtdcCombinationLegFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcCombinationLegFieldWrapper(const CThostFtdcCombinationLegField& _data = { 0 }) :data(_data) { }
+    CThostFtdcCombinationLegFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcCombinationLegField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         strncpy(data.reserve1, rowValue.at("reserve1").c_str(), sizeof(TThostFtdcOldInstrumentIDType));
@@ -7188,8 +7904,8 @@ struct CThostFtdcSyncStatusFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcSyncStatusField data;
 
-    CThostFtdcSyncStatusFieldWrapper(const CThostFtdcSyncStatusField& _data = {0}) :data(_data) {}
-    CThostFtdcSyncStatusFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcSyncStatusFieldWrapper(const CThostFtdcSyncStatusField& _data = { 0 }) :data(_data) { }
+    CThostFtdcSyncStatusFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcSyncStatusField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         strncpy(data.TradingDay, rowValue.at("TradingDay").c_str(), sizeof(TThostFtdcDateType));
@@ -7211,8 +7927,8 @@ struct CThostFtdcQryLinkManFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcQryLinkManField data;
 
-    CThostFtdcQryLinkManFieldWrapper(const CThostFtdcQryLinkManField& _data = {0}) :data(_data) {}
-    CThostFtdcQryLinkManFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcQryLinkManFieldWrapper(const CThostFtdcQryLinkManField& _data = { 0 }) :data(_data) { }
+    CThostFtdcQryLinkManFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcQryLinkManField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         strncpy(data.BrokerID, rowValue.at("BrokerID").c_str(), sizeof(TThostFtdcBrokerIDType));
@@ -7224,6 +7940,12 @@ struct CThostFtdcQryLinkManFieldWrapper
             + "'";
         return INSERT_SQL_PREFIX + insertSqlBody + ");";
     }
+    std::string generateSelectSqlByUserID() const {
+        return generateSelectSqlByUserID(data.BrokerID, data.InvestorID);
+    }
+    static std::string generateSelectSqlByUserID(const std::string& BrokerID, const std::string& InvestorID) {
+        return "SELECT * FROM 'CThostFtdcQryLinkManField' where BrokerID='" + BrokerID + "' and InvestorID='" + InvestorID + "';";
+    }
 };
 
 struct CThostFtdcLinkManFieldWrapper
@@ -7234,8 +7956,8 @@ struct CThostFtdcLinkManFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcLinkManField data;
 
-    CThostFtdcLinkManFieldWrapper(const CThostFtdcLinkManField& _data = {0}) :data(_data) {}
-    CThostFtdcLinkManFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcLinkManFieldWrapper(const CThostFtdcLinkManField& _data = { 0 }) :data(_data) { }
+    CThostFtdcLinkManFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcLinkManField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         strncpy(data.BrokerID, rowValue.at("BrokerID").c_str(), sizeof(TThostFtdcBrokerIDType));
@@ -7257,6 +7979,12 @@ struct CThostFtdcLinkManFieldWrapper
             + "'";
         return INSERT_SQL_PREFIX + insertSqlBody + ");";
     }
+    std::string generateSelectSqlByUserID() const {
+        return generateSelectSqlByUserID(data.BrokerID, data.InvestorID);
+    }
+    static std::string generateSelectSqlByUserID(const std::string& BrokerID, const std::string& InvestorID) {
+        return "SELECT * FROM 'CThostFtdcLinkManField' where BrokerID='" + BrokerID + "' and InvestorID='" + InvestorID + "';";
+    }
 };
 
 struct CThostFtdcQryBrokerUserEventFieldWrapper
@@ -7267,8 +7995,8 @@ struct CThostFtdcQryBrokerUserEventFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcQryBrokerUserEventField data;
 
-    CThostFtdcQryBrokerUserEventFieldWrapper(const CThostFtdcQryBrokerUserEventField& _data = {0}) :data(_data) {}
-    CThostFtdcQryBrokerUserEventFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcQryBrokerUserEventFieldWrapper(const CThostFtdcQryBrokerUserEventField& _data = { 0 }) :data(_data) { }
+    CThostFtdcQryBrokerUserEventFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcQryBrokerUserEventField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         strncpy(data.BrokerID, rowValue.at("BrokerID").c_str(), sizeof(TThostFtdcBrokerIDType));
@@ -7281,6 +8009,12 @@ struct CThostFtdcQryBrokerUserEventFieldWrapper
             + "'";
         return INSERT_SQL_PREFIX + insertSqlBody + ");";
     }
+    std::string generateSelectSqlByUserID() const {
+        return generateSelectSqlByUserID(data.BrokerID, data.UserID);
+    }
+    static std::string generateSelectSqlByUserID(const std::string& BrokerID, const std::string& UserID) {
+        return "SELECT * FROM 'CThostFtdcQryBrokerUserEventField' where BrokerID='" + BrokerID + "' and UserID='" + UserID + "';";
+    }
 };
 
 struct CThostFtdcBrokerUserEventFieldWrapper
@@ -7291,8 +8025,8 @@ struct CThostFtdcBrokerUserEventFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcBrokerUserEventField data;
 
-    CThostFtdcBrokerUserEventFieldWrapper(const CThostFtdcBrokerUserEventField& _data = {0}) :data(_data) {}
-    CThostFtdcBrokerUserEventFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcBrokerUserEventFieldWrapper(const CThostFtdcBrokerUserEventField& _data = { 0 }) :data(_data) { }
+    CThostFtdcBrokerUserEventFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcBrokerUserEventField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         strncpy(data.BrokerID, rowValue.at("BrokerID").c_str(), sizeof(TThostFtdcBrokerIDType));
@@ -7312,6 +8046,12 @@ struct CThostFtdcBrokerUserEventFieldWrapper
             + "'";
         return INSERT_SQL_PREFIX + insertSqlBody + ");";
     }
+    std::string generateSelectSqlByUserID() const {
+        return generateSelectSqlByUserID(data.BrokerID, data.InvestorID);
+    }
+    static std::string generateSelectSqlByUserID(const std::string& BrokerID, const std::string& InvestorID) {
+        return "SELECT * FROM 'CThostFtdcBrokerUserEventField' where BrokerID='" + BrokerID + "' and InvestorID='" + InvestorID + "';";
+    }
 };
 
 struct CThostFtdcQryContractBankFieldWrapper
@@ -7322,8 +8062,8 @@ struct CThostFtdcQryContractBankFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcQryContractBankField data;
 
-    CThostFtdcQryContractBankFieldWrapper(const CThostFtdcQryContractBankField& _data = {0}) :data(_data) {}
-    CThostFtdcQryContractBankFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcQryContractBankFieldWrapper(const CThostFtdcQryContractBankField& _data = { 0 }) :data(_data) { }
+    CThostFtdcQryContractBankFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcQryContractBankField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         strncpy(data.BrokerID, rowValue.at("BrokerID").c_str(), sizeof(TThostFtdcBrokerIDType));
@@ -7346,8 +8086,8 @@ struct CThostFtdcContractBankFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcContractBankField data;
 
-    CThostFtdcContractBankFieldWrapper(const CThostFtdcContractBankField& _data = {0}) :data(_data) {}
-    CThostFtdcContractBankFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcContractBankFieldWrapper(const CThostFtdcContractBankField& _data = { 0 }) :data(_data) { }
+    CThostFtdcContractBankFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcContractBankField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         strncpy(data.BrokerID, rowValue.at("BrokerID").c_str(), sizeof(TThostFtdcBrokerIDType));
@@ -7371,8 +8111,8 @@ struct CThostFtdcInvestorPositionCombineDetailFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcInvestorPositionCombineDetailField data;
 
-    CThostFtdcInvestorPositionCombineDetailFieldWrapper(const CThostFtdcInvestorPositionCombineDetailField& _data = {0}) :data(_data) {}
-    CThostFtdcInvestorPositionCombineDetailFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcInvestorPositionCombineDetailFieldWrapper(const CThostFtdcInvestorPositionCombineDetailField& _data = { 0 }) :data(_data) { }
+    CThostFtdcInvestorPositionCombineDetailFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcInvestorPositionCombineDetailField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         strncpy(data.TradingDay, rowValue.at("TradingDay").c_str(), sizeof(TThostFtdcDateType));
@@ -7405,6 +8145,12 @@ struct CThostFtdcInvestorPositionCombineDetailFieldWrapper
             + "'";
         return INSERT_SQL_PREFIX + insertSqlBody + ");";
     }
+    std::string generateSelectSqlByUserID() const {
+        return generateSelectSqlByUserID(data.BrokerID, data.InvestorID);
+    }
+    static std::string generateSelectSqlByUserID(const std::string& BrokerID, const std::string& InvestorID) {
+        return "SELECT * FROM 'CThostFtdcInvestorPositionCombineDetailField' where BrokerID='" + BrokerID + "' and InvestorID='" + InvestorID + "';";
+    }
 };
 
 struct CThostFtdcParkedOrderFieldWrapper
@@ -7415,8 +8161,8 @@ struct CThostFtdcParkedOrderFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcParkedOrderField data;
 
-    CThostFtdcParkedOrderFieldWrapper(const CThostFtdcParkedOrderField& _data = {0}) :data(_data) {}
-    CThostFtdcParkedOrderFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcParkedOrderFieldWrapper(const CThostFtdcParkedOrderField& _data = { 0 }) :data(_data) { }
+    CThostFtdcParkedOrderFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcParkedOrderField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         strncpy(data.BrokerID, rowValue.at("BrokerID").c_str(), sizeof(TThostFtdcBrokerIDType));
@@ -7463,6 +8209,12 @@ struct CThostFtdcParkedOrderFieldWrapper
             + "'";
         return INSERT_SQL_PREFIX + insertSqlBody + ");";
     }
+    std::string generateSelectSqlByUserID() const {
+        return generateSelectSqlByUserID(data.BrokerID, data.InvestorID);
+    }
+    static std::string generateSelectSqlByUserID(const std::string& BrokerID, const std::string& InvestorID) {
+        return "SELECT * FROM 'CThostFtdcParkedOrderField' where BrokerID='" + BrokerID + "' and InvestorID='" + InvestorID + "';";
+    }
 };
 
 struct CThostFtdcParkedOrderActionFieldWrapper
@@ -7473,8 +8225,8 @@ struct CThostFtdcParkedOrderActionFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcParkedOrderActionField data;
 
-    CThostFtdcParkedOrderActionFieldWrapper(const CThostFtdcParkedOrderActionField& _data = {0}) :data(_data) {}
-    CThostFtdcParkedOrderActionFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcParkedOrderActionFieldWrapper(const CThostFtdcParkedOrderActionField& _data = { 0 }) :data(_data) { }
+    CThostFtdcParkedOrderActionFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcParkedOrderActionField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         strncpy(data.BrokerID, rowValue.at("BrokerID").c_str(), sizeof(TThostFtdcBrokerIDType));
@@ -7508,6 +8260,12 @@ struct CThostFtdcParkedOrderActionFieldWrapper
             + "'";
         return INSERT_SQL_PREFIX + insertSqlBody + ");";
     }
+    std::string generateSelectSqlByUserID() const {
+        return generateSelectSqlByUserID(data.BrokerID, data.InvestorID);
+    }
+    static std::string generateSelectSqlByUserID(const std::string& BrokerID, const std::string& InvestorID) {
+        return "SELECT * FROM 'CThostFtdcParkedOrderActionField' where BrokerID='" + BrokerID + "' and InvestorID='" + InvestorID + "';";
+    }
 };
 
 struct CThostFtdcQryParkedOrderFieldWrapper
@@ -7518,8 +8276,8 @@ struct CThostFtdcQryParkedOrderFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcQryParkedOrderField data;
 
-    CThostFtdcQryParkedOrderFieldWrapper(const CThostFtdcQryParkedOrderField& _data = {0}) :data(_data) {}
-    CThostFtdcQryParkedOrderFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcQryParkedOrderFieldWrapper(const CThostFtdcQryParkedOrderField& _data = { 0 }) :data(_data) { }
+    CThostFtdcQryParkedOrderFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcQryParkedOrderField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         strncpy(data.BrokerID, rowValue.at("BrokerID").c_str(), sizeof(TThostFtdcBrokerIDType));
@@ -7535,6 +8293,12 @@ struct CThostFtdcQryParkedOrderFieldWrapper
             + "'";
         return INSERT_SQL_PREFIX + insertSqlBody + ");";
     }
+    std::string generateSelectSqlByUserID() const {
+        return generateSelectSqlByUserID(data.BrokerID, data.InvestorID);
+    }
+    static std::string generateSelectSqlByUserID(const std::string& BrokerID, const std::string& InvestorID) {
+        return "SELECT * FROM 'CThostFtdcQryParkedOrderField' where BrokerID='" + BrokerID + "' and InvestorID='" + InvestorID + "';";
+    }
 };
 
 struct CThostFtdcQryParkedOrderActionFieldWrapper
@@ -7545,8 +8309,8 @@ struct CThostFtdcQryParkedOrderActionFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcQryParkedOrderActionField data;
 
-    CThostFtdcQryParkedOrderActionFieldWrapper(const CThostFtdcQryParkedOrderActionField& _data = {0}) :data(_data) {}
-    CThostFtdcQryParkedOrderActionFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcQryParkedOrderActionFieldWrapper(const CThostFtdcQryParkedOrderActionField& _data = { 0 }) :data(_data) { }
+    CThostFtdcQryParkedOrderActionFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcQryParkedOrderActionField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         strncpy(data.BrokerID, rowValue.at("BrokerID").c_str(), sizeof(TThostFtdcBrokerIDType));
@@ -7562,6 +8326,12 @@ struct CThostFtdcQryParkedOrderActionFieldWrapper
             + "'";
         return INSERT_SQL_PREFIX + insertSqlBody + ");";
     }
+    std::string generateSelectSqlByUserID() const {
+        return generateSelectSqlByUserID(data.BrokerID, data.InvestorID);
+    }
+    static std::string generateSelectSqlByUserID(const std::string& BrokerID, const std::string& InvestorID) {
+        return "SELECT * FROM 'CThostFtdcQryParkedOrderActionField' where BrokerID='" + BrokerID + "' and InvestorID='" + InvestorID + "';";
+    }
 };
 
 struct CThostFtdcRemoveParkedOrderFieldWrapper
@@ -7572,8 +8342,8 @@ struct CThostFtdcRemoveParkedOrderFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcRemoveParkedOrderField data;
 
-    CThostFtdcRemoveParkedOrderFieldWrapper(const CThostFtdcRemoveParkedOrderField& _data = {0}) :data(_data) {}
-    CThostFtdcRemoveParkedOrderFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcRemoveParkedOrderFieldWrapper(const CThostFtdcRemoveParkedOrderField& _data = { 0 }) :data(_data) { }
+    CThostFtdcRemoveParkedOrderFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcRemoveParkedOrderField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         strncpy(data.BrokerID, rowValue.at("BrokerID").c_str(), sizeof(TThostFtdcBrokerIDType));
@@ -7587,6 +8357,12 @@ struct CThostFtdcRemoveParkedOrderFieldWrapper
             + "'";
         return INSERT_SQL_PREFIX + insertSqlBody + ");";
     }
+    std::string generateSelectSqlByUserID() const {
+        return generateSelectSqlByUserID(data.BrokerID, data.InvestorID);
+    }
+    static std::string generateSelectSqlByUserID(const std::string& BrokerID, const std::string& InvestorID) {
+        return "SELECT * FROM 'CThostFtdcRemoveParkedOrderField' where BrokerID='" + BrokerID + "' and InvestorID='" + InvestorID + "';";
+    }
 };
 
 struct CThostFtdcRemoveParkedOrderActionFieldWrapper
@@ -7597,8 +8373,8 @@ struct CThostFtdcRemoveParkedOrderActionFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcRemoveParkedOrderActionField data;
 
-    CThostFtdcRemoveParkedOrderActionFieldWrapper(const CThostFtdcRemoveParkedOrderActionField& _data = {0}) :data(_data) {}
-    CThostFtdcRemoveParkedOrderActionFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcRemoveParkedOrderActionFieldWrapper(const CThostFtdcRemoveParkedOrderActionField& _data = { 0 }) :data(_data) { }
+    CThostFtdcRemoveParkedOrderActionFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcRemoveParkedOrderActionField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         strncpy(data.BrokerID, rowValue.at("BrokerID").c_str(), sizeof(TThostFtdcBrokerIDType));
@@ -7612,6 +8388,12 @@ struct CThostFtdcRemoveParkedOrderActionFieldWrapper
             + "'";
         return INSERT_SQL_PREFIX + insertSqlBody + ");";
     }
+    std::string generateSelectSqlByUserID() const {
+        return generateSelectSqlByUserID(data.BrokerID, data.InvestorID);
+    }
+    static std::string generateSelectSqlByUserID(const std::string& BrokerID, const std::string& InvestorID) {
+        return "SELECT * FROM 'CThostFtdcRemoveParkedOrderActionField' where BrokerID='" + BrokerID + "' and InvestorID='" + InvestorID + "';";
+    }
 };
 
 struct CThostFtdcInvestorWithdrawAlgorithmFieldWrapper
@@ -7622,8 +8404,8 @@ struct CThostFtdcInvestorWithdrawAlgorithmFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcInvestorWithdrawAlgorithmField data;
 
-    CThostFtdcInvestorWithdrawAlgorithmFieldWrapper(const CThostFtdcInvestorWithdrawAlgorithmField& _data = {0}) :data(_data) {}
-    CThostFtdcInvestorWithdrawAlgorithmFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcInvestorWithdrawAlgorithmFieldWrapper(const CThostFtdcInvestorWithdrawAlgorithmField& _data = { 0 }) :data(_data) { }
+    CThostFtdcInvestorWithdrawAlgorithmFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcInvestorWithdrawAlgorithmField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         strncpy(data.BrokerID, rowValue.at("BrokerID").c_str(), sizeof(TThostFtdcBrokerIDType));
@@ -7639,6 +8421,12 @@ struct CThostFtdcInvestorWithdrawAlgorithmFieldWrapper
             + "'";
         return INSERT_SQL_PREFIX + insertSqlBody + ");";
     }
+    std::string generateSelectSqlByUserID() const {
+        return generateSelectSqlByUserID(data.BrokerID, data.InvestorID);
+    }
+    static std::string generateSelectSqlByUserID(const std::string& BrokerID, const std::string& InvestorID) {
+        return "SELECT * FROM 'CThostFtdcInvestorWithdrawAlgorithmField' where BrokerID='" + BrokerID + "' and InvestorID='" + InvestorID + "';";
+    }
 };
 
 struct CThostFtdcQryInvestorPositionCombineDetailFieldWrapper
@@ -7649,8 +8437,8 @@ struct CThostFtdcQryInvestorPositionCombineDetailFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcQryInvestorPositionCombineDetailField data;
 
-    CThostFtdcQryInvestorPositionCombineDetailFieldWrapper(const CThostFtdcQryInvestorPositionCombineDetailField& _data = {0}) :data(_data) {}
-    CThostFtdcQryInvestorPositionCombineDetailFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcQryInvestorPositionCombineDetailFieldWrapper(const CThostFtdcQryInvestorPositionCombineDetailField& _data = { 0 }) :data(_data) { }
+    CThostFtdcQryInvestorPositionCombineDetailFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcQryInvestorPositionCombineDetailField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         strncpy(data.BrokerID, rowValue.at("BrokerID").c_str(), sizeof(TThostFtdcBrokerIDType));
@@ -7666,6 +8454,12 @@ struct CThostFtdcQryInvestorPositionCombineDetailFieldWrapper
             + "'";
         return INSERT_SQL_PREFIX + insertSqlBody + ");";
     }
+    std::string generateSelectSqlByUserID() const {
+        return generateSelectSqlByUserID(data.BrokerID, data.InvestorID);
+    }
+    static std::string generateSelectSqlByUserID(const std::string& BrokerID, const std::string& InvestorID) {
+        return "SELECT * FROM 'CThostFtdcQryInvestorPositionCombineDetailField' where BrokerID='" + BrokerID + "' and InvestorID='" + InvestorID + "';";
+    }
 };
 
 struct CThostFtdcMarketDataAveragePriceFieldWrapper
@@ -7676,8 +8470,8 @@ struct CThostFtdcMarketDataAveragePriceFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcMarketDataAveragePriceField data;
 
-    CThostFtdcMarketDataAveragePriceFieldWrapper(const CThostFtdcMarketDataAveragePriceField& _data = {0}) :data(_data) {}
-    CThostFtdcMarketDataAveragePriceFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcMarketDataAveragePriceFieldWrapper(const CThostFtdcMarketDataAveragePriceField& _data = { 0 }) :data(_data) { }
+    CThostFtdcMarketDataAveragePriceFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcMarketDataAveragePriceField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         data.AveragePrice = std::stod(rowValue.at("AveragePrice"));
@@ -7698,8 +8492,8 @@ struct CThostFtdcVerifyInvestorPasswordFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcVerifyInvestorPasswordField data;
 
-    CThostFtdcVerifyInvestorPasswordFieldWrapper(const CThostFtdcVerifyInvestorPasswordField& _data = {0}) :data(_data) {}
-    CThostFtdcVerifyInvestorPasswordFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcVerifyInvestorPasswordFieldWrapper(const CThostFtdcVerifyInvestorPasswordField& _data = { 0 }) :data(_data) { }
+    CThostFtdcVerifyInvestorPasswordFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcVerifyInvestorPasswordField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         strncpy(data.BrokerID, rowValue.at("BrokerID").c_str(), sizeof(TThostFtdcBrokerIDType));
@@ -7712,6 +8506,12 @@ struct CThostFtdcVerifyInvestorPasswordFieldWrapper
             + "'";
         return INSERT_SQL_PREFIX + insertSqlBody + ");";
     }
+    std::string generateSelectSqlByUserID() const {
+        return generateSelectSqlByUserID(data.BrokerID, data.InvestorID);
+    }
+    static std::string generateSelectSqlByUserID(const std::string& BrokerID, const std::string& InvestorID) {
+        return "SELECT * FROM 'CThostFtdcVerifyInvestorPasswordField' where BrokerID='" + BrokerID + "' and InvestorID='" + InvestorID + "';";
+    }
 };
 
 struct CThostFtdcUserIPFieldWrapper
@@ -7722,8 +8522,8 @@ struct CThostFtdcUserIPFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcUserIPField data;
 
-    CThostFtdcUserIPFieldWrapper(const CThostFtdcUserIPField& _data = {0}) :data(_data) {}
-    CThostFtdcUserIPFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcUserIPFieldWrapper(const CThostFtdcUserIPField& _data = { 0 }) :data(_data) { }
+    CThostFtdcUserIPFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcUserIPField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         strncpy(data.BrokerID, rowValue.at("BrokerID").c_str(), sizeof(TThostFtdcBrokerIDType));
@@ -7740,6 +8540,12 @@ struct CThostFtdcUserIPFieldWrapper
             + "'";
         return INSERT_SQL_PREFIX + insertSqlBody + ");";
     }
+    std::string generateSelectSqlByUserID() const {
+        return generateSelectSqlByUserID(data.BrokerID, data.UserID);
+    }
+    static std::string generateSelectSqlByUserID(const std::string& BrokerID, const std::string& UserID) {
+        return "SELECT * FROM 'CThostFtdcUserIPField' where BrokerID='" + BrokerID + "' and UserID='" + UserID + "';";
+    }
 };
 
 struct CThostFtdcTradingNoticeInfoFieldWrapper
@@ -7750,8 +8556,8 @@ struct CThostFtdcTradingNoticeInfoFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcTradingNoticeInfoField data;
 
-    CThostFtdcTradingNoticeInfoFieldWrapper(const CThostFtdcTradingNoticeInfoField& _data = {0}) :data(_data) {}
-    CThostFtdcTradingNoticeInfoFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcTradingNoticeInfoFieldWrapper(const CThostFtdcTradingNoticeInfoField& _data = { 0 }) :data(_data) { }
+    CThostFtdcTradingNoticeInfoFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcTradingNoticeInfoField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         strncpy(data.BrokerID, rowValue.at("BrokerID").c_str(), sizeof(TThostFtdcBrokerIDType));
@@ -7768,6 +8574,12 @@ struct CThostFtdcTradingNoticeInfoFieldWrapper
             + "'";
         return INSERT_SQL_PREFIX + insertSqlBody + ");";
     }
+    std::string generateSelectSqlByUserID() const {
+        return generateSelectSqlByUserID(data.BrokerID, data.InvestorID);
+    }
+    static std::string generateSelectSqlByUserID(const std::string& BrokerID, const std::string& InvestorID) {
+        return "SELECT * FROM 'CThostFtdcTradingNoticeInfoField' where BrokerID='" + BrokerID + "' and InvestorID='" + InvestorID + "';";
+    }
 };
 
 struct CThostFtdcTradingNoticeFieldWrapper
@@ -7778,8 +8590,8 @@ struct CThostFtdcTradingNoticeFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcTradingNoticeField data;
 
-    CThostFtdcTradingNoticeFieldWrapper(const CThostFtdcTradingNoticeField& _data = {0}) :data(_data) {}
-    CThostFtdcTradingNoticeFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcTradingNoticeFieldWrapper(const CThostFtdcTradingNoticeField& _data = { 0 }) :data(_data) { }
+    CThostFtdcTradingNoticeFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcTradingNoticeField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         strncpy(data.BrokerID, rowValue.at("BrokerID").c_str(), sizeof(TThostFtdcBrokerIDType));
@@ -7798,6 +8610,12 @@ struct CThostFtdcTradingNoticeFieldWrapper
             + "'";
         return INSERT_SQL_PREFIX + insertSqlBody + ");";
     }
+    std::string generateSelectSqlByUserID() const {
+        return generateSelectSqlByUserID(data.BrokerID, data.InvestorID);
+    }
+    static std::string generateSelectSqlByUserID(const std::string& BrokerID, const std::string& InvestorID) {
+        return "SELECT * FROM 'CThostFtdcTradingNoticeField' where BrokerID='" + BrokerID + "' and InvestorID='" + InvestorID + "';";
+    }
 };
 
 struct CThostFtdcQryTradingNoticeFieldWrapper
@@ -7808,8 +8626,8 @@ struct CThostFtdcQryTradingNoticeFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcQryTradingNoticeField data;
 
-    CThostFtdcQryTradingNoticeFieldWrapper(const CThostFtdcQryTradingNoticeField& _data = {0}) :data(_data) {}
-    CThostFtdcQryTradingNoticeFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcQryTradingNoticeFieldWrapper(const CThostFtdcQryTradingNoticeField& _data = { 0 }) :data(_data) { }
+    CThostFtdcQryTradingNoticeFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcQryTradingNoticeField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         strncpy(data.BrokerID, rowValue.at("BrokerID").c_str(), sizeof(TThostFtdcBrokerIDType));
@@ -7822,6 +8640,12 @@ struct CThostFtdcQryTradingNoticeFieldWrapper
             + "'";
         return INSERT_SQL_PREFIX + insertSqlBody + ");";
     }
+    std::string generateSelectSqlByUserID() const {
+        return generateSelectSqlByUserID(data.BrokerID, data.InvestorID);
+    }
+    static std::string generateSelectSqlByUserID(const std::string& BrokerID, const std::string& InvestorID) {
+        return "SELECT * FROM 'CThostFtdcQryTradingNoticeField' where BrokerID='" + BrokerID + "' and InvestorID='" + InvestorID + "';";
+    }
 };
 
 struct CThostFtdcQryErrOrderFieldWrapper
@@ -7832,8 +8656,8 @@ struct CThostFtdcQryErrOrderFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcQryErrOrderField data;
 
-    CThostFtdcQryErrOrderFieldWrapper(const CThostFtdcQryErrOrderField& _data = {0}) :data(_data) {}
-    CThostFtdcQryErrOrderFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcQryErrOrderFieldWrapper(const CThostFtdcQryErrOrderField& _data = { 0 }) :data(_data) { }
+    CThostFtdcQryErrOrderFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcQryErrOrderField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         strncpy(data.BrokerID, rowValue.at("BrokerID").c_str(), sizeof(TThostFtdcBrokerIDType));
@@ -7845,6 +8669,12 @@ struct CThostFtdcQryErrOrderFieldWrapper
             + "'";
         return INSERT_SQL_PREFIX + insertSqlBody + ");";
     }
+    std::string generateSelectSqlByUserID() const {
+        return generateSelectSqlByUserID(data.BrokerID, data.InvestorID);
+    }
+    static std::string generateSelectSqlByUserID(const std::string& BrokerID, const std::string& InvestorID) {
+        return "SELECT * FROM 'CThostFtdcQryErrOrderField' where BrokerID='" + BrokerID + "' and InvestorID='" + InvestorID + "';";
+    }
 };
 
 struct CThostFtdcErrOrderFieldWrapper
@@ -7855,8 +8685,8 @@ struct CThostFtdcErrOrderFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcErrOrderField data;
 
-    CThostFtdcErrOrderFieldWrapper(const CThostFtdcErrOrderField& _data = {0}) :data(_data) {}
-    CThostFtdcErrOrderFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcErrOrderFieldWrapper(const CThostFtdcErrOrderField& _data = { 0 }) :data(_data) { }
+    CThostFtdcErrOrderFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcErrOrderField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         strncpy(data.BrokerID, rowValue.at("BrokerID").c_str(), sizeof(TThostFtdcBrokerIDType));
@@ -7900,6 +8730,12 @@ struct CThostFtdcErrOrderFieldWrapper
             + "'";
         return INSERT_SQL_PREFIX + insertSqlBody + ");";
     }
+    std::string generateSelectSqlByUserID() const {
+        return generateSelectSqlByUserID(data.BrokerID, data.InvestorID);
+    }
+    static std::string generateSelectSqlByUserID(const std::string& BrokerID, const std::string& InvestorID) {
+        return "SELECT * FROM 'CThostFtdcErrOrderField' where BrokerID='" + BrokerID + "' and InvestorID='" + InvestorID + "';";
+    }
 };
 
 struct CThostFtdcErrorConditionalOrderFieldWrapper
@@ -7910,8 +8746,8 @@ struct CThostFtdcErrorConditionalOrderFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcErrorConditionalOrderField data;
 
-    CThostFtdcErrorConditionalOrderFieldWrapper(const CThostFtdcErrorConditionalOrderField& _data = {0}) :data(_data) {}
-    CThostFtdcErrorConditionalOrderFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcErrorConditionalOrderFieldWrapper(const CThostFtdcErrorConditionalOrderField& _data = { 0 }) :data(_data) { }
+    CThostFtdcErrorConditionalOrderFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcErrorConditionalOrderField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         strncpy(data.BrokerID, rowValue.at("BrokerID").c_str(), sizeof(TThostFtdcBrokerIDType));
@@ -7989,6 +8825,12 @@ struct CThostFtdcErrorConditionalOrderFieldWrapper
             + "'";
         return INSERT_SQL_PREFIX + insertSqlBody + ");";
     }
+    std::string generateSelectSqlByUserID() const {
+        return generateSelectSqlByUserID(data.BrokerID, data.InvestorID);
+    }
+    static std::string generateSelectSqlByUserID(const std::string& BrokerID, const std::string& InvestorID) {
+        return "SELECT * FROM 'CThostFtdcErrorConditionalOrderField' where BrokerID='" + BrokerID + "' and InvestorID='" + InvestorID + "';";
+    }
 };
 
 struct CThostFtdcQryErrOrderActionFieldWrapper
@@ -7999,8 +8841,8 @@ struct CThostFtdcQryErrOrderActionFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcQryErrOrderActionField data;
 
-    CThostFtdcQryErrOrderActionFieldWrapper(const CThostFtdcQryErrOrderActionField& _data = {0}) :data(_data) {}
-    CThostFtdcQryErrOrderActionFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcQryErrOrderActionFieldWrapper(const CThostFtdcQryErrOrderActionField& _data = { 0 }) :data(_data) { }
+    CThostFtdcQryErrOrderActionFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcQryErrOrderActionField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         strncpy(data.BrokerID, rowValue.at("BrokerID").c_str(), sizeof(TThostFtdcBrokerIDType));
@@ -8012,6 +8854,12 @@ struct CThostFtdcQryErrOrderActionFieldWrapper
             + "'";
         return INSERT_SQL_PREFIX + insertSqlBody + ");";
     }
+    std::string generateSelectSqlByUserID() const {
+        return generateSelectSqlByUserID(data.BrokerID, data.InvestorID);
+    }
+    static std::string generateSelectSqlByUserID(const std::string& BrokerID, const std::string& InvestorID) {
+        return "SELECT * FROM 'CThostFtdcQryErrOrderActionField' where BrokerID='" + BrokerID + "' and InvestorID='" + InvestorID + "';";
+    }
 };
 
 struct CThostFtdcErrOrderActionFieldWrapper
@@ -8022,8 +8870,8 @@ struct CThostFtdcErrOrderActionFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcErrOrderActionField data;
 
-    CThostFtdcErrOrderActionFieldWrapper(const CThostFtdcErrOrderActionField& _data = {0}) :data(_data) {}
-    CThostFtdcErrOrderActionFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcErrOrderActionFieldWrapper(const CThostFtdcErrOrderActionField& _data = { 0 }) :data(_data) { }
+    CThostFtdcErrOrderActionFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcErrOrderActionField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         strncpy(data.BrokerID, rowValue.at("BrokerID").c_str(), sizeof(TThostFtdcBrokerIDType));
@@ -8066,6 +8914,12 @@ struct CThostFtdcErrOrderActionFieldWrapper
             + "'";
         return INSERT_SQL_PREFIX + insertSqlBody + ");";
     }
+    std::string generateSelectSqlByUserID() const {
+        return generateSelectSqlByUserID(data.BrokerID, data.InvestorID);
+    }
+    static std::string generateSelectSqlByUserID(const std::string& BrokerID, const std::string& InvestorID) {
+        return "SELECT * FROM 'CThostFtdcErrOrderActionField' where BrokerID='" + BrokerID + "' and InvestorID='" + InvestorID + "';";
+    }
 };
 
 struct CThostFtdcQryExchangeSequenceFieldWrapper
@@ -8076,8 +8930,8 @@ struct CThostFtdcQryExchangeSequenceFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcQryExchangeSequenceField data;
 
-    CThostFtdcQryExchangeSequenceFieldWrapper(const CThostFtdcQryExchangeSequenceField& _data = {0}) :data(_data) {}
-    CThostFtdcQryExchangeSequenceFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcQryExchangeSequenceFieldWrapper(const CThostFtdcQryExchangeSequenceField& _data = { 0 }) :data(_data) { }
+    CThostFtdcQryExchangeSequenceFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcQryExchangeSequenceField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         strncpy(data.ExchangeID, rowValue.at("ExchangeID").c_str(), sizeof(TThostFtdcExchangeIDType));
@@ -8098,8 +8952,8 @@ struct CThostFtdcExchangeSequenceFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcExchangeSequenceField data;
 
-    CThostFtdcExchangeSequenceFieldWrapper(const CThostFtdcExchangeSequenceField& _data = {0}) :data(_data) {}
-    CThostFtdcExchangeSequenceFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcExchangeSequenceFieldWrapper(const CThostFtdcExchangeSequenceField& _data = { 0 }) :data(_data) { }
+    CThostFtdcExchangeSequenceFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcExchangeSequenceField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         strncpy(data.ExchangeID, rowValue.at("ExchangeID").c_str(), sizeof(TThostFtdcExchangeIDType));
@@ -8122,8 +8976,8 @@ struct CThostFtdcQryMaxOrderVolumeWithPriceFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcQryMaxOrderVolumeWithPriceField data;
 
-    CThostFtdcQryMaxOrderVolumeWithPriceFieldWrapper(const CThostFtdcQryMaxOrderVolumeWithPriceField& _data = {0}) :data(_data) {}
-    CThostFtdcQryMaxOrderVolumeWithPriceFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcQryMaxOrderVolumeWithPriceFieldWrapper(const CThostFtdcQryMaxOrderVolumeWithPriceField& _data = { 0 }) :data(_data) { }
+    CThostFtdcQryMaxOrderVolumeWithPriceFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcQryMaxOrderVolumeWithPriceField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         strncpy(data.BrokerID, rowValue.at("BrokerID").c_str(), sizeof(TThostFtdcBrokerIDType));
@@ -8144,6 +8998,12 @@ struct CThostFtdcQryMaxOrderVolumeWithPriceFieldWrapper
             + "'";
         return INSERT_SQL_PREFIX + insertSqlBody + ");";
     }
+    std::string generateSelectSqlByUserID() const {
+        return generateSelectSqlByUserID(data.BrokerID, data.InvestorID);
+    }
+    static std::string generateSelectSqlByUserID(const std::string& BrokerID, const std::string& InvestorID) {
+        return "SELECT * FROM 'CThostFtdcQryMaxOrderVolumeWithPriceField' where BrokerID='" + BrokerID + "' and InvestorID='" + InvestorID + "';";
+    }
 };
 
 struct CThostFtdcQryBrokerTradingParamsFieldWrapper
@@ -8154,8 +9014,8 @@ struct CThostFtdcQryBrokerTradingParamsFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcQryBrokerTradingParamsField data;
 
-    CThostFtdcQryBrokerTradingParamsFieldWrapper(const CThostFtdcQryBrokerTradingParamsField& _data = {0}) :data(_data) {}
-    CThostFtdcQryBrokerTradingParamsFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcQryBrokerTradingParamsFieldWrapper(const CThostFtdcQryBrokerTradingParamsField& _data = { 0 }) :data(_data) { }
+    CThostFtdcQryBrokerTradingParamsFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcQryBrokerTradingParamsField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         strncpy(data.BrokerID, rowValue.at("BrokerID").c_str(), sizeof(TThostFtdcBrokerIDType));
@@ -8169,6 +9029,12 @@ struct CThostFtdcQryBrokerTradingParamsFieldWrapper
             + "'";
         return INSERT_SQL_PREFIX + insertSqlBody + ");";
     }
+    std::string generateSelectSqlByUserID() const {
+        return generateSelectSqlByUserID(data.BrokerID, data.InvestorID);
+    }
+    static std::string generateSelectSqlByUserID(const std::string& BrokerID, const std::string& InvestorID) {
+        return "SELECT * FROM 'CThostFtdcQryBrokerTradingParamsField' where BrokerID='" + BrokerID + "' and InvestorID='" + InvestorID + "';";
+    }
 };
 
 struct CThostFtdcBrokerTradingParamsFieldWrapper
@@ -8179,8 +9045,8 @@ struct CThostFtdcBrokerTradingParamsFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcBrokerTradingParamsField data;
 
-    CThostFtdcBrokerTradingParamsFieldWrapper(const CThostFtdcBrokerTradingParamsField& _data = {0}) :data(_data) {}
-    CThostFtdcBrokerTradingParamsFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcBrokerTradingParamsFieldWrapper(const CThostFtdcBrokerTradingParamsField& _data = { 0 }) :data(_data) { }
+    CThostFtdcBrokerTradingParamsFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcBrokerTradingParamsField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         strncpy(data.BrokerID, rowValue.at("BrokerID").c_str(), sizeof(TThostFtdcBrokerIDType));
@@ -8198,6 +9064,12 @@ struct CThostFtdcBrokerTradingParamsFieldWrapper
             + "'";
         return INSERT_SQL_PREFIX + insertSqlBody + ");";
     }
+    std::string generateSelectSqlByUserID() const {
+        return generateSelectSqlByUserID(data.BrokerID, data.InvestorID);
+    }
+    static std::string generateSelectSqlByUserID(const std::string& BrokerID, const std::string& InvestorID) {
+        return "SELECT * FROM 'CThostFtdcBrokerTradingParamsField' where BrokerID='" + BrokerID + "' and InvestorID='" + InvestorID + "';";
+    }
 };
 
 struct CThostFtdcQryBrokerTradingAlgosFieldWrapper
@@ -8208,8 +9080,8 @@ struct CThostFtdcQryBrokerTradingAlgosFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcQryBrokerTradingAlgosField data;
 
-    CThostFtdcQryBrokerTradingAlgosFieldWrapper(const CThostFtdcQryBrokerTradingAlgosField& _data = {0}) :data(_data) {}
-    CThostFtdcQryBrokerTradingAlgosFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcQryBrokerTradingAlgosFieldWrapper(const CThostFtdcQryBrokerTradingAlgosField& _data = { 0 }) :data(_data) { }
+    CThostFtdcQryBrokerTradingAlgosFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcQryBrokerTradingAlgosField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         strncpy(data.BrokerID, rowValue.at("BrokerID").c_str(), sizeof(TThostFtdcBrokerIDType));
@@ -8233,8 +9105,8 @@ struct CThostFtdcBrokerTradingAlgosFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcBrokerTradingAlgosField data;
 
-    CThostFtdcBrokerTradingAlgosFieldWrapper(const CThostFtdcBrokerTradingAlgosField& _data = {0}) :data(_data) {}
-    CThostFtdcBrokerTradingAlgosFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcBrokerTradingAlgosFieldWrapper(const CThostFtdcBrokerTradingAlgosField& _data = { 0 }) :data(_data) { }
+    CThostFtdcBrokerTradingAlgosFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcBrokerTradingAlgosField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         strncpy(data.BrokerID, rowValue.at("BrokerID").c_str(), sizeof(TThostFtdcBrokerIDType));
@@ -8261,8 +9133,8 @@ struct CThostFtdcQueryBrokerDepositFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcQueryBrokerDepositField data;
 
-    CThostFtdcQueryBrokerDepositFieldWrapper(const CThostFtdcQueryBrokerDepositField& _data = {0}) :data(_data) {}
-    CThostFtdcQueryBrokerDepositFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcQueryBrokerDepositFieldWrapper(const CThostFtdcQueryBrokerDepositField& _data = { 0 }) :data(_data) { }
+    CThostFtdcQueryBrokerDepositFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcQueryBrokerDepositField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         strncpy(data.BrokerID, rowValue.at("BrokerID").c_str(), sizeof(TThostFtdcBrokerIDType));
@@ -8284,8 +9156,8 @@ struct CThostFtdcBrokerDepositFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcBrokerDepositField data;
 
-    CThostFtdcBrokerDepositFieldWrapper(const CThostFtdcBrokerDepositField& _data = {0}) :data(_data) {}
-    CThostFtdcBrokerDepositFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcBrokerDepositFieldWrapper(const CThostFtdcBrokerDepositField& _data = { 0 }) :data(_data) { }
+    CThostFtdcBrokerDepositFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcBrokerDepositField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         strncpy(data.TradingDay, rowValue.at("TradingDay").c_str(), sizeof(TThostFtdcTradeDateType));
@@ -8318,8 +9190,8 @@ struct CThostFtdcQryCFMMCBrokerKeyFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcQryCFMMCBrokerKeyField data;
 
-    CThostFtdcQryCFMMCBrokerKeyFieldWrapper(const CThostFtdcQryCFMMCBrokerKeyField& _data = {0}) :data(_data) {}
-    CThostFtdcQryCFMMCBrokerKeyFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcQryCFMMCBrokerKeyFieldWrapper(const CThostFtdcQryCFMMCBrokerKeyField& _data = { 0 }) :data(_data) { }
+    CThostFtdcQryCFMMCBrokerKeyFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcQryCFMMCBrokerKeyField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         strncpy(data.BrokerID, rowValue.at("BrokerID").c_str(), sizeof(TThostFtdcBrokerIDType));
@@ -8340,8 +9212,8 @@ struct CThostFtdcCFMMCBrokerKeyFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcCFMMCBrokerKeyField data;
 
-    CThostFtdcCFMMCBrokerKeyFieldWrapper(const CThostFtdcCFMMCBrokerKeyField& _data = {0}) :data(_data) {}
-    CThostFtdcCFMMCBrokerKeyFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcCFMMCBrokerKeyFieldWrapper(const CThostFtdcCFMMCBrokerKeyField& _data = { 0 }) :data(_data) { }
+    CThostFtdcCFMMCBrokerKeyFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcCFMMCBrokerKeyField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         strncpy(data.BrokerID, rowValue.at("BrokerID").c_str(), sizeof(TThostFtdcBrokerIDType));
@@ -8368,8 +9240,8 @@ struct CThostFtdcCFMMCTradingAccountKeyFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcCFMMCTradingAccountKeyField data;
 
-    CThostFtdcCFMMCTradingAccountKeyFieldWrapper(const CThostFtdcCFMMCTradingAccountKeyField& _data = {0}) :data(_data) {}
-    CThostFtdcCFMMCTradingAccountKeyFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcCFMMCTradingAccountKeyFieldWrapper(const CThostFtdcCFMMCTradingAccountKeyField& _data = { 0 }) :data(_data) { }
+    CThostFtdcCFMMCTradingAccountKeyFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcCFMMCTradingAccountKeyField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         strncpy(data.BrokerID, rowValue.at("BrokerID").c_str(), sizeof(TThostFtdcBrokerIDType));
@@ -8384,6 +9256,12 @@ struct CThostFtdcCFMMCTradingAccountKeyFieldWrapper
             + "'";
         return INSERT_SQL_PREFIX + insertSqlBody + ");";
     }
+    std::string generateSelectSqlByUserID() const {
+        return generateSelectSqlByUserID(data.BrokerID, data.AccountID);
+    }
+    static std::string generateSelectSqlByUserID(const std::string& BrokerID, const std::string& AccountID) {
+        return "SELECT * FROM 'CThostFtdcCFMMCTradingAccountKeyField' where BrokerID='" + BrokerID + "' and AccountID='" + AccountID + "';";
+    }
 };
 
 struct CThostFtdcQryCFMMCTradingAccountKeyFieldWrapper
@@ -8394,8 +9272,8 @@ struct CThostFtdcQryCFMMCTradingAccountKeyFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcQryCFMMCTradingAccountKeyField data;
 
-    CThostFtdcQryCFMMCTradingAccountKeyFieldWrapper(const CThostFtdcQryCFMMCTradingAccountKeyField& _data = {0}) :data(_data) {}
-    CThostFtdcQryCFMMCTradingAccountKeyFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcQryCFMMCTradingAccountKeyFieldWrapper(const CThostFtdcQryCFMMCTradingAccountKeyField& _data = { 0 }) :data(_data) { }
+    CThostFtdcQryCFMMCTradingAccountKeyFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcQryCFMMCTradingAccountKeyField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         strncpy(data.BrokerID, rowValue.at("BrokerID").c_str(), sizeof(TThostFtdcBrokerIDType));
@@ -8407,6 +9285,12 @@ struct CThostFtdcQryCFMMCTradingAccountKeyFieldWrapper
             + "'";
         return INSERT_SQL_PREFIX + insertSqlBody + ");";
     }
+    std::string generateSelectSqlByUserID() const {
+        return generateSelectSqlByUserID(data.BrokerID, data.InvestorID);
+    }
+    static std::string generateSelectSqlByUserID(const std::string& BrokerID, const std::string& InvestorID) {
+        return "SELECT * FROM 'CThostFtdcQryCFMMCTradingAccountKeyField' where BrokerID='" + BrokerID + "' and InvestorID='" + InvestorID + "';";
+    }
 };
 
 struct CThostFtdcBrokerUserOTPParamFieldWrapper
@@ -8417,8 +9301,8 @@ struct CThostFtdcBrokerUserOTPParamFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcBrokerUserOTPParamField data;
 
-    CThostFtdcBrokerUserOTPParamFieldWrapper(const CThostFtdcBrokerUserOTPParamField& _data = {0}) :data(_data) {}
-    CThostFtdcBrokerUserOTPParamFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcBrokerUserOTPParamFieldWrapper(const CThostFtdcBrokerUserOTPParamField& _data = { 0 }) :data(_data) { }
+    CThostFtdcBrokerUserOTPParamFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcBrokerUserOTPParamField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         strncpy(data.BrokerID, rowValue.at("BrokerID").c_str(), sizeof(TThostFtdcBrokerIDType));
@@ -8436,6 +9320,12 @@ struct CThostFtdcBrokerUserOTPParamFieldWrapper
             + "'";
         return INSERT_SQL_PREFIX + insertSqlBody + ");";
     }
+    std::string generateSelectSqlByUserID() const {
+        return generateSelectSqlByUserID(data.BrokerID, data.UserID);
+    }
+    static std::string generateSelectSqlByUserID(const std::string& BrokerID, const std::string& UserID) {
+        return "SELECT * FROM 'CThostFtdcBrokerUserOTPParamField' where BrokerID='" + BrokerID + "' and UserID='" + UserID + "';";
+    }
 };
 
 struct CThostFtdcManualSyncBrokerUserOTPFieldWrapper
@@ -8446,8 +9336,8 @@ struct CThostFtdcManualSyncBrokerUserOTPFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcManualSyncBrokerUserOTPField data;
 
-    CThostFtdcManualSyncBrokerUserOTPFieldWrapper(const CThostFtdcManualSyncBrokerUserOTPField& _data = {0}) :data(_data) {}
-    CThostFtdcManualSyncBrokerUserOTPFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcManualSyncBrokerUserOTPFieldWrapper(const CThostFtdcManualSyncBrokerUserOTPField& _data = { 0 }) :data(_data) { }
+    CThostFtdcManualSyncBrokerUserOTPFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcManualSyncBrokerUserOTPField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         strncpy(data.BrokerID, rowValue.at("BrokerID").c_str(), sizeof(TThostFtdcBrokerIDType));
@@ -8462,6 +9352,12 @@ struct CThostFtdcManualSyncBrokerUserOTPFieldWrapper
             + "'";
         return INSERT_SQL_PREFIX + insertSqlBody + ");";
     }
+    std::string generateSelectSqlByUserID() const {
+        return generateSelectSqlByUserID(data.BrokerID, data.UserID);
+    }
+    static std::string generateSelectSqlByUserID(const std::string& BrokerID, const std::string& UserID) {
+        return "SELECT * FROM 'CThostFtdcManualSyncBrokerUserOTPField' where BrokerID='" + BrokerID + "' and UserID='" + UserID + "';";
+    }
 };
 
 struct CThostFtdcCommRateModelFieldWrapper
@@ -8472,8 +9368,8 @@ struct CThostFtdcCommRateModelFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcCommRateModelField data;
 
-    CThostFtdcCommRateModelFieldWrapper(const CThostFtdcCommRateModelField& _data = {0}) :data(_data) {}
-    CThostFtdcCommRateModelFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcCommRateModelFieldWrapper(const CThostFtdcCommRateModelField& _data = { 0 }) :data(_data) { }
+    CThostFtdcCommRateModelFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcCommRateModelField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         strncpy(data.BrokerID, rowValue.at("BrokerID").c_str(), sizeof(TThostFtdcBrokerIDType));
@@ -8496,8 +9392,8 @@ struct CThostFtdcQryCommRateModelFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcQryCommRateModelField data;
 
-    CThostFtdcQryCommRateModelFieldWrapper(const CThostFtdcQryCommRateModelField& _data = {0}) :data(_data) {}
-    CThostFtdcQryCommRateModelFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcQryCommRateModelFieldWrapper(const CThostFtdcQryCommRateModelField& _data = { 0 }) :data(_data) { }
+    CThostFtdcQryCommRateModelFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcQryCommRateModelField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         strncpy(data.BrokerID, rowValue.at("BrokerID").c_str(), sizeof(TThostFtdcBrokerIDType));
@@ -8519,8 +9415,8 @@ struct CThostFtdcMarginModelFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcMarginModelField data;
 
-    CThostFtdcMarginModelFieldWrapper(const CThostFtdcMarginModelField& _data = {0}) :data(_data) {}
-    CThostFtdcMarginModelFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcMarginModelFieldWrapper(const CThostFtdcMarginModelField& _data = { 0 }) :data(_data) { }
+    CThostFtdcMarginModelFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcMarginModelField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         strncpy(data.BrokerID, rowValue.at("BrokerID").c_str(), sizeof(TThostFtdcBrokerIDType));
@@ -8543,8 +9439,8 @@ struct CThostFtdcQryMarginModelFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcQryMarginModelField data;
 
-    CThostFtdcQryMarginModelFieldWrapper(const CThostFtdcQryMarginModelField& _data = {0}) :data(_data) {}
-    CThostFtdcQryMarginModelFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcQryMarginModelFieldWrapper(const CThostFtdcQryMarginModelField& _data = { 0 }) :data(_data) { }
+    CThostFtdcQryMarginModelFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcQryMarginModelField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         strncpy(data.BrokerID, rowValue.at("BrokerID").c_str(), sizeof(TThostFtdcBrokerIDType));
@@ -8566,8 +9462,8 @@ struct CThostFtdcEWarrantOffsetFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcEWarrantOffsetField data;
 
-    CThostFtdcEWarrantOffsetFieldWrapper(const CThostFtdcEWarrantOffsetField& _data = {0}) :data(_data) {}
-    CThostFtdcEWarrantOffsetFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcEWarrantOffsetFieldWrapper(const CThostFtdcEWarrantOffsetField& _data = { 0 }) :data(_data) { }
+    CThostFtdcEWarrantOffsetFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcEWarrantOffsetField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         strncpy(data.TradingDay, rowValue.at("TradingDay").c_str(), sizeof(TThostFtdcTradeDateType));
@@ -8587,6 +9483,12 @@ struct CThostFtdcEWarrantOffsetFieldWrapper
             + "'";
         return INSERT_SQL_PREFIX + insertSqlBody + ");";
     }
+    std::string generateSelectSqlByUserID() const {
+        return generateSelectSqlByUserID(data.BrokerID, data.InvestorID);
+    }
+    static std::string generateSelectSqlByUserID(const std::string& BrokerID, const std::string& InvestorID) {
+        return "SELECT * FROM 'CThostFtdcEWarrantOffsetField' where BrokerID='" + BrokerID + "' and InvestorID='" + InvestorID + "';";
+    }
 };
 
 struct CThostFtdcQryEWarrantOffsetFieldWrapper
@@ -8597,8 +9499,8 @@ struct CThostFtdcQryEWarrantOffsetFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcQryEWarrantOffsetField data;
 
-    CThostFtdcQryEWarrantOffsetFieldWrapper(const CThostFtdcQryEWarrantOffsetField& _data = {0}) :data(_data) {}
-    CThostFtdcQryEWarrantOffsetFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcQryEWarrantOffsetFieldWrapper(const CThostFtdcQryEWarrantOffsetField& _data = { 0 }) :data(_data) { }
+    CThostFtdcQryEWarrantOffsetFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcQryEWarrantOffsetField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         strncpy(data.BrokerID, rowValue.at("BrokerID").c_str(), sizeof(TThostFtdcBrokerIDType));
@@ -8614,6 +9516,12 @@ struct CThostFtdcQryEWarrantOffsetFieldWrapper
             + "'";
         return INSERT_SQL_PREFIX + insertSqlBody + ");";
     }
+    std::string generateSelectSqlByUserID() const {
+        return generateSelectSqlByUserID(data.BrokerID, data.InvestorID);
+    }
+    static std::string generateSelectSqlByUserID(const std::string& BrokerID, const std::string& InvestorID) {
+        return "SELECT * FROM 'CThostFtdcQryEWarrantOffsetField' where BrokerID='" + BrokerID + "' and InvestorID='" + InvestorID + "';";
+    }
 };
 
 struct CThostFtdcQryInvestorProductGroupMarginFieldWrapper
@@ -8624,8 +9532,8 @@ struct CThostFtdcQryInvestorProductGroupMarginFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcQryInvestorProductGroupMarginField data;
 
-    CThostFtdcQryInvestorProductGroupMarginFieldWrapper(const CThostFtdcQryInvestorProductGroupMarginField& _data = {0}) :data(_data) {}
-    CThostFtdcQryInvestorProductGroupMarginFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcQryInvestorProductGroupMarginFieldWrapper(const CThostFtdcQryInvestorProductGroupMarginField& _data = { 0 }) :data(_data) { }
+    CThostFtdcQryInvestorProductGroupMarginFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcQryInvestorProductGroupMarginField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         strncpy(data.BrokerID, rowValue.at("BrokerID").c_str(), sizeof(TThostFtdcBrokerIDType));
@@ -8642,6 +9550,12 @@ struct CThostFtdcQryInvestorProductGroupMarginFieldWrapper
             + "'";
         return INSERT_SQL_PREFIX + insertSqlBody + ");";
     }
+    std::string generateSelectSqlByUserID() const {
+        return generateSelectSqlByUserID(data.BrokerID, data.InvestorID);
+    }
+    static std::string generateSelectSqlByUserID(const std::string& BrokerID, const std::string& InvestorID) {
+        return "SELECT * FROM 'CThostFtdcQryInvestorProductGroupMarginField' where BrokerID='" + BrokerID + "' and InvestorID='" + InvestorID + "';";
+    }
 };
 
 struct CThostFtdcInvestorProductGroupMarginFieldWrapper
@@ -8652,8 +9566,8 @@ struct CThostFtdcInvestorProductGroupMarginFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcInvestorProductGroupMarginField data;
 
-    CThostFtdcInvestorProductGroupMarginFieldWrapper(const CThostFtdcInvestorProductGroupMarginField& _data = {0}) :data(_data) {}
-    CThostFtdcInvestorProductGroupMarginFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcInvestorProductGroupMarginFieldWrapper(const CThostFtdcInvestorProductGroupMarginField& _data = { 0 }) :data(_data) { }
+    CThostFtdcInvestorProductGroupMarginFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcInvestorProductGroupMarginField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         strncpy(data.reserve1, rowValue.at("reserve1").c_str(), sizeof(TThostFtdcOldInstrumentIDType));
@@ -8693,6 +9607,12 @@ struct CThostFtdcInvestorProductGroupMarginFieldWrapper
             + "'";
         return INSERT_SQL_PREFIX + insertSqlBody + ");";
     }
+    std::string generateSelectSqlByUserID() const {
+        return generateSelectSqlByUserID(data.BrokerID, data.InvestorID);
+    }
+    static std::string generateSelectSqlByUserID(const std::string& BrokerID, const std::string& InvestorID) {
+        return "SELECT * FROM 'CThostFtdcInvestorProductGroupMarginField' where BrokerID='" + BrokerID + "' and InvestorID='" + InvestorID + "';";
+    }
 };
 
 struct CThostFtdcQueryCFMMCTradingAccountTokenFieldWrapper
@@ -8703,8 +9623,8 @@ struct CThostFtdcQueryCFMMCTradingAccountTokenFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcQueryCFMMCTradingAccountTokenField data;
 
-    CThostFtdcQueryCFMMCTradingAccountTokenFieldWrapper(const CThostFtdcQueryCFMMCTradingAccountTokenField& _data = {0}) :data(_data) {}
-    CThostFtdcQueryCFMMCTradingAccountTokenFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcQueryCFMMCTradingAccountTokenFieldWrapper(const CThostFtdcQueryCFMMCTradingAccountTokenField& _data = { 0 }) :data(_data) { }
+    CThostFtdcQueryCFMMCTradingAccountTokenFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcQueryCFMMCTradingAccountTokenField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         strncpy(data.BrokerID, rowValue.at("BrokerID").c_str(), sizeof(TThostFtdcBrokerIDType));
@@ -8717,6 +9637,12 @@ struct CThostFtdcQueryCFMMCTradingAccountTokenFieldWrapper
             + "'";
         return INSERT_SQL_PREFIX + insertSqlBody + ");";
     }
+    std::string generateSelectSqlByUserID() const {
+        return generateSelectSqlByUserID(data.BrokerID, data.InvestorID);
+    }
+    static std::string generateSelectSqlByUserID(const std::string& BrokerID, const std::string& InvestorID) {
+        return "SELECT * FROM 'CThostFtdcQueryCFMMCTradingAccountTokenField' where BrokerID='" + BrokerID + "' and InvestorID='" + InvestorID + "';";
+    }
 };
 
 struct CThostFtdcCFMMCTradingAccountTokenFieldWrapper
@@ -8727,8 +9653,8 @@ struct CThostFtdcCFMMCTradingAccountTokenFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcCFMMCTradingAccountTokenField data;
 
-    CThostFtdcCFMMCTradingAccountTokenFieldWrapper(const CThostFtdcCFMMCTradingAccountTokenField& _data = {0}) :data(_data) {}
-    CThostFtdcCFMMCTradingAccountTokenFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcCFMMCTradingAccountTokenFieldWrapper(const CThostFtdcCFMMCTradingAccountTokenField& _data = { 0 }) :data(_data) { }
+    CThostFtdcCFMMCTradingAccountTokenFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcCFMMCTradingAccountTokenField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         strncpy(data.BrokerID, rowValue.at("BrokerID").c_str(), sizeof(TThostFtdcBrokerIDType));
@@ -8743,6 +9669,12 @@ struct CThostFtdcCFMMCTradingAccountTokenFieldWrapper
             + "'";
         return INSERT_SQL_PREFIX + insertSqlBody + ");";
     }
+    std::string generateSelectSqlByUserID() const {
+        return generateSelectSqlByUserID(data.BrokerID, data.AccountID);
+    }
+    static std::string generateSelectSqlByUserID(const std::string& BrokerID, const std::string& AccountID) {
+        return "SELECT * FROM 'CThostFtdcCFMMCTradingAccountTokenField' where BrokerID='" + BrokerID + "' and AccountID='" + AccountID + "';";
+    }
 };
 
 struct CThostFtdcQryProductGroupFieldWrapper
@@ -8753,8 +9685,8 @@ struct CThostFtdcQryProductGroupFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcQryProductGroupField data;
 
-    CThostFtdcQryProductGroupFieldWrapper(const CThostFtdcQryProductGroupField& _data = {0}) :data(_data) {}
-    CThostFtdcQryProductGroupFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcQryProductGroupFieldWrapper(const CThostFtdcQryProductGroupField& _data = { 0 }) :data(_data) { }
+    CThostFtdcQryProductGroupFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcQryProductGroupField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         strncpy(data.reserve1, rowValue.at("reserve1").c_str(), sizeof(TThostFtdcOldInstrumentIDType));
@@ -8777,8 +9709,8 @@ struct CThostFtdcProductGroupFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcProductGroupField data;
 
-    CThostFtdcProductGroupFieldWrapper(const CThostFtdcProductGroupField& _data = {0}) :data(_data) {}
-    CThostFtdcProductGroupFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcProductGroupFieldWrapper(const CThostFtdcProductGroupField& _data = { 0 }) :data(_data) { }
+    CThostFtdcProductGroupFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcProductGroupField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         strncpy(data.reserve1, rowValue.at("reserve1").c_str(), sizeof(TThostFtdcOldInstrumentIDType));
@@ -8803,8 +9735,8 @@ struct CThostFtdcBulletinFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcBulletinField data;
 
-    CThostFtdcBulletinFieldWrapper(const CThostFtdcBulletinField& _data = {0}) :data(_data) {}
-    CThostFtdcBulletinFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcBulletinFieldWrapper(const CThostFtdcBulletinField& _data = { 0 }) :data(_data) { }
+    CThostFtdcBulletinFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcBulletinField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         strncpy(data.ExchangeID, rowValue.at("ExchangeID").c_str(), sizeof(TThostFtdcExchangeIDType));
@@ -8836,8 +9768,8 @@ struct CThostFtdcQryBulletinFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcQryBulletinField data;
 
-    CThostFtdcQryBulletinFieldWrapper(const CThostFtdcQryBulletinField& _data = {0}) :data(_data) {}
-    CThostFtdcQryBulletinFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcQryBulletinFieldWrapper(const CThostFtdcQryBulletinField& _data = { 0 }) :data(_data) { }
+    CThostFtdcQryBulletinFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcQryBulletinField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         strncpy(data.ExchangeID, rowValue.at("ExchangeID").c_str(), sizeof(TThostFtdcExchangeIDType));
@@ -8862,8 +9794,8 @@ struct CThostFtdcMulticastInstrumentFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcMulticastInstrumentField data;
 
-    CThostFtdcMulticastInstrumentFieldWrapper(const CThostFtdcMulticastInstrumentField& _data = {0}) :data(_data) {}
-    CThostFtdcMulticastInstrumentFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcMulticastInstrumentFieldWrapper(const CThostFtdcMulticastInstrumentField& _data = { 0 }) :data(_data) { }
+    CThostFtdcMulticastInstrumentFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcMulticastInstrumentField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         data.TopicID = std::stoi(rowValue.at("TopicID"));
@@ -8890,8 +9822,8 @@ struct CThostFtdcQryMulticastInstrumentFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcQryMulticastInstrumentField data;
 
-    CThostFtdcQryMulticastInstrumentFieldWrapper(const CThostFtdcQryMulticastInstrumentField& _data = {0}) :data(_data) {}
-    CThostFtdcQryMulticastInstrumentFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcQryMulticastInstrumentFieldWrapper(const CThostFtdcQryMulticastInstrumentField& _data = { 0 }) :data(_data) { }
+    CThostFtdcQryMulticastInstrumentFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcQryMulticastInstrumentField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         data.TopicID = std::stoi(rowValue.at("TopicID"));
@@ -8914,8 +9846,8 @@ struct CThostFtdcAppIDAuthAssignFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcAppIDAuthAssignField data;
 
-    CThostFtdcAppIDAuthAssignFieldWrapper(const CThostFtdcAppIDAuthAssignField& _data = {0}) :data(_data) {}
-    CThostFtdcAppIDAuthAssignFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcAppIDAuthAssignFieldWrapper(const CThostFtdcAppIDAuthAssignField& _data = { 0 }) :data(_data) { }
+    CThostFtdcAppIDAuthAssignFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcAppIDAuthAssignField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         strncpy(data.BrokerID, rowValue.at("BrokerID").c_str(), sizeof(TThostFtdcBrokerIDType));
@@ -8938,8 +9870,8 @@ struct CThostFtdcReqOpenAccountFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcReqOpenAccountField data;
 
-    CThostFtdcReqOpenAccountFieldWrapper(const CThostFtdcReqOpenAccountField& _data = {0}) :data(_data) {}
-    CThostFtdcReqOpenAccountFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcReqOpenAccountFieldWrapper(const CThostFtdcReqOpenAccountField& _data = { 0 }) :data(_data) { }
+    CThostFtdcReqOpenAccountFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcReqOpenAccountField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         strncpy(data.TradeCode, rowValue.at("TradeCode").c_str(), sizeof(TThostFtdcTradeCodeType));
@@ -8994,6 +9926,12 @@ struct CThostFtdcReqOpenAccountFieldWrapper
             + "'";
         return INSERT_SQL_PREFIX + insertSqlBody + ");";
     }
+    std::string generateSelectSqlByUserID() const {
+        return generateSelectSqlByUserID(data.BrokerID, data.AccountID);
+    }
+    static std::string generateSelectSqlByUserID(const std::string& BrokerID, const std::string& AccountID) {
+        return "SELECT * FROM 'CThostFtdcReqOpenAccountField' where BrokerID='" + BrokerID + "' and AccountID='" + AccountID + "';";
+    }
 };
 
 struct CThostFtdcReqCancelAccountFieldWrapper
@@ -9004,8 +9942,8 @@ struct CThostFtdcReqCancelAccountFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcReqCancelAccountField data;
 
-    CThostFtdcReqCancelAccountFieldWrapper(const CThostFtdcReqCancelAccountField& _data = {0}) :data(_data) {}
-    CThostFtdcReqCancelAccountFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcReqCancelAccountFieldWrapper(const CThostFtdcReqCancelAccountField& _data = { 0 }) :data(_data) { }
+    CThostFtdcReqCancelAccountFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcReqCancelAccountField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         strncpy(data.TradeCode, rowValue.at("TradeCode").c_str(), sizeof(TThostFtdcTradeCodeType));
@@ -9060,6 +9998,12 @@ struct CThostFtdcReqCancelAccountFieldWrapper
             + "'";
         return INSERT_SQL_PREFIX + insertSqlBody + ");";
     }
+    std::string generateSelectSqlByUserID() const {
+        return generateSelectSqlByUserID(data.BrokerID, data.AccountID);
+    }
+    static std::string generateSelectSqlByUserID(const std::string& BrokerID, const std::string& AccountID) {
+        return "SELECT * FROM 'CThostFtdcReqCancelAccountField' where BrokerID='" + BrokerID + "' and AccountID='" + AccountID + "';";
+    }
 };
 
 struct CThostFtdcReqChangeAccountFieldWrapper
@@ -9070,8 +10014,8 @@ struct CThostFtdcReqChangeAccountFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcReqChangeAccountField data;
 
-    CThostFtdcReqChangeAccountFieldWrapper(const CThostFtdcReqChangeAccountField& _data = {0}) :data(_data) {}
-    CThostFtdcReqChangeAccountFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcReqChangeAccountFieldWrapper(const CThostFtdcReqChangeAccountField& _data = { 0 }) :data(_data) { }
+    CThostFtdcReqChangeAccountFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcReqChangeAccountField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         strncpy(data.TradeCode, rowValue.at("TradeCode").c_str(), sizeof(TThostFtdcTradeCodeType));
@@ -9122,6 +10066,12 @@ struct CThostFtdcReqChangeAccountFieldWrapper
             + "'";
         return INSERT_SQL_PREFIX + insertSqlBody + ");";
     }
+    std::string generateSelectSqlByUserID() const {
+        return generateSelectSqlByUserID(data.BrokerID, data.AccountID);
+    }
+    static std::string generateSelectSqlByUserID(const std::string& BrokerID, const std::string& AccountID) {
+        return "SELECT * FROM 'CThostFtdcReqChangeAccountField' where BrokerID='" + BrokerID + "' and AccountID='" + AccountID + "';";
+    }
 };
 
 struct CThostFtdcReqTransferFieldWrapper
@@ -9132,8 +10082,8 @@ struct CThostFtdcReqTransferFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcReqTransferField data;
 
-    CThostFtdcReqTransferFieldWrapper(const CThostFtdcReqTransferField& _data = {0}) :data(_data) {}
-    CThostFtdcReqTransferFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcReqTransferFieldWrapper(const CThostFtdcReqTransferField& _data = { 0 }) :data(_data) { }
+    CThostFtdcReqTransferFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcReqTransferField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         strncpy(data.TradeCode, rowValue.at("TradeCode").c_str(), sizeof(TThostFtdcTradeCodeType));
@@ -9187,6 +10137,12 @@ struct CThostFtdcReqTransferFieldWrapper
             + "'";
         return INSERT_SQL_PREFIX + insertSqlBody + ");";
     }
+    std::string generateSelectSqlByUserID() const {
+        return generateSelectSqlByUserID(data.BrokerID, data.AccountID);
+    }
+    static std::string generateSelectSqlByUserID(const std::string& BrokerID, const std::string& AccountID) {
+        return "SELECT * FROM 'CThostFtdcReqTransferField' where BrokerID='" + BrokerID + "' and AccountID='" + AccountID + "';";
+    }
 };
 
 struct CThostFtdcRspTransferFieldWrapper
@@ -9197,8 +10153,8 @@ struct CThostFtdcRspTransferFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcRspTransferField data;
 
-    CThostFtdcRspTransferFieldWrapper(const CThostFtdcRspTransferField& _data = {0}) :data(_data) {}
-    CThostFtdcRspTransferFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcRspTransferFieldWrapper(const CThostFtdcRspTransferField& _data = { 0 }) :data(_data) { }
+    CThostFtdcRspTransferFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcRspTransferField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         strncpy(data.TradeCode, rowValue.at("TradeCode").c_str(), sizeof(TThostFtdcTradeCodeType));
@@ -9254,6 +10210,12 @@ struct CThostFtdcRspTransferFieldWrapper
             + "'";
         return INSERT_SQL_PREFIX + insertSqlBody + ");";
     }
+    std::string generateSelectSqlByUserID() const {
+        return generateSelectSqlByUserID(data.BrokerID, data.AccountID);
+    }
+    static std::string generateSelectSqlByUserID(const std::string& BrokerID, const std::string& AccountID) {
+        return "SELECT * FROM 'CThostFtdcRspTransferField' where BrokerID='" + BrokerID + "' and AccountID='" + AccountID + "';";
+    }
 };
 
 struct CThostFtdcReqRepealFieldWrapper
@@ -9264,8 +10226,8 @@ struct CThostFtdcReqRepealFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcReqRepealField data;
 
-    CThostFtdcReqRepealFieldWrapper(const CThostFtdcReqRepealField& _data = {0}) :data(_data) {}
-    CThostFtdcReqRepealFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcReqRepealFieldWrapper(const CThostFtdcReqRepealField& _data = { 0 }) :data(_data) { }
+    CThostFtdcReqRepealFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcReqRepealField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         data.RepealTimeInterval = std::stoi(rowValue.at("RepealTimeInterval"));
@@ -9326,6 +10288,12 @@ struct CThostFtdcReqRepealFieldWrapper
             + "'";
         return INSERT_SQL_PREFIX + insertSqlBody + ");";
     }
+    std::string generateSelectSqlByUserID() const {
+        return generateSelectSqlByUserID(data.BrokerID, data.AccountID);
+    }
+    static std::string generateSelectSqlByUserID(const std::string& BrokerID, const std::string& AccountID) {
+        return "SELECT * FROM 'CThostFtdcReqRepealField' where BrokerID='" + BrokerID + "' and AccountID='" + AccountID + "';";
+    }
 };
 
 struct CThostFtdcRspRepealFieldWrapper
@@ -9336,8 +10304,8 @@ struct CThostFtdcRspRepealFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcRspRepealField data;
 
-    CThostFtdcRspRepealFieldWrapper(const CThostFtdcRspRepealField& _data = {0}) :data(_data) {}
-    CThostFtdcRspRepealFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcRspRepealFieldWrapper(const CThostFtdcRspRepealField& _data = { 0 }) :data(_data) { }
+    CThostFtdcRspRepealFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcRspRepealField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         data.RepealTimeInterval = std::stoi(rowValue.at("RepealTimeInterval"));
@@ -9400,6 +10368,12 @@ struct CThostFtdcRspRepealFieldWrapper
             + "'";
         return INSERT_SQL_PREFIX + insertSqlBody + ");";
     }
+    std::string generateSelectSqlByUserID() const {
+        return generateSelectSqlByUserID(data.BrokerID, data.AccountID);
+    }
+    static std::string generateSelectSqlByUserID(const std::string& BrokerID, const std::string& AccountID) {
+        return "SELECT * FROM 'CThostFtdcRspRepealField' where BrokerID='" + BrokerID + "' and AccountID='" + AccountID + "';";
+    }
 };
 
 struct CThostFtdcReqQueryAccountFieldWrapper
@@ -9410,8 +10384,8 @@ struct CThostFtdcReqQueryAccountFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcReqQueryAccountField data;
 
-    CThostFtdcReqQueryAccountFieldWrapper(const CThostFtdcReqQueryAccountField& _data = {0}) :data(_data) {}
-    CThostFtdcReqQueryAccountFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcReqQueryAccountFieldWrapper(const CThostFtdcReqQueryAccountField& _data = { 0 }) :data(_data) { }
+    CThostFtdcReqQueryAccountFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcReqQueryAccountField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         strncpy(data.TradeCode, rowValue.at("TradeCode").c_str(), sizeof(TThostFtdcTradeCodeType));
@@ -9458,6 +10432,12 @@ struct CThostFtdcReqQueryAccountFieldWrapper
             + "'";
         return INSERT_SQL_PREFIX + insertSqlBody + ");";
     }
+    std::string generateSelectSqlByUserID() const {
+        return generateSelectSqlByUserID(data.BrokerID, data.AccountID);
+    }
+    static std::string generateSelectSqlByUserID(const std::string& BrokerID, const std::string& AccountID) {
+        return "SELECT * FROM 'CThostFtdcReqQueryAccountField' where BrokerID='" + BrokerID + "' and AccountID='" + AccountID + "';";
+    }
 };
 
 struct CThostFtdcRspQueryAccountFieldWrapper
@@ -9468,8 +10448,8 @@ struct CThostFtdcRspQueryAccountFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcRspQueryAccountField data;
 
-    CThostFtdcRspQueryAccountFieldWrapper(const CThostFtdcRspQueryAccountField& _data = {0}) :data(_data) {}
-    CThostFtdcRspQueryAccountFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcRspQueryAccountFieldWrapper(const CThostFtdcRspQueryAccountField& _data = { 0 }) :data(_data) { }
+    CThostFtdcRspQueryAccountFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcRspQueryAccountField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         strncpy(data.TradeCode, rowValue.at("TradeCode").c_str(), sizeof(TThostFtdcTradeCodeType));
@@ -9518,6 +10498,12 @@ struct CThostFtdcRspQueryAccountFieldWrapper
             + "'";
         return INSERT_SQL_PREFIX + insertSqlBody + ");";
     }
+    std::string generateSelectSqlByUserID() const {
+        return generateSelectSqlByUserID(data.BrokerID, data.AccountID);
+    }
+    static std::string generateSelectSqlByUserID(const std::string& BrokerID, const std::string& AccountID) {
+        return "SELECT * FROM 'CThostFtdcRspQueryAccountField' where BrokerID='" + BrokerID + "' and AccountID='" + AccountID + "';";
+    }
 };
 
 struct CThostFtdcFutureSignIOFieldWrapper
@@ -9528,8 +10514,8 @@ struct CThostFtdcFutureSignIOFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcFutureSignIOField data;
 
-    CThostFtdcFutureSignIOFieldWrapper(const CThostFtdcFutureSignIOField& _data = {0}) :data(_data) {}
-    CThostFtdcFutureSignIOFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcFutureSignIOFieldWrapper(const CThostFtdcFutureSignIOField& _data = { 0 }) :data(_data) { }
+    CThostFtdcFutureSignIOFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcFutureSignIOField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         strncpy(data.TradeCode, rowValue.at("TradeCode").c_str(), sizeof(TThostFtdcTradeCodeType));
@@ -9560,6 +10546,12 @@ struct CThostFtdcFutureSignIOFieldWrapper
             + "'";
         return INSERT_SQL_PREFIX + insertSqlBody + ");";
     }
+    std::string generateSelectSqlByUserID() const {
+        return generateSelectSqlByUserID(data.BrokerID, data.UserID);
+    }
+    static std::string generateSelectSqlByUserID(const std::string& BrokerID, const std::string& UserID) {
+        return "SELECT * FROM 'CThostFtdcFutureSignIOField' where BrokerID='" + BrokerID + "' and UserID='" + UserID + "';";
+    }
 };
 
 struct CThostFtdcRspFutureSignInFieldWrapper
@@ -9570,8 +10562,8 @@ struct CThostFtdcRspFutureSignInFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcRspFutureSignInField data;
 
-    CThostFtdcRspFutureSignInFieldWrapper(const CThostFtdcRspFutureSignInField& _data = {0}) :data(_data) {}
-    CThostFtdcRspFutureSignInFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcRspFutureSignInFieldWrapper(const CThostFtdcRspFutureSignInField& _data = { 0 }) :data(_data) { }
+    CThostFtdcRspFutureSignInFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcRspFutureSignInField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         strncpy(data.TradeCode, rowValue.at("TradeCode").c_str(), sizeof(TThostFtdcTradeCodeType));
@@ -9606,6 +10598,12 @@ struct CThostFtdcRspFutureSignInFieldWrapper
             + "'";
         return INSERT_SQL_PREFIX + insertSqlBody + ");";
     }
+    std::string generateSelectSqlByUserID() const {
+        return generateSelectSqlByUserID(data.BrokerID, data.UserID);
+    }
+    static std::string generateSelectSqlByUserID(const std::string& BrokerID, const std::string& UserID) {
+        return "SELECT * FROM 'CThostFtdcRspFutureSignInField' where BrokerID='" + BrokerID + "' and UserID='" + UserID + "';";
+    }
 };
 
 struct CThostFtdcReqFutureSignOutFieldWrapper
@@ -9616,8 +10614,8 @@ struct CThostFtdcReqFutureSignOutFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcReqFutureSignOutField data;
 
-    CThostFtdcReqFutureSignOutFieldWrapper(const CThostFtdcReqFutureSignOutField& _data = {0}) :data(_data) {}
-    CThostFtdcReqFutureSignOutFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcReqFutureSignOutFieldWrapper(const CThostFtdcReqFutureSignOutField& _data = { 0 }) :data(_data) { }
+    CThostFtdcReqFutureSignOutFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcReqFutureSignOutField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         strncpy(data.TradeCode, rowValue.at("TradeCode").c_str(), sizeof(TThostFtdcTradeCodeType));
@@ -9648,6 +10646,12 @@ struct CThostFtdcReqFutureSignOutFieldWrapper
             + "'";
         return INSERT_SQL_PREFIX + insertSqlBody + ");";
     }
+    std::string generateSelectSqlByUserID() const {
+        return generateSelectSqlByUserID(data.BrokerID, data.UserID);
+    }
+    static std::string generateSelectSqlByUserID(const std::string& BrokerID, const std::string& UserID) {
+        return "SELECT * FROM 'CThostFtdcReqFutureSignOutField' where BrokerID='" + BrokerID + "' and UserID='" + UserID + "';";
+    }
 };
 
 struct CThostFtdcRspFutureSignOutFieldWrapper
@@ -9658,8 +10662,8 @@ struct CThostFtdcRspFutureSignOutFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcRspFutureSignOutField data;
 
-    CThostFtdcRspFutureSignOutFieldWrapper(const CThostFtdcRspFutureSignOutField& _data = {0}) :data(_data) {}
-    CThostFtdcRspFutureSignOutFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcRspFutureSignOutFieldWrapper(const CThostFtdcRspFutureSignOutField& _data = { 0 }) :data(_data) { }
+    CThostFtdcRspFutureSignOutFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcRspFutureSignOutField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         strncpy(data.TradeCode, rowValue.at("TradeCode").c_str(), sizeof(TThostFtdcTradeCodeType));
@@ -9692,6 +10696,12 @@ struct CThostFtdcRspFutureSignOutFieldWrapper
             + "'";
         return INSERT_SQL_PREFIX + insertSqlBody + ");";
     }
+    std::string generateSelectSqlByUserID() const {
+        return generateSelectSqlByUserID(data.BrokerID, data.UserID);
+    }
+    static std::string generateSelectSqlByUserID(const std::string& BrokerID, const std::string& UserID) {
+        return "SELECT * FROM 'CThostFtdcRspFutureSignOutField' where BrokerID='" + BrokerID + "' and UserID='" + UserID + "';";
+    }
 };
 
 struct CThostFtdcReqQueryTradeResultBySerialFieldWrapper
@@ -9702,8 +10712,8 @@ struct CThostFtdcReqQueryTradeResultBySerialFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcReqQueryTradeResultBySerialField data;
 
-    CThostFtdcReqQueryTradeResultBySerialFieldWrapper(const CThostFtdcReqQueryTradeResultBySerialField& _data = {0}) :data(_data) {}
-    CThostFtdcReqQueryTradeResultBySerialFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcReqQueryTradeResultBySerialFieldWrapper(const CThostFtdcReqQueryTradeResultBySerialField& _data = { 0 }) :data(_data) { }
+    CThostFtdcReqQueryTradeResultBySerialFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcReqQueryTradeResultBySerialField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         strncpy(data.TradeCode, rowValue.at("TradeCode").c_str(), sizeof(TThostFtdcTradeCodeType));
@@ -9740,6 +10750,12 @@ struct CThostFtdcReqQueryTradeResultBySerialFieldWrapper
             + "'";
         return INSERT_SQL_PREFIX + insertSqlBody + ");";
     }
+    std::string generateSelectSqlByUserID() const {
+        return generateSelectSqlByUserID(data.BrokerID, data.AccountID);
+    }
+    static std::string generateSelectSqlByUserID(const std::string& BrokerID, const std::string& AccountID) {
+        return "SELECT * FROM 'CThostFtdcReqQueryTradeResultBySerialField' where BrokerID='" + BrokerID + "' and AccountID='" + AccountID + "';";
+    }
 };
 
 struct CThostFtdcRspQueryTradeResultBySerialFieldWrapper
@@ -9750,8 +10766,8 @@ struct CThostFtdcRspQueryTradeResultBySerialFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcRspQueryTradeResultBySerialField data;
 
-    CThostFtdcRspQueryTradeResultBySerialFieldWrapper(const CThostFtdcRspQueryTradeResultBySerialField& _data = {0}) :data(_data) {}
-    CThostFtdcRspQueryTradeResultBySerialFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcRspQueryTradeResultBySerialFieldWrapper(const CThostFtdcRspQueryTradeResultBySerialField& _data = { 0 }) :data(_data) { }
+    CThostFtdcRspQueryTradeResultBySerialFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcRspQueryTradeResultBySerialField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         strncpy(data.TradeCode, rowValue.at("TradeCode").c_str(), sizeof(TThostFtdcTradeCodeType));
@@ -9787,6 +10803,12 @@ struct CThostFtdcRspQueryTradeResultBySerialFieldWrapper
             + "'";
         return INSERT_SQL_PREFIX + insertSqlBody + ");";
     }
+    std::string generateSelectSqlByUserID() const {
+        return generateSelectSqlByUserID(data.BrokerID, data.AccountID);
+    }
+    static std::string generateSelectSqlByUserID(const std::string& BrokerID, const std::string& AccountID) {
+        return "SELECT * FROM 'CThostFtdcRspQueryTradeResultBySerialField' where BrokerID='" + BrokerID + "' and AccountID='" + AccountID + "';";
+    }
 };
 
 struct CThostFtdcReqDayEndFileReadyFieldWrapper
@@ -9797,8 +10819,8 @@ struct CThostFtdcReqDayEndFileReadyFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcReqDayEndFileReadyField data;
 
-    CThostFtdcReqDayEndFileReadyFieldWrapper(const CThostFtdcReqDayEndFileReadyField& _data = {0}) :data(_data) {}
-    CThostFtdcReqDayEndFileReadyFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcReqDayEndFileReadyFieldWrapper(const CThostFtdcReqDayEndFileReadyField& _data = { 0 }) :data(_data) { }
+    CThostFtdcReqDayEndFileReadyFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcReqDayEndFileReadyField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         strncpy(data.TradeCode, rowValue.at("TradeCode").c_str(), sizeof(TThostFtdcTradeCodeType));
@@ -9832,8 +10854,8 @@ struct CThostFtdcReturnResultFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcReturnResultField data;
 
-    CThostFtdcReturnResultFieldWrapper(const CThostFtdcReturnResultField& _data = {0}) :data(_data) {}
-    CThostFtdcReturnResultFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcReturnResultFieldWrapper(const CThostFtdcReturnResultField& _data = { 0 }) :data(_data) { }
+    CThostFtdcReturnResultFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcReturnResultField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         strncpy(data.ReturnCode, rowValue.at("ReturnCode").c_str(), sizeof(TThostFtdcReturnCodeType));
@@ -9855,8 +10877,8 @@ struct CThostFtdcVerifyFuturePasswordFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcVerifyFuturePasswordField data;
 
-    CThostFtdcVerifyFuturePasswordFieldWrapper(const CThostFtdcVerifyFuturePasswordField& _data = {0}) :data(_data) {}
-    CThostFtdcVerifyFuturePasswordFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcVerifyFuturePasswordFieldWrapper(const CThostFtdcVerifyFuturePasswordField& _data = { 0 }) :data(_data) { }
+    CThostFtdcVerifyFuturePasswordFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcVerifyFuturePasswordField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         strncpy(data.TradeCode, rowValue.at("TradeCode").c_str(), sizeof(TThostFtdcTradeCodeType));
@@ -9885,6 +10907,12 @@ struct CThostFtdcVerifyFuturePasswordFieldWrapper
             + "'";
         return INSERT_SQL_PREFIX + insertSqlBody + ");";
     }
+    std::string generateSelectSqlByUserID() const {
+        return generateSelectSqlByUserID(data.BrokerID, data.AccountID);
+    }
+    static std::string generateSelectSqlByUserID(const std::string& BrokerID, const std::string& AccountID) {
+        return "SELECT * FROM 'CThostFtdcVerifyFuturePasswordField' where BrokerID='" + BrokerID + "' and AccountID='" + AccountID + "';";
+    }
 };
 
 struct CThostFtdcVerifyCustInfoFieldWrapper
@@ -9895,8 +10923,8 @@ struct CThostFtdcVerifyCustInfoFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcVerifyCustInfoField data;
 
-    CThostFtdcVerifyCustInfoFieldWrapper(const CThostFtdcVerifyCustInfoField& _data = {0}) :data(_data) {}
-    CThostFtdcVerifyCustInfoFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcVerifyCustInfoFieldWrapper(const CThostFtdcVerifyCustInfoField& _data = { 0 }) :data(_data) { }
+    CThostFtdcVerifyCustInfoFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcVerifyCustInfoField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         strncpy(data.CustomerName, rowValue.at("CustomerName").c_str(), sizeof(TThostFtdcIndividualNameType));
@@ -9921,8 +10949,8 @@ struct CThostFtdcVerifyFuturePasswordAndCustInfoFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcVerifyFuturePasswordAndCustInfoField data;
 
-    CThostFtdcVerifyFuturePasswordAndCustInfoFieldWrapper(const CThostFtdcVerifyFuturePasswordAndCustInfoField& _data = {0}) :data(_data) {}
-    CThostFtdcVerifyFuturePasswordAndCustInfoFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcVerifyFuturePasswordAndCustInfoFieldWrapper(const CThostFtdcVerifyFuturePasswordAndCustInfoField& _data = { 0 }) :data(_data) { }
+    CThostFtdcVerifyFuturePasswordAndCustInfoFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcVerifyFuturePasswordAndCustInfoField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         strncpy(data.CustomerName, rowValue.at("CustomerName").c_str(), sizeof(TThostFtdcIndividualNameType));
@@ -9950,8 +10978,8 @@ struct CThostFtdcDepositResultInformFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcDepositResultInformField data;
 
-    CThostFtdcDepositResultInformFieldWrapper(const CThostFtdcDepositResultInformField& _data = {0}) :data(_data) {}
-    CThostFtdcDepositResultInformFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcDepositResultInformFieldWrapper(const CThostFtdcDepositResultInformField& _data = { 0 }) :data(_data) { }
+    CThostFtdcDepositResultInformFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcDepositResultInformField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         strncpy(data.DepositSeqNo, rowValue.at("DepositSeqNo").c_str(), sizeof(TThostFtdcDepositSeqNoType));
@@ -9968,6 +10996,12 @@ struct CThostFtdcDepositResultInformFieldWrapper
             + "'";
         return INSERT_SQL_PREFIX + insertSqlBody + ");";
     }
+    std::string generateSelectSqlByUserID() const {
+        return generateSelectSqlByUserID(data.BrokerID, data.InvestorID);
+    }
+    static std::string generateSelectSqlByUserID(const std::string& BrokerID, const std::string& InvestorID) {
+        return "SELECT * FROM 'CThostFtdcDepositResultInformField' where BrokerID='" + BrokerID + "' and InvestorID='" + InvestorID + "';";
+    }
 };
 
 struct CThostFtdcReqSyncKeyFieldWrapper
@@ -9978,8 +11012,8 @@ struct CThostFtdcReqSyncKeyFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcReqSyncKeyField data;
 
-    CThostFtdcReqSyncKeyFieldWrapper(const CThostFtdcReqSyncKeyField& _data = {0}) :data(_data) {}
-    CThostFtdcReqSyncKeyFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcReqSyncKeyFieldWrapper(const CThostFtdcReqSyncKeyField& _data = { 0 }) :data(_data) { }
+    CThostFtdcReqSyncKeyFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcReqSyncKeyField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         strncpy(data.TradeCode, rowValue.at("TradeCode").c_str(), sizeof(TThostFtdcTradeCodeType));
@@ -10009,6 +11043,12 @@ struct CThostFtdcReqSyncKeyFieldWrapper
             + "'";
         return INSERT_SQL_PREFIX + insertSqlBody + ");";
     }
+    std::string generateSelectSqlByUserID() const {
+        return generateSelectSqlByUserID(data.BrokerID, data.UserID);
+    }
+    static std::string generateSelectSqlByUserID(const std::string& BrokerID, const std::string& UserID) {
+        return "SELECT * FROM 'CThostFtdcReqSyncKeyField' where BrokerID='" + BrokerID + "' and UserID='" + UserID + "';";
+    }
 };
 
 struct CThostFtdcRspSyncKeyFieldWrapper
@@ -10019,8 +11059,8 @@ struct CThostFtdcRspSyncKeyFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcRspSyncKeyField data;
 
-    CThostFtdcRspSyncKeyFieldWrapper(const CThostFtdcRspSyncKeyField& _data = {0}) :data(_data) {}
-    CThostFtdcRspSyncKeyFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcRspSyncKeyFieldWrapper(const CThostFtdcRspSyncKeyField& _data = { 0 }) :data(_data) { }
+    CThostFtdcRspSyncKeyFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcRspSyncKeyField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         strncpy(data.TradeCode, rowValue.at("TradeCode").c_str(), sizeof(TThostFtdcTradeCodeType));
@@ -10052,6 +11092,12 @@ struct CThostFtdcRspSyncKeyFieldWrapper
             + "'";
         return INSERT_SQL_PREFIX + insertSqlBody + ");";
     }
+    std::string generateSelectSqlByUserID() const {
+        return generateSelectSqlByUserID(data.BrokerID, data.UserID);
+    }
+    static std::string generateSelectSqlByUserID(const std::string& BrokerID, const std::string& UserID) {
+        return "SELECT * FROM 'CThostFtdcRspSyncKeyField' where BrokerID='" + BrokerID + "' and UserID='" + UserID + "';";
+    }
 };
 
 struct CThostFtdcNotifyQueryAccountFieldWrapper
@@ -10062,8 +11108,8 @@ struct CThostFtdcNotifyQueryAccountFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcNotifyQueryAccountField data;
 
-    CThostFtdcNotifyQueryAccountFieldWrapper(const CThostFtdcNotifyQueryAccountField& _data = {0}) :data(_data) {}
-    CThostFtdcNotifyQueryAccountFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcNotifyQueryAccountFieldWrapper(const CThostFtdcNotifyQueryAccountField& _data = { 0 }) :data(_data) { }
+    CThostFtdcNotifyQueryAccountFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcNotifyQueryAccountField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         strncpy(data.TradeCode, rowValue.at("TradeCode").c_str(), sizeof(TThostFtdcTradeCodeType));
@@ -10114,6 +11160,12 @@ struct CThostFtdcNotifyQueryAccountFieldWrapper
             + "'";
         return INSERT_SQL_PREFIX + insertSqlBody + ");";
     }
+    std::string generateSelectSqlByUserID() const {
+        return generateSelectSqlByUserID(data.BrokerID, data.AccountID);
+    }
+    static std::string generateSelectSqlByUserID(const std::string& BrokerID, const std::string& AccountID) {
+        return "SELECT * FROM 'CThostFtdcNotifyQueryAccountField' where BrokerID='" + BrokerID + "' and AccountID='" + AccountID + "';";
+    }
 };
 
 struct CThostFtdcTransferSerialFieldWrapper
@@ -10124,8 +11176,8 @@ struct CThostFtdcTransferSerialFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcTransferSerialField data;
 
-    CThostFtdcTransferSerialFieldWrapper(const CThostFtdcTransferSerialField& _data = {0}) :data(_data) {}
-    CThostFtdcTransferSerialFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcTransferSerialFieldWrapper(const CThostFtdcTransferSerialField& _data = { 0 }) :data(_data) { }
+    CThostFtdcTransferSerialFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcTransferSerialField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         data.PlateSerial = std::stoi(rowValue.at("PlateSerial"));
@@ -10163,6 +11215,12 @@ struct CThostFtdcTransferSerialFieldWrapper
             + "'";
         return INSERT_SQL_PREFIX + insertSqlBody + ");";
     }
+    std::string generateSelectSqlByUserID() const {
+        return generateSelectSqlByUserID(data.BrokerID, data.InvestorID);
+    }
+    static std::string generateSelectSqlByUserID(const std::string& BrokerID, const std::string& InvestorID) {
+        return "SELECT * FROM 'CThostFtdcTransferSerialField' where BrokerID='" + BrokerID + "' and InvestorID='" + InvestorID + "';";
+    }
 };
 
 struct CThostFtdcQryTransferSerialFieldWrapper
@@ -10173,8 +11231,8 @@ struct CThostFtdcQryTransferSerialFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcQryTransferSerialField data;
 
-    CThostFtdcQryTransferSerialFieldWrapper(const CThostFtdcQryTransferSerialField& _data = {0}) :data(_data) {}
-    CThostFtdcQryTransferSerialFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcQryTransferSerialFieldWrapper(const CThostFtdcQryTransferSerialField& _data = { 0 }) :data(_data) { }
+    CThostFtdcQryTransferSerialFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcQryTransferSerialField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         strncpy(data.BrokerID, rowValue.at("BrokerID").c_str(), sizeof(TThostFtdcBrokerIDType));
@@ -10188,6 +11246,12 @@ struct CThostFtdcQryTransferSerialFieldWrapper
             + "'";
         return INSERT_SQL_PREFIX + insertSqlBody + ");";
     }
+    std::string generateSelectSqlByUserID() const {
+        return generateSelectSqlByUserID(data.BrokerID, data.AccountID);
+    }
+    static std::string generateSelectSqlByUserID(const std::string& BrokerID, const std::string& AccountID) {
+        return "SELECT * FROM 'CThostFtdcQryTransferSerialField' where BrokerID='" + BrokerID + "' and AccountID='" + AccountID + "';";
+    }
 };
 
 struct CThostFtdcNotifyFutureSignInFieldWrapper
@@ -10198,8 +11262,8 @@ struct CThostFtdcNotifyFutureSignInFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcNotifyFutureSignInField data;
 
-    CThostFtdcNotifyFutureSignInFieldWrapper(const CThostFtdcNotifyFutureSignInField& _data = {0}) :data(_data) {}
-    CThostFtdcNotifyFutureSignInFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcNotifyFutureSignInFieldWrapper(const CThostFtdcNotifyFutureSignInField& _data = { 0 }) :data(_data) { }
+    CThostFtdcNotifyFutureSignInFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcNotifyFutureSignInField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         strncpy(data.TradeCode, rowValue.at("TradeCode").c_str(), sizeof(TThostFtdcTradeCodeType));
@@ -10234,6 +11298,12 @@ struct CThostFtdcNotifyFutureSignInFieldWrapper
             + "'";
         return INSERT_SQL_PREFIX + insertSqlBody + ");";
     }
+    std::string generateSelectSqlByUserID() const {
+        return generateSelectSqlByUserID(data.BrokerID, data.UserID);
+    }
+    static std::string generateSelectSqlByUserID(const std::string& BrokerID, const std::string& UserID) {
+        return "SELECT * FROM 'CThostFtdcNotifyFutureSignInField' where BrokerID='" + BrokerID + "' and UserID='" + UserID + "';";
+    }
 };
 
 struct CThostFtdcNotifyFutureSignOutFieldWrapper
@@ -10244,8 +11314,8 @@ struct CThostFtdcNotifyFutureSignOutFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcNotifyFutureSignOutField data;
 
-    CThostFtdcNotifyFutureSignOutFieldWrapper(const CThostFtdcNotifyFutureSignOutField& _data = {0}) :data(_data) {}
-    CThostFtdcNotifyFutureSignOutFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcNotifyFutureSignOutFieldWrapper(const CThostFtdcNotifyFutureSignOutField& _data = { 0 }) :data(_data) { }
+    CThostFtdcNotifyFutureSignOutFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcNotifyFutureSignOutField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         strncpy(data.TradeCode, rowValue.at("TradeCode").c_str(), sizeof(TThostFtdcTradeCodeType));
@@ -10278,6 +11348,12 @@ struct CThostFtdcNotifyFutureSignOutFieldWrapper
             + "'";
         return INSERT_SQL_PREFIX + insertSqlBody + ");";
     }
+    std::string generateSelectSqlByUserID() const {
+        return generateSelectSqlByUserID(data.BrokerID, data.UserID);
+    }
+    static std::string generateSelectSqlByUserID(const std::string& BrokerID, const std::string& UserID) {
+        return "SELECT * FROM 'CThostFtdcNotifyFutureSignOutField' where BrokerID='" + BrokerID + "' and UserID='" + UserID + "';";
+    }
 };
 
 struct CThostFtdcNotifySyncKeyFieldWrapper
@@ -10288,8 +11364,8 @@ struct CThostFtdcNotifySyncKeyFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcNotifySyncKeyField data;
 
-    CThostFtdcNotifySyncKeyFieldWrapper(const CThostFtdcNotifySyncKeyField& _data = {0}) :data(_data) {}
-    CThostFtdcNotifySyncKeyFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcNotifySyncKeyFieldWrapper(const CThostFtdcNotifySyncKeyField& _data = { 0 }) :data(_data) { }
+    CThostFtdcNotifySyncKeyFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcNotifySyncKeyField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         strncpy(data.TradeCode, rowValue.at("TradeCode").c_str(), sizeof(TThostFtdcTradeCodeType));
@@ -10321,6 +11397,12 @@ struct CThostFtdcNotifySyncKeyFieldWrapper
             + "'";
         return INSERT_SQL_PREFIX + insertSqlBody + ");";
     }
+    std::string generateSelectSqlByUserID() const {
+        return generateSelectSqlByUserID(data.BrokerID, data.UserID);
+    }
+    static std::string generateSelectSqlByUserID(const std::string& BrokerID, const std::string& UserID) {
+        return "SELECT * FROM 'CThostFtdcNotifySyncKeyField' where BrokerID='" + BrokerID + "' and UserID='" + UserID + "';";
+    }
 };
 
 struct CThostFtdcQryAccountregisterFieldWrapper
@@ -10331,8 +11413,8 @@ struct CThostFtdcQryAccountregisterFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcQryAccountregisterField data;
 
-    CThostFtdcQryAccountregisterFieldWrapper(const CThostFtdcQryAccountregisterField& _data = {0}) :data(_data) {}
-    CThostFtdcQryAccountregisterFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcQryAccountregisterFieldWrapper(const CThostFtdcQryAccountregisterField& _data = { 0 }) :data(_data) { }
+    CThostFtdcQryAccountregisterFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcQryAccountregisterField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         strncpy(data.BrokerID, rowValue.at("BrokerID").c_str(), sizeof(TThostFtdcBrokerIDType));
@@ -10347,6 +11429,12 @@ struct CThostFtdcQryAccountregisterFieldWrapper
             + "'";
         return INSERT_SQL_PREFIX + insertSqlBody + ");";
     }
+    std::string generateSelectSqlByUserID() const {
+        return generateSelectSqlByUserID(data.BrokerID, data.AccountID);
+    }
+    static std::string generateSelectSqlByUserID(const std::string& BrokerID, const std::string& AccountID) {
+        return "SELECT * FROM 'CThostFtdcQryAccountregisterField' where BrokerID='" + BrokerID + "' and AccountID='" + AccountID + "';";
+    }
 };
 
 struct CThostFtdcAccountregisterFieldWrapper
@@ -10357,8 +11445,8 @@ struct CThostFtdcAccountregisterFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcAccountregisterField data;
 
-    CThostFtdcAccountregisterFieldWrapper(const CThostFtdcAccountregisterField& _data = {0}) :data(_data) {}
-    CThostFtdcAccountregisterFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcAccountregisterFieldWrapper(const CThostFtdcAccountregisterField& _data = { 0 }) :data(_data) { }
+    CThostFtdcAccountregisterFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcAccountregisterField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         strncpy(data.TradeDay, rowValue.at("TradeDay").c_str(), sizeof(TThostFtdcTradeDateType));
@@ -10386,6 +11474,12 @@ struct CThostFtdcAccountregisterFieldWrapper
             + "'";
         return INSERT_SQL_PREFIX + insertSqlBody + ");";
     }
+    std::string generateSelectSqlByUserID() const {
+        return generateSelectSqlByUserID(data.BrokerID, data.AccountID);
+    }
+    static std::string generateSelectSqlByUserID(const std::string& BrokerID, const std::string& AccountID) {
+        return "SELECT * FROM 'CThostFtdcAccountregisterField' where BrokerID='" + BrokerID + "' and AccountID='" + AccountID + "';";
+    }
 };
 
 struct CThostFtdcOpenAccountFieldWrapper
@@ -10396,8 +11490,8 @@ struct CThostFtdcOpenAccountFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcOpenAccountField data;
 
-    CThostFtdcOpenAccountFieldWrapper(const CThostFtdcOpenAccountField& _data = {0}) :data(_data) {}
-    CThostFtdcOpenAccountFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcOpenAccountFieldWrapper(const CThostFtdcOpenAccountField& _data = { 0 }) :data(_data) { }
+    CThostFtdcOpenAccountFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcOpenAccountField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         strncpy(data.TradeCode, rowValue.at("TradeCode").c_str(), sizeof(TThostFtdcTradeCodeType));
@@ -10454,6 +11548,12 @@ struct CThostFtdcOpenAccountFieldWrapper
             + "'";
         return INSERT_SQL_PREFIX + insertSqlBody + ");";
     }
+    std::string generateSelectSqlByUserID() const {
+        return generateSelectSqlByUserID(data.BrokerID, data.AccountID);
+    }
+    static std::string generateSelectSqlByUserID(const std::string& BrokerID, const std::string& AccountID) {
+        return "SELECT * FROM 'CThostFtdcOpenAccountField' where BrokerID='" + BrokerID + "' and AccountID='" + AccountID + "';";
+    }
 };
 
 struct CThostFtdcCancelAccountFieldWrapper
@@ -10464,8 +11564,8 @@ struct CThostFtdcCancelAccountFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcCancelAccountField data;
 
-    CThostFtdcCancelAccountFieldWrapper(const CThostFtdcCancelAccountField& _data = {0}) :data(_data) {}
-    CThostFtdcCancelAccountFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcCancelAccountFieldWrapper(const CThostFtdcCancelAccountField& _data = { 0 }) :data(_data) { }
+    CThostFtdcCancelAccountFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcCancelAccountField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         strncpy(data.TradeCode, rowValue.at("TradeCode").c_str(), sizeof(TThostFtdcTradeCodeType));
@@ -10522,6 +11622,12 @@ struct CThostFtdcCancelAccountFieldWrapper
             + "'";
         return INSERT_SQL_PREFIX + insertSqlBody + ");";
     }
+    std::string generateSelectSqlByUserID() const {
+        return generateSelectSqlByUserID(data.BrokerID, data.AccountID);
+    }
+    static std::string generateSelectSqlByUserID(const std::string& BrokerID, const std::string& AccountID) {
+        return "SELECT * FROM 'CThostFtdcCancelAccountField' where BrokerID='" + BrokerID + "' and AccountID='" + AccountID + "';";
+    }
 };
 
 struct CThostFtdcChangeAccountFieldWrapper
@@ -10532,8 +11638,8 @@ struct CThostFtdcChangeAccountFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcChangeAccountField data;
 
-    CThostFtdcChangeAccountFieldWrapper(const CThostFtdcChangeAccountField& _data = {0}) :data(_data) {}
-    CThostFtdcChangeAccountFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcChangeAccountFieldWrapper(const CThostFtdcChangeAccountField& _data = { 0 }) :data(_data) { }
+    CThostFtdcChangeAccountFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcChangeAccountField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         strncpy(data.TradeCode, rowValue.at("TradeCode").c_str(), sizeof(TThostFtdcTradeCodeType));
@@ -10586,6 +11692,12 @@ struct CThostFtdcChangeAccountFieldWrapper
             + "'";
         return INSERT_SQL_PREFIX + insertSqlBody + ");";
     }
+    std::string generateSelectSqlByUserID() const {
+        return generateSelectSqlByUserID(data.BrokerID, data.AccountID);
+    }
+    static std::string generateSelectSqlByUserID(const std::string& BrokerID, const std::string& AccountID) {
+        return "SELECT * FROM 'CThostFtdcChangeAccountField' where BrokerID='" + BrokerID + "' and AccountID='" + AccountID + "';";
+    }
 };
 
 struct CThostFtdcSecAgentACIDMapFieldWrapper
@@ -10596,8 +11708,8 @@ struct CThostFtdcSecAgentACIDMapFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcSecAgentACIDMapField data;
 
-    CThostFtdcSecAgentACIDMapFieldWrapper(const CThostFtdcSecAgentACIDMapField& _data = {0}) :data(_data) {}
-    CThostFtdcSecAgentACIDMapFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcSecAgentACIDMapFieldWrapper(const CThostFtdcSecAgentACIDMapField& _data = { 0 }) :data(_data) { }
+    CThostFtdcSecAgentACIDMapFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcSecAgentACIDMapField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         strncpy(data.BrokerID, rowValue.at("BrokerID").c_str(), sizeof(TThostFtdcBrokerIDType));
@@ -10612,6 +11724,12 @@ struct CThostFtdcSecAgentACIDMapFieldWrapper
             + "'";
         return INSERT_SQL_PREFIX + insertSqlBody + ");";
     }
+    std::string generateSelectSqlByUserID() const {
+        return generateSelectSqlByUserID(data.BrokerID, data.AccountID);
+    }
+    static std::string generateSelectSqlByUserID(const std::string& BrokerID, const std::string& AccountID) {
+        return "SELECT * FROM 'CThostFtdcSecAgentACIDMapField' where BrokerID='" + BrokerID + "' and AccountID='" + AccountID + "';";
+    }
 };
 
 struct CThostFtdcQrySecAgentACIDMapFieldWrapper
@@ -10622,8 +11740,8 @@ struct CThostFtdcQrySecAgentACIDMapFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcQrySecAgentACIDMapField data;
 
-    CThostFtdcQrySecAgentACIDMapFieldWrapper(const CThostFtdcQrySecAgentACIDMapField& _data = {0}) :data(_data) {}
-    CThostFtdcQrySecAgentACIDMapFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcQrySecAgentACIDMapFieldWrapper(const CThostFtdcQrySecAgentACIDMapField& _data = { 0 }) :data(_data) { }
+    CThostFtdcQrySecAgentACIDMapFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcQrySecAgentACIDMapField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         strncpy(data.BrokerID, rowValue.at("BrokerID").c_str(), sizeof(TThostFtdcBrokerIDType));
@@ -10637,6 +11755,12 @@ struct CThostFtdcQrySecAgentACIDMapFieldWrapper
             + "'";
         return INSERT_SQL_PREFIX + insertSqlBody + ");";
     }
+    std::string generateSelectSqlByUserID() const {
+        return generateSelectSqlByUserID(data.BrokerID, data.AccountID);
+    }
+    static std::string generateSelectSqlByUserID(const std::string& BrokerID, const std::string& AccountID) {
+        return "SELECT * FROM 'CThostFtdcQrySecAgentACIDMapField' where BrokerID='" + BrokerID + "' and AccountID='" + AccountID + "';";
+    }
 };
 
 struct CThostFtdcUserRightsAssignFieldWrapper
@@ -10647,8 +11771,8 @@ struct CThostFtdcUserRightsAssignFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcUserRightsAssignField data;
 
-    CThostFtdcUserRightsAssignFieldWrapper(const CThostFtdcUserRightsAssignField& _data = {0}) :data(_data) {}
-    CThostFtdcUserRightsAssignFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcUserRightsAssignFieldWrapper(const CThostFtdcUserRightsAssignField& _data = { 0 }) :data(_data) { }
+    CThostFtdcUserRightsAssignFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcUserRightsAssignField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         strncpy(data.BrokerID, rowValue.at("BrokerID").c_str(), sizeof(TThostFtdcBrokerIDType));
@@ -10661,6 +11785,12 @@ struct CThostFtdcUserRightsAssignFieldWrapper
             + "'";
         return INSERT_SQL_PREFIX + insertSqlBody + ");";
     }
+    std::string generateSelectSqlByUserID() const {
+        return generateSelectSqlByUserID(data.BrokerID, data.UserID);
+    }
+    static std::string generateSelectSqlByUserID(const std::string& BrokerID, const std::string& UserID) {
+        return "SELECT * FROM 'CThostFtdcUserRightsAssignField' where BrokerID='" + BrokerID + "' and UserID='" + UserID + "';";
+    }
 };
 
 struct CThostFtdcBrokerUserRightAssignFieldWrapper
@@ -10671,8 +11801,8 @@ struct CThostFtdcBrokerUserRightAssignFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcBrokerUserRightAssignField data;
 
-    CThostFtdcBrokerUserRightAssignFieldWrapper(const CThostFtdcBrokerUserRightAssignField& _data = {0}) :data(_data) {}
-    CThostFtdcBrokerUserRightAssignFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcBrokerUserRightAssignFieldWrapper(const CThostFtdcBrokerUserRightAssignField& _data = { 0 }) :data(_data) { }
+    CThostFtdcBrokerUserRightAssignFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcBrokerUserRightAssignField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         strncpy(data.BrokerID, rowValue.at("BrokerID").c_str(), sizeof(TThostFtdcBrokerIDType));
@@ -10695,8 +11825,8 @@ struct CThostFtdcDRTransferFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcDRTransferField data;
 
-    CThostFtdcDRTransferFieldWrapper(const CThostFtdcDRTransferField& _data = {0}) :data(_data) {}
-    CThostFtdcDRTransferFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcDRTransferFieldWrapper(const CThostFtdcDRTransferField& _data = { 0 }) :data(_data) { }
+    CThostFtdcDRTransferFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcDRTransferField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         data.OrigDRIdentityID = std::stoi(rowValue.at("OrigDRIdentityID"));
@@ -10720,8 +11850,8 @@ struct CThostFtdcFensUserInfoFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcFensUserInfoField data;
 
-    CThostFtdcFensUserInfoFieldWrapper(const CThostFtdcFensUserInfoField& _data = {0}) :data(_data) {}
-    CThostFtdcFensUserInfoFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcFensUserInfoFieldWrapper(const CThostFtdcFensUserInfoField& _data = { 0 }) :data(_data) { }
+    CThostFtdcFensUserInfoFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcFensUserInfoField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         strncpy(data.BrokerID, rowValue.at("BrokerID").c_str(), sizeof(TThostFtdcBrokerIDType));
@@ -10734,6 +11864,12 @@ struct CThostFtdcFensUserInfoFieldWrapper
             + "'";
         return INSERT_SQL_PREFIX + insertSqlBody + ");";
     }
+    std::string generateSelectSqlByUserID() const {
+        return generateSelectSqlByUserID(data.BrokerID, data.UserID);
+    }
+    static std::string generateSelectSqlByUserID(const std::string& BrokerID, const std::string& UserID) {
+        return "SELECT * FROM 'CThostFtdcFensUserInfoField' where BrokerID='" + BrokerID + "' and UserID='" + UserID + "';";
+    }
 };
 
 struct CThostFtdcCurrTransferIdentityFieldWrapper
@@ -10744,8 +11880,8 @@ struct CThostFtdcCurrTransferIdentityFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcCurrTransferIdentityField data;
 
-    CThostFtdcCurrTransferIdentityFieldWrapper(const CThostFtdcCurrTransferIdentityField& _data = {0}) :data(_data) {}
-    CThostFtdcCurrTransferIdentityFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcCurrTransferIdentityFieldWrapper(const CThostFtdcCurrTransferIdentityField& _data = { 0 }) :data(_data) { }
+    CThostFtdcCurrTransferIdentityFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcCurrTransferIdentityField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         data.IdentityID = std::stoi(rowValue.at("IdentityID"));
@@ -10766,8 +11902,8 @@ struct CThostFtdcLoginForbiddenUserFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcLoginForbiddenUserField data;
 
-    CThostFtdcLoginForbiddenUserFieldWrapper(const CThostFtdcLoginForbiddenUserField& _data = {0}) :data(_data) {}
-    CThostFtdcLoginForbiddenUserFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcLoginForbiddenUserFieldWrapper(const CThostFtdcLoginForbiddenUserField& _data = { 0 }) :data(_data) { }
+    CThostFtdcLoginForbiddenUserFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcLoginForbiddenUserField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         strncpy(data.BrokerID, rowValue.at("BrokerID").c_str(), sizeof(TThostFtdcBrokerIDType));
@@ -10781,6 +11917,12 @@ struct CThostFtdcLoginForbiddenUserFieldWrapper
             + "'";
         return INSERT_SQL_PREFIX + insertSqlBody + ");";
     }
+    std::string generateSelectSqlByUserID() const {
+        return generateSelectSqlByUserID(data.BrokerID, data.UserID);
+    }
+    static std::string generateSelectSqlByUserID(const std::string& BrokerID, const std::string& UserID) {
+        return "SELECT * FROM 'CThostFtdcLoginForbiddenUserField' where BrokerID='" + BrokerID + "' and UserID='" + UserID + "';";
+    }
 };
 
 struct CThostFtdcQryLoginForbiddenUserFieldWrapper
@@ -10791,8 +11933,8 @@ struct CThostFtdcQryLoginForbiddenUserFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcQryLoginForbiddenUserField data;
 
-    CThostFtdcQryLoginForbiddenUserFieldWrapper(const CThostFtdcQryLoginForbiddenUserField& _data = {0}) :data(_data) {}
-    CThostFtdcQryLoginForbiddenUserFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcQryLoginForbiddenUserFieldWrapper(const CThostFtdcQryLoginForbiddenUserField& _data = { 0 }) :data(_data) { }
+    CThostFtdcQryLoginForbiddenUserFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcQryLoginForbiddenUserField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         strncpy(data.BrokerID, rowValue.at("BrokerID").c_str(), sizeof(TThostFtdcBrokerIDType));
@@ -10804,6 +11946,12 @@ struct CThostFtdcQryLoginForbiddenUserFieldWrapper
             + "'";
         return INSERT_SQL_PREFIX + insertSqlBody + ");";
     }
+    std::string generateSelectSqlByUserID() const {
+        return generateSelectSqlByUserID(data.BrokerID, data.UserID);
+    }
+    static std::string generateSelectSqlByUserID(const std::string& BrokerID, const std::string& UserID) {
+        return "SELECT * FROM 'CThostFtdcQryLoginForbiddenUserField' where BrokerID='" + BrokerID + "' and UserID='" + UserID + "';";
+    }
 };
 
 struct CThostFtdcTradingAccountReserveFieldWrapper
@@ -10814,8 +11962,8 @@ struct CThostFtdcTradingAccountReserveFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcTradingAccountReserveField data;
 
-    CThostFtdcTradingAccountReserveFieldWrapper(const CThostFtdcTradingAccountReserveField& _data = {0}) :data(_data) {}
-    CThostFtdcTradingAccountReserveFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcTradingAccountReserveFieldWrapper(const CThostFtdcTradingAccountReserveField& _data = { 0 }) :data(_data) { }
+    CThostFtdcTradingAccountReserveFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcTradingAccountReserveField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         strncpy(data.BrokerID, rowValue.at("BrokerID").c_str(), sizeof(TThostFtdcBrokerIDType));
@@ -10829,6 +11977,12 @@ struct CThostFtdcTradingAccountReserveFieldWrapper
             + "'";
         return INSERT_SQL_PREFIX + insertSqlBody + ");";
     }
+    std::string generateSelectSqlByUserID() const {
+        return generateSelectSqlByUserID(data.BrokerID, data.AccountID);
+    }
+    static std::string generateSelectSqlByUserID(const std::string& BrokerID, const std::string& AccountID) {
+        return "SELECT * FROM 'CThostFtdcTradingAccountReserveField' where BrokerID='" + BrokerID + "' and AccountID='" + AccountID + "';";
+    }
 };
 
 struct CThostFtdcQryLoginForbiddenIPFieldWrapper
@@ -10839,8 +11993,8 @@ struct CThostFtdcQryLoginForbiddenIPFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcQryLoginForbiddenIPField data;
 
-    CThostFtdcQryLoginForbiddenIPFieldWrapper(const CThostFtdcQryLoginForbiddenIPField& _data = {0}) :data(_data) {}
-    CThostFtdcQryLoginForbiddenIPFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcQryLoginForbiddenIPFieldWrapper(const CThostFtdcQryLoginForbiddenIPField& _data = { 0 }) :data(_data) { }
+    CThostFtdcQryLoginForbiddenIPFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcQryLoginForbiddenIPField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         strncpy(data.reserve1, rowValue.at("reserve1").c_str(), sizeof(TThostFtdcOldIPAddressType));
@@ -10862,8 +12016,8 @@ struct CThostFtdcQryIPListFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcQryIPListField data;
 
-    CThostFtdcQryIPListFieldWrapper(const CThostFtdcQryIPListField& _data = {0}) :data(_data) {}
-    CThostFtdcQryIPListFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcQryIPListFieldWrapper(const CThostFtdcQryIPListField& _data = { 0 }) :data(_data) { }
+    CThostFtdcQryIPListFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcQryIPListField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         strncpy(data.reserve1, rowValue.at("reserve1").c_str(), sizeof(TThostFtdcOldIPAddressType));
@@ -10885,8 +12039,8 @@ struct CThostFtdcQryUserRightsAssignFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcQryUserRightsAssignField data;
 
-    CThostFtdcQryUserRightsAssignFieldWrapper(const CThostFtdcQryUserRightsAssignField& _data = {0}) :data(_data) {}
-    CThostFtdcQryUserRightsAssignFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcQryUserRightsAssignFieldWrapper(const CThostFtdcQryUserRightsAssignField& _data = { 0 }) :data(_data) { }
+    CThostFtdcQryUserRightsAssignFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcQryUserRightsAssignField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         strncpy(data.BrokerID, rowValue.at("BrokerID").c_str(), sizeof(TThostFtdcBrokerIDType));
@@ -10898,6 +12052,12 @@ struct CThostFtdcQryUserRightsAssignFieldWrapper
             + "'";
         return INSERT_SQL_PREFIX + insertSqlBody + ");";
     }
+    std::string generateSelectSqlByUserID() const {
+        return generateSelectSqlByUserID(data.BrokerID, data.UserID);
+    }
+    static std::string generateSelectSqlByUserID(const std::string& BrokerID, const std::string& UserID) {
+        return "SELECT * FROM 'CThostFtdcQryUserRightsAssignField' where BrokerID='" + BrokerID + "' and UserID='" + UserID + "';";
+    }
 };
 
 struct CThostFtdcReserveOpenAccountConfirmFieldWrapper
@@ -10908,8 +12068,8 @@ struct CThostFtdcReserveOpenAccountConfirmFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcReserveOpenAccountConfirmField data;
 
-    CThostFtdcReserveOpenAccountConfirmFieldWrapper(const CThostFtdcReserveOpenAccountConfirmField& _data = {0}) :data(_data) {}
-    CThostFtdcReserveOpenAccountConfirmFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcReserveOpenAccountConfirmFieldWrapper(const CThostFtdcReserveOpenAccountConfirmField& _data = { 0 }) :data(_data) { }
+    CThostFtdcReserveOpenAccountConfirmFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcReserveOpenAccountConfirmField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         strncpy(data.TradeCode, rowValue.at("TradeCode").c_str(), sizeof(TThostFtdcTradeCodeType));
@@ -10960,6 +12120,12 @@ struct CThostFtdcReserveOpenAccountConfirmFieldWrapper
             + "'";
         return INSERT_SQL_PREFIX + insertSqlBody + ");";
     }
+    std::string generateSelectSqlByUserID() const {
+        return generateSelectSqlByUserID(data.BrokerID, data.AccountID);
+    }
+    static std::string generateSelectSqlByUserID(const std::string& BrokerID, const std::string& AccountID) {
+        return "SELECT * FROM 'CThostFtdcReserveOpenAccountConfirmField' where BrokerID='" + BrokerID + "' and AccountID='" + AccountID + "';";
+    }
 };
 
 struct CThostFtdcReserveOpenAccountFieldWrapper
@@ -10970,8 +12136,8 @@ struct CThostFtdcReserveOpenAccountFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcReserveOpenAccountField data;
 
-    CThostFtdcReserveOpenAccountFieldWrapper(const CThostFtdcReserveOpenAccountField& _data = {0}) :data(_data) {}
-    CThostFtdcReserveOpenAccountFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcReserveOpenAccountFieldWrapper(const CThostFtdcReserveOpenAccountField& _data = { 0 }) :data(_data) { }
+    CThostFtdcReserveOpenAccountFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcReserveOpenAccountField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         strncpy(data.TradeCode, rowValue.at("TradeCode").c_str(), sizeof(TThostFtdcTradeCodeType));
@@ -11028,8 +12194,8 @@ struct CThostFtdcAccountPropertyFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcAccountPropertyField data;
 
-    CThostFtdcAccountPropertyFieldWrapper(const CThostFtdcAccountPropertyField& _data = {0}) :data(_data) {}
-    CThostFtdcAccountPropertyFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcAccountPropertyFieldWrapper(const CThostFtdcAccountPropertyField& _data = { 0 }) :data(_data) { }
+    CThostFtdcAccountPropertyFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcAccountPropertyField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         strncpy(data.BrokerID, rowValue.at("BrokerID").c_str(), sizeof(TThostFtdcBrokerIDType));
@@ -11053,6 +12219,12 @@ struct CThostFtdcAccountPropertyFieldWrapper
             + "'";
         return INSERT_SQL_PREFIX + insertSqlBody + ");";
     }
+    std::string generateSelectSqlByUserID() const {
+        return generateSelectSqlByUserID(data.BrokerID, data.AccountID);
+    }
+    static std::string generateSelectSqlByUserID(const std::string& BrokerID, const std::string& AccountID) {
+        return "SELECT * FROM 'CThostFtdcAccountPropertyField' where BrokerID='" + BrokerID + "' and AccountID='" + AccountID + "';";
+    }
 };
 
 struct CThostFtdcQryCurrDRIdentityFieldWrapper
@@ -11063,8 +12235,8 @@ struct CThostFtdcQryCurrDRIdentityFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcQryCurrDRIdentityField data;
 
-    CThostFtdcQryCurrDRIdentityFieldWrapper(const CThostFtdcQryCurrDRIdentityField& _data = {0}) :data(_data) {}
-    CThostFtdcQryCurrDRIdentityFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcQryCurrDRIdentityFieldWrapper(const CThostFtdcQryCurrDRIdentityField& _data = { 0 }) :data(_data) { }
+    CThostFtdcQryCurrDRIdentityFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcQryCurrDRIdentityField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         data.DRIdentityID = std::stoi(rowValue.at("DRIdentityID"));
@@ -11085,8 +12257,8 @@ struct CThostFtdcCurrDRIdentityFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcCurrDRIdentityField data;
 
-    CThostFtdcCurrDRIdentityFieldWrapper(const CThostFtdcCurrDRIdentityField& _data = {0}) :data(_data) {}
-    CThostFtdcCurrDRIdentityFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcCurrDRIdentityFieldWrapper(const CThostFtdcCurrDRIdentityField& _data = { 0 }) :data(_data) { }
+    CThostFtdcCurrDRIdentityFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcCurrDRIdentityField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         data.DRIdentityID = std::stoi(rowValue.at("DRIdentityID"));
@@ -11107,8 +12279,8 @@ struct CThostFtdcQrySecAgentCheckModeFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcQrySecAgentCheckModeField data;
 
-    CThostFtdcQrySecAgentCheckModeFieldWrapper(const CThostFtdcQrySecAgentCheckModeField& _data = {0}) :data(_data) {}
-    CThostFtdcQrySecAgentCheckModeFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcQrySecAgentCheckModeFieldWrapper(const CThostFtdcQrySecAgentCheckModeField& _data = { 0 }) :data(_data) { }
+    CThostFtdcQrySecAgentCheckModeFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcQrySecAgentCheckModeField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         strncpy(data.BrokerID, rowValue.at("BrokerID").c_str(), sizeof(TThostFtdcBrokerIDType));
@@ -11120,6 +12292,12 @@ struct CThostFtdcQrySecAgentCheckModeFieldWrapper
             + "'";
         return INSERT_SQL_PREFIX + insertSqlBody + ");";
     }
+    std::string generateSelectSqlByUserID() const {
+        return generateSelectSqlByUserID(data.BrokerID, data.InvestorID);
+    }
+    static std::string generateSelectSqlByUserID(const std::string& BrokerID, const std::string& InvestorID) {
+        return "SELECT * FROM 'CThostFtdcQrySecAgentCheckModeField' where BrokerID='" + BrokerID + "' and InvestorID='" + InvestorID + "';";
+    }
 };
 
 struct CThostFtdcQrySecAgentTradeInfoFieldWrapper
@@ -11130,8 +12308,8 @@ struct CThostFtdcQrySecAgentTradeInfoFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcQrySecAgentTradeInfoField data;
 
-    CThostFtdcQrySecAgentTradeInfoFieldWrapper(const CThostFtdcQrySecAgentTradeInfoField& _data = {0}) :data(_data) {}
-    CThostFtdcQrySecAgentTradeInfoFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcQrySecAgentTradeInfoFieldWrapper(const CThostFtdcQrySecAgentTradeInfoField& _data = { 0 }) :data(_data) { }
+    CThostFtdcQrySecAgentTradeInfoFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcQrySecAgentTradeInfoField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         strncpy(data.BrokerID, rowValue.at("BrokerID").c_str(), sizeof(TThostFtdcBrokerIDType));
@@ -11153,8 +12331,8 @@ struct CThostFtdcReqUserAuthMethodFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcReqUserAuthMethodField data;
 
-    CThostFtdcReqUserAuthMethodFieldWrapper(const CThostFtdcReqUserAuthMethodField& _data = {0}) :data(_data) {}
-    CThostFtdcReqUserAuthMethodFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcReqUserAuthMethodFieldWrapper(const CThostFtdcReqUserAuthMethodField& _data = { 0 }) :data(_data) { }
+    CThostFtdcReqUserAuthMethodFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcReqUserAuthMethodField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         strncpy(data.TradingDay, rowValue.at("TradingDay").c_str(), sizeof(TThostFtdcDateType));
@@ -11167,6 +12345,12 @@ struct CThostFtdcReqUserAuthMethodFieldWrapper
             + "'";
         return INSERT_SQL_PREFIX + insertSqlBody + ");";
     }
+    std::string generateSelectSqlByUserID() const {
+        return generateSelectSqlByUserID(data.BrokerID, data.UserID);
+    }
+    static std::string generateSelectSqlByUserID(const std::string& BrokerID, const std::string& UserID) {
+        return "SELECT * FROM 'CThostFtdcReqUserAuthMethodField' where BrokerID='" + BrokerID + "' and UserID='" + UserID + "';";
+    }
 };
 
 struct CThostFtdcRspUserAuthMethodFieldWrapper
@@ -11177,8 +12361,8 @@ struct CThostFtdcRspUserAuthMethodFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcRspUserAuthMethodField data;
 
-    CThostFtdcRspUserAuthMethodFieldWrapper(const CThostFtdcRspUserAuthMethodField& _data = {0}) :data(_data) {}
-    CThostFtdcRspUserAuthMethodFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcRspUserAuthMethodFieldWrapper(const CThostFtdcRspUserAuthMethodField& _data = { 0 }) :data(_data) { }
+    CThostFtdcRspUserAuthMethodFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcRspUserAuthMethodField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         data.UsableAuthMethod = std::stoi(rowValue.at("UsableAuthMethod"));
@@ -11199,8 +12383,8 @@ struct CThostFtdcReqGenUserCaptchaFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcReqGenUserCaptchaField data;
 
-    CThostFtdcReqGenUserCaptchaFieldWrapper(const CThostFtdcReqGenUserCaptchaField& _data = {0}) :data(_data) {}
-    CThostFtdcReqGenUserCaptchaFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcReqGenUserCaptchaFieldWrapper(const CThostFtdcReqGenUserCaptchaField& _data = { 0 }) :data(_data) { }
+    CThostFtdcReqGenUserCaptchaFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcReqGenUserCaptchaField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         strncpy(data.TradingDay, rowValue.at("TradingDay").c_str(), sizeof(TThostFtdcDateType));
@@ -11213,6 +12397,12 @@ struct CThostFtdcReqGenUserCaptchaFieldWrapper
             + "'";
         return INSERT_SQL_PREFIX + insertSqlBody + ");";
     }
+    std::string generateSelectSqlByUserID() const {
+        return generateSelectSqlByUserID(data.BrokerID, data.UserID);
+    }
+    static std::string generateSelectSqlByUserID(const std::string& BrokerID, const std::string& UserID) {
+        return "SELECT * FROM 'CThostFtdcReqGenUserCaptchaField' where BrokerID='" + BrokerID + "' and UserID='" + UserID + "';";
+    }
 };
 
 struct CThostFtdcRspGenUserCaptchaFieldWrapper
@@ -11223,8 +12413,8 @@ struct CThostFtdcRspGenUserCaptchaFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcRspGenUserCaptchaField data;
 
-    CThostFtdcRspGenUserCaptchaFieldWrapper(const CThostFtdcRspGenUserCaptchaField& _data = {0}) :data(_data) {}
-    CThostFtdcRspGenUserCaptchaFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcRspGenUserCaptchaFieldWrapper(const CThostFtdcRspGenUserCaptchaField& _data = { 0 }) :data(_data) { }
+    CThostFtdcRspGenUserCaptchaFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcRspGenUserCaptchaField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         strncpy(data.BrokerID, rowValue.at("BrokerID").c_str(), sizeof(TThostFtdcBrokerIDType));
@@ -11238,6 +12428,12 @@ struct CThostFtdcRspGenUserCaptchaFieldWrapper
             + "'";
         return INSERT_SQL_PREFIX + insertSqlBody + ");";
     }
+    std::string generateSelectSqlByUserID() const {
+        return generateSelectSqlByUserID(data.BrokerID, data.UserID);
+    }
+    static std::string generateSelectSqlByUserID(const std::string& BrokerID, const std::string& UserID) {
+        return "SELECT * FROM 'CThostFtdcRspGenUserCaptchaField' where BrokerID='" + BrokerID + "' and UserID='" + UserID + "';";
+    }
 };
 
 struct CThostFtdcReqGenUserTextFieldWrapper
@@ -11248,8 +12444,8 @@ struct CThostFtdcReqGenUserTextFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcReqGenUserTextField data;
 
-    CThostFtdcReqGenUserTextFieldWrapper(const CThostFtdcReqGenUserTextField& _data = {0}) :data(_data) {}
-    CThostFtdcReqGenUserTextFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcReqGenUserTextFieldWrapper(const CThostFtdcReqGenUserTextField& _data = { 0 }) :data(_data) { }
+    CThostFtdcReqGenUserTextFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcReqGenUserTextField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         strncpy(data.TradingDay, rowValue.at("TradingDay").c_str(), sizeof(TThostFtdcDateType));
@@ -11262,6 +12458,12 @@ struct CThostFtdcReqGenUserTextFieldWrapper
             + "'";
         return INSERT_SQL_PREFIX + insertSqlBody + ");";
     }
+    std::string generateSelectSqlByUserID() const {
+        return generateSelectSqlByUserID(data.BrokerID, data.UserID);
+    }
+    static std::string generateSelectSqlByUserID(const std::string& BrokerID, const std::string& UserID) {
+        return "SELECT * FROM 'CThostFtdcReqGenUserTextField' where BrokerID='" + BrokerID + "' and UserID='" + UserID + "';";
+    }
 };
 
 struct CThostFtdcRspGenUserTextFieldWrapper
@@ -11272,8 +12474,8 @@ struct CThostFtdcRspGenUserTextFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcRspGenUserTextField data;
 
-    CThostFtdcRspGenUserTextFieldWrapper(const CThostFtdcRspGenUserTextField& _data = {0}) :data(_data) {}
-    CThostFtdcRspGenUserTextFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcRspGenUserTextFieldWrapper(const CThostFtdcRspGenUserTextField& _data = { 0 }) :data(_data) { }
+    CThostFtdcRspGenUserTextFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcRspGenUserTextField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         data.UserTextSeq = std::stoi(rowValue.at("UserTextSeq"));
@@ -11294,8 +12496,8 @@ struct CThostFtdcReqUserLoginWithCaptchaFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcReqUserLoginWithCaptchaField data;
 
-    CThostFtdcReqUserLoginWithCaptchaFieldWrapper(const CThostFtdcReqUserLoginWithCaptchaField& _data = {0}) :data(_data) {}
-    CThostFtdcReqUserLoginWithCaptchaFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcReqUserLoginWithCaptchaFieldWrapper(const CThostFtdcReqUserLoginWithCaptchaField& _data = { 0 }) :data(_data) { }
+    CThostFtdcReqUserLoginWithCaptchaFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcReqUserLoginWithCaptchaField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         strncpy(data.TradingDay, rowValue.at("TradingDay").c_str(), sizeof(TThostFtdcDateType));
@@ -11318,6 +12520,12 @@ struct CThostFtdcReqUserLoginWithCaptchaFieldWrapper
             + "'";
         return INSERT_SQL_PREFIX + insertSqlBody + ");";
     }
+    std::string generateSelectSqlByUserID() const {
+        return generateSelectSqlByUserID(data.BrokerID, data.UserID);
+    }
+    static std::string generateSelectSqlByUserID(const std::string& BrokerID, const std::string& UserID) {
+        return "SELECT * FROM 'CThostFtdcReqUserLoginWithCaptchaField' where BrokerID='" + BrokerID + "' and UserID='" + UserID + "';";
+    }
 };
 
 struct CThostFtdcReqUserLoginWithTextFieldWrapper
@@ -11328,8 +12536,8 @@ struct CThostFtdcReqUserLoginWithTextFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcReqUserLoginWithTextField data;
 
-    CThostFtdcReqUserLoginWithTextFieldWrapper(const CThostFtdcReqUserLoginWithTextField& _data = {0}) :data(_data) {}
-    CThostFtdcReqUserLoginWithTextFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcReqUserLoginWithTextFieldWrapper(const CThostFtdcReqUserLoginWithTextField& _data = { 0 }) :data(_data) { }
+    CThostFtdcReqUserLoginWithTextFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcReqUserLoginWithTextField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         strncpy(data.TradingDay, rowValue.at("TradingDay").c_str(), sizeof(TThostFtdcDateType));
@@ -11352,6 +12560,12 @@ struct CThostFtdcReqUserLoginWithTextFieldWrapper
             + "'";
         return INSERT_SQL_PREFIX + insertSqlBody + ");";
     }
+    std::string generateSelectSqlByUserID() const {
+        return generateSelectSqlByUserID(data.BrokerID, data.UserID);
+    }
+    static std::string generateSelectSqlByUserID(const std::string& BrokerID, const std::string& UserID) {
+        return "SELECT * FROM 'CThostFtdcReqUserLoginWithTextField' where BrokerID='" + BrokerID + "' and UserID='" + UserID + "';";
+    }
 };
 
 struct CThostFtdcReqUserLoginWithOTPFieldWrapper
@@ -11362,8 +12576,8 @@ struct CThostFtdcReqUserLoginWithOTPFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcReqUserLoginWithOTPField data;
 
-    CThostFtdcReqUserLoginWithOTPFieldWrapper(const CThostFtdcReqUserLoginWithOTPField& _data = {0}) :data(_data) {}
-    CThostFtdcReqUserLoginWithOTPFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcReqUserLoginWithOTPFieldWrapper(const CThostFtdcReqUserLoginWithOTPField& _data = { 0 }) :data(_data) { }
+    CThostFtdcReqUserLoginWithOTPFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcReqUserLoginWithOTPField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         strncpy(data.TradingDay, rowValue.at("TradingDay").c_str(), sizeof(TThostFtdcDateType));
@@ -11386,6 +12600,12 @@ struct CThostFtdcReqUserLoginWithOTPFieldWrapper
             + "'";
         return INSERT_SQL_PREFIX + insertSqlBody + ");";
     }
+    std::string generateSelectSqlByUserID() const {
+        return generateSelectSqlByUserID(data.BrokerID, data.UserID);
+    }
+    static std::string generateSelectSqlByUserID(const std::string& BrokerID, const std::string& UserID) {
+        return "SELECT * FROM 'CThostFtdcReqUserLoginWithOTPField' where BrokerID='" + BrokerID + "' and UserID='" + UserID + "';";
+    }
 };
 
 struct CThostFtdcReqApiHandshakeFieldWrapper
@@ -11396,8 +12616,8 @@ struct CThostFtdcReqApiHandshakeFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcReqApiHandshakeField data;
 
-    CThostFtdcReqApiHandshakeFieldWrapper(const CThostFtdcReqApiHandshakeField& _data = {0}) :data(_data) {}
-    CThostFtdcReqApiHandshakeFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcReqApiHandshakeFieldWrapper(const CThostFtdcReqApiHandshakeField& _data = { 0 }) :data(_data) { }
+    CThostFtdcReqApiHandshakeFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcReqApiHandshakeField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         strncpy(data.CryptoKeyVersion, rowValue.at("CryptoKeyVersion").c_str(), sizeof(TThostFtdcCryptoKeyVersionType));
@@ -11418,8 +12638,8 @@ struct CThostFtdcRspApiHandshakeFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcRspApiHandshakeField data;
 
-    CThostFtdcRspApiHandshakeFieldWrapper(const CThostFtdcRspApiHandshakeField& _data = {0}) :data(_data) {}
-    CThostFtdcRspApiHandshakeFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcRspApiHandshakeFieldWrapper(const CThostFtdcRspApiHandshakeField& _data = { 0 }) :data(_data) { }
+    CThostFtdcRspApiHandshakeFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcRspApiHandshakeField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         data.FrontHandshakeDataLen = std::stoi(rowValue.at("FrontHandshakeDataLen"));
@@ -11442,8 +12662,8 @@ struct CThostFtdcReqVerifyApiKeyFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcReqVerifyApiKeyField data;
 
-    CThostFtdcReqVerifyApiKeyFieldWrapper(const CThostFtdcReqVerifyApiKeyField& _data = {0}) :data(_data) {}
-    CThostFtdcReqVerifyApiKeyFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcReqVerifyApiKeyFieldWrapper(const CThostFtdcReqVerifyApiKeyField& _data = { 0 }) :data(_data) { }
+    CThostFtdcReqVerifyApiKeyFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcReqVerifyApiKeyField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         data.ApiHandshakeDataLen = std::stoi(rowValue.at("ApiHandshakeDataLen"));
@@ -11465,8 +12685,8 @@ struct CThostFtdcDepartmentUserFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcDepartmentUserField data;
 
-    CThostFtdcDepartmentUserFieldWrapper(const CThostFtdcDepartmentUserField& _data = {0}) :data(_data) {}
-    CThostFtdcDepartmentUserFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcDepartmentUserFieldWrapper(const CThostFtdcDepartmentUserField& _data = { 0 }) :data(_data) { }
+    CThostFtdcDepartmentUserFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcDepartmentUserField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         strncpy(data.BrokerID, rowValue.at("BrokerID").c_str(), sizeof(TThostFtdcBrokerIDType));
@@ -11480,6 +12700,12 @@ struct CThostFtdcDepartmentUserFieldWrapper
             + "'";
         return INSERT_SQL_PREFIX + insertSqlBody + ");";
     }
+    std::string generateSelectSqlByUserID() const {
+        return generateSelectSqlByUserID(data.BrokerID, data.InvestorID);
+    }
+    static std::string generateSelectSqlByUserID(const std::string& BrokerID, const std::string& InvestorID) {
+        return "SELECT * FROM 'CThostFtdcDepartmentUserField' where BrokerID='" + BrokerID + "' and InvestorID='" + InvestorID + "';";
+    }
 };
 
 struct CThostFtdcQueryFreqFieldWrapper
@@ -11490,8 +12716,8 @@ struct CThostFtdcQueryFreqFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcQueryFreqField data;
 
-    CThostFtdcQueryFreqFieldWrapper(const CThostFtdcQueryFreqField& _data = {0}) :data(_data) {}
-    CThostFtdcQueryFreqFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcQueryFreqFieldWrapper(const CThostFtdcQueryFreqField& _data = { 0 }) :data(_data) { }
+    CThostFtdcQueryFreqFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcQueryFreqField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         data.QueryFreq = std::stoi(rowValue.at("QueryFreq"));
@@ -11512,8 +12738,8 @@ struct CThostFtdcAuthForbiddenIPFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcAuthForbiddenIPField data;
 
-    CThostFtdcAuthForbiddenIPFieldWrapper(const CThostFtdcAuthForbiddenIPField& _data = {0}) :data(_data) {}
-    CThostFtdcAuthForbiddenIPFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcAuthForbiddenIPFieldWrapper(const CThostFtdcAuthForbiddenIPField& _data = { 0 }) :data(_data) { }
+    CThostFtdcAuthForbiddenIPFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcAuthForbiddenIPField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         strncpy(data.reserve1, rowValue.at("reserve1").c_str(), sizeof(TThostFtdcOldIPAddressType));
@@ -11535,8 +12761,8 @@ struct CThostFtdcQryAuthForbiddenIPFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcQryAuthForbiddenIPField data;
 
-    CThostFtdcQryAuthForbiddenIPFieldWrapper(const CThostFtdcQryAuthForbiddenIPField& _data = {0}) :data(_data) {}
-    CThostFtdcQryAuthForbiddenIPFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcQryAuthForbiddenIPFieldWrapper(const CThostFtdcQryAuthForbiddenIPField& _data = { 0 }) :data(_data) { }
+    CThostFtdcQryAuthForbiddenIPFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcQryAuthForbiddenIPField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         strncpy(data.reserve1, rowValue.at("reserve1").c_str(), sizeof(TThostFtdcOldIPAddressType));
@@ -11558,8 +12784,8 @@ struct CThostFtdcSyncDelaySwapFrozenFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcSyncDelaySwapFrozenField data;
 
-    CThostFtdcSyncDelaySwapFrozenFieldWrapper(const CThostFtdcSyncDelaySwapFrozenField& _data = {0}) :data(_data) {}
-    CThostFtdcSyncDelaySwapFrozenFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcSyncDelaySwapFrozenFieldWrapper(const CThostFtdcSyncDelaySwapFrozenField& _data = { 0 }) :data(_data) { }
+    CThostFtdcSyncDelaySwapFrozenFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcSyncDelaySwapFrozenField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         strncpy(data.DelaySwapSeqNo, rowValue.at("DelaySwapSeqNo").c_str(), sizeof(TThostFtdcDepositSeqNoType));
@@ -11575,6 +12801,12 @@ struct CThostFtdcSyncDelaySwapFrozenFieldWrapper
             + "'";
         return INSERT_SQL_PREFIX + insertSqlBody + ");";
     }
+    std::string generateSelectSqlByUserID() const {
+        return generateSelectSqlByUserID(data.BrokerID, data.InvestorID);
+    }
+    static std::string generateSelectSqlByUserID(const std::string& BrokerID, const std::string& InvestorID) {
+        return "SELECT * FROM 'CThostFtdcSyncDelaySwapFrozenField' where BrokerID='" + BrokerID + "' and InvestorID='" + InvestorID + "';";
+    }
 };
 
 struct CThostFtdcUserSystemInfoFieldWrapper
@@ -11585,8 +12817,8 @@ struct CThostFtdcUserSystemInfoFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcUserSystemInfoField data;
 
-    CThostFtdcUserSystemInfoFieldWrapper(const CThostFtdcUserSystemInfoField& _data = {0}) :data(_data) {}
-    CThostFtdcUserSystemInfoFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcUserSystemInfoFieldWrapper(const CThostFtdcUserSystemInfoField& _data = { 0 }) :data(_data) { }
+    CThostFtdcUserSystemInfoFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcUserSystemInfoField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         strncpy(data.BrokerID, rowValue.at("BrokerID").c_str(), sizeof(TThostFtdcBrokerIDType));
@@ -11605,6 +12837,12 @@ struct CThostFtdcUserSystemInfoFieldWrapper
             + "'";
         return INSERT_SQL_PREFIX + insertSqlBody + ");";
     }
+    std::string generateSelectSqlByUserID() const {
+        return generateSelectSqlByUserID(data.BrokerID, data.UserID);
+    }
+    static std::string generateSelectSqlByUserID(const std::string& BrokerID, const std::string& UserID) {
+        return "SELECT * FROM 'CThostFtdcUserSystemInfoField' where BrokerID='" + BrokerID + "' and UserID='" + UserID + "';";
+    }
 };
 
 struct CThostFtdcAuthUserIDFieldWrapper
@@ -11615,8 +12853,8 @@ struct CThostFtdcAuthUserIDFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcAuthUserIDField data;
 
-    CThostFtdcAuthUserIDFieldWrapper(const CThostFtdcAuthUserIDField& _data = {0}) :data(_data) {}
-    CThostFtdcAuthUserIDFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcAuthUserIDFieldWrapper(const CThostFtdcAuthUserIDField& _data = { 0 }) :data(_data) { }
+    CThostFtdcAuthUserIDFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcAuthUserIDField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         strncpy(data.BrokerID, rowValue.at("BrokerID").c_str(), sizeof(TThostFtdcBrokerIDType));
@@ -11630,6 +12868,12 @@ struct CThostFtdcAuthUserIDFieldWrapper
             + "'";
         return INSERT_SQL_PREFIX + insertSqlBody + ");";
     }
+    std::string generateSelectSqlByUserID() const {
+        return generateSelectSqlByUserID(data.BrokerID, data.UserID);
+    }
+    static std::string generateSelectSqlByUserID(const std::string& BrokerID, const std::string& UserID) {
+        return "SELECT * FROM 'CThostFtdcAuthUserIDField' where BrokerID='" + BrokerID + "' and UserID='" + UserID + "';";
+    }
 };
 
 struct CThostFtdcAuthIPFieldWrapper
@@ -11640,8 +12884,8 @@ struct CThostFtdcAuthIPFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcAuthIPField data;
 
-    CThostFtdcAuthIPFieldWrapper(const CThostFtdcAuthIPField& _data = {0}) :data(_data) {}
-    CThostFtdcAuthIPFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcAuthIPFieldWrapper(const CThostFtdcAuthIPField& _data = { 0 }) :data(_data) { }
+    CThostFtdcAuthIPFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcAuthIPField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         strncpy(data.BrokerID, rowValue.at("BrokerID").c_str(), sizeof(TThostFtdcBrokerIDType));
@@ -11664,8 +12908,8 @@ struct CThostFtdcQryClassifiedInstrumentFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcQryClassifiedInstrumentField data;
 
-    CThostFtdcQryClassifiedInstrumentFieldWrapper(const CThostFtdcQryClassifiedInstrumentField& _data = {0}) :data(_data) {}
-    CThostFtdcQryClassifiedInstrumentFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcQryClassifiedInstrumentFieldWrapper(const CThostFtdcQryClassifiedInstrumentField& _data = { 0 }) :data(_data) { }
+    CThostFtdcQryClassifiedInstrumentFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcQryClassifiedInstrumentField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         strncpy(data.InstrumentID, rowValue.at("InstrumentID").c_str(), sizeof(TThostFtdcInstrumentIDType));
@@ -11691,8 +12935,8 @@ struct CThostFtdcQryCombPromotionParamFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcQryCombPromotionParamField data;
 
-    CThostFtdcQryCombPromotionParamFieldWrapper(const CThostFtdcQryCombPromotionParamField& _data = {0}) :data(_data) {}
-    CThostFtdcQryCombPromotionParamFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcQryCombPromotionParamFieldWrapper(const CThostFtdcQryCombPromotionParamField& _data = { 0 }) :data(_data) { }
+    CThostFtdcQryCombPromotionParamFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcQryCombPromotionParamField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         strncpy(data.ExchangeID, rowValue.at("ExchangeID").c_str(), sizeof(TThostFtdcExchangeIDType));
@@ -11714,8 +12958,8 @@ struct CThostFtdcCombPromotionParamFieldWrapper
     static const std::string INSERT_SQL_PREFIX;
     CThostFtdcCombPromotionParamField data;
 
-    CThostFtdcCombPromotionParamFieldWrapper(const CThostFtdcCombPromotionParamField& _data = {0}) :data(_data) {}
-    CThostFtdcCombPromotionParamFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
+    CThostFtdcCombPromotionParamFieldWrapper(const CThostFtdcCombPromotionParamField& _data = { 0 }) :data(_data) { }
+    CThostFtdcCombPromotionParamFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
     operator CThostFtdcCombPromotionParamField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         strncpy(data.ExchangeID, rowValue.at("ExchangeID").c_str(), sizeof(TThostFtdcExchangeIDType));

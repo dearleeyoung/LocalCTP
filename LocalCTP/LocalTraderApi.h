@@ -41,7 +41,7 @@ private:
             else // 同一开仓日期的按开仓成交编号比较大小
                 return strcmp(lhs.TradeID, rhs.TradeID) < 0;
         }
-        // 对持仓明细排序
+        // 对持仓明细排序. 在持仓明细数据数量(笔数)发生变化后需调用.
         void sortPositionDetail()
         {
             std::sort(posDetailData.begin(), posDetailData.end(), comparePosDetail);
@@ -63,6 +63,7 @@ private:
         {
             dealTestReqOrderInsertNormal(inputOrder, relativeOrderSysID);
         }
+        // 通过已有的报单回报来创建. 适用于用数据源中读取到报单回报然后创建OrderData.
         OrderData(CLocalTraderApi* pApi, const CThostFtdcOrderField& _rtnOrder)
             : inputOrder(OrderData::genrateInputOrderFromRtnOrder(_rtnOrder))
             , rtnOrder(_rtnOrder)
@@ -77,7 +78,7 @@ private:
 
         const CThostFtdcInputOrderField inputOrder;
         CThostFtdcOrderField rtnOrder;
-        std::vector<CThostFtdcTradeField> rtnTrades;
+        std::vector<CThostFtdcTradeFieldWrapper> rtnTrades;
 
     private:
         static CThostFtdcInputOrderField genrateInputOrderFromRtnOrder(
@@ -86,9 +87,9 @@ private:
             const CThostFtdcInputOrderField& inputO);
         void dealTestReqOrderInsertNormal(const CThostFtdcInputOrderField& InputOrder,
             const std::string& relativeOrderSysID);
-        void sendRtnTrade(CThostFtdcTradeField& rtnTrade);
+        void sendRtnTrade(CThostFtdcTradeFieldWrapper& rtnTrade);
         void getRtnTrade(const TradePriceVec& tradePriceVec,
-            int tradedSize, std::vector<CThostFtdcTradeField>& Trades);
+            int tradedSize, std::vector<CThostFtdcTradeFieldWrapper>& Trades);
 
         CLocalTraderApi& api;
         bool isConditionalOrder;
@@ -131,7 +132,9 @@ public:
         else
             return ++(it->second);
     }
-    // 判断是否成交
+    // 判断是否成交条件.
+    // input: mdVec. 订单有关的合约的行情数据的列表(若为组合合约需确保为组合的各个单腿的顺序).
+    // input & output: tradePriceVec. 成交价格的列表(若为组合合约则为按组合的各个单腿的顺序).
     static bool isMatchTrade(TThostFtdcDirectionType direction, double orderPrice,
         const MarketDataVec& mdVec, TradePriceVec& tradePriceVec);
     // 将组合合约代码拆分为单腿合约的数组. 支持处理多于2个单腿合约的组合合约.
@@ -230,14 +233,14 @@ private:
     void onSnapshot(const CThostFtdcDepthMarketDataField& mdData);// 处理行情快照的接口
     void updatePNL(bool needTotalCalc = false);// 更新PNL(盈亏)的接口
     void updateByCancel(const CThostFtdcOrderField& o);// 根据已撤单的委托更新账户数据的接口,在委托被撤单后被调用
-    void updateByTrade(const CThostFtdcTradeField& t);// 根据成交更新账户数据的接口,在发生成交后被调用
+    void updateByTrade(const CThostFtdcTradeFieldWrapper& t);// 根据成交更新账户数据的接口,在发生成交后被调用
     void reloadAccountData();// 从数据库中重新加载账户数据的接口
     void saveTradingAccountToDb();// 保存账户资金数据到数据库中的接口
     void savePositionToDb(const PositionData& pos);// 保存账户持仓数据到数据库中的接口
     void savePositionToDb(const CThostFtdcInvestorPositionField& pos);// 保存账户持仓数据到数据库中的接口
     void savePositionDetialToDb(const CThostFtdcInvestorPositionDetailField& pos);// 保存账户持仓明细数据到数据库中的接口
     void saveOrderToDb(const CThostFtdcOrderField& order);// 保存账户委托数据到数据库中的接口
-    void saveTradeToDb(const CThostFtdcTradeField& trade);// 保存账户成交数据到数据库中的接口
+    void saveTradeToDb(const CThostFtdcTradeFieldWrapper& trade);// 保存账户成交数据到数据库中的接口
     int ReqOrderInsertImpl(CThostFtdcInputOrderField* pInputOrder, int nRequestID,
         std::string relativeOrderSysID = std::string());// 处理新委托的实现的接口
 

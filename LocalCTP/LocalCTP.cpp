@@ -345,15 +345,16 @@ void CLocalTraderApi::OrderData::handleTrade(const TradePriceVec& tradedPriceInf
         sizeof(rtnOrder.StatusMsg));
 
 
-    std::vector<CThostFtdcTradeField> rtnTradeFromOrder;
+    std::vector<CThostFtdcTradeFieldWrapper> rtnTradeFromOrder;
     getRtnTrade(tradedPriceInfo, tradedSize, rtnTradeFromOrder);
-    rtnTrades.insert(rtnTrades.end(), rtnTradeFromOrder.begin(), rtnTradeFromOrder.end());
 
     for (auto& t : rtnTradeFromOrder)
     {
-        api.updateByTrade(t);
+        api.updateByTrade(t);// it will set commission for trade while handling in updateByTrade
         sendRtnTrade(t);
     }
+    rtnTrades.insert(rtnTrades.end(), rtnTradeFromOrder.begin(), rtnTradeFromOrder.end());
+
     sendRtnOrder();
     return;
 }
@@ -380,7 +381,7 @@ void CLocalTraderApi::OrderData::handleCancel(bool cancelFromClient)
 }
 
 void CLocalTraderApi::OrderData::getRtnTrade(const TradePriceVec& tradePriceVec,
-    int tradedSize, std::vector<CThostFtdcTradeField>& Trades)
+    int tradedSize, std::vector<CThostFtdcTradeFieldWrapper>& Trades)
 {
     std::vector<std::string> SingleContracts;
     CLocalTraderApi::GetSingleContractFromCombinationContract(rtnOrder.InstrumentID, SingleContracts);
@@ -478,11 +479,11 @@ void CLocalTraderApi::OrderData::sendRtnOrder()
     api.getSpi()->OnRtnOrder(&rtnOrder);
 }
 
-void CLocalTraderApi::OrderData::sendRtnTrade(CThostFtdcTradeField& rtnTrade)
+void CLocalTraderApi::OrderData::sendRtnTrade(CThostFtdcTradeFieldWrapper& rtnTrade)
 {
     api.saveTradeToDb(rtnTrade);
     if (api.getSpi() == nullptr) return;
-    api.getSpi()->OnRtnTrade(&rtnTrade);
+    api.getSpi()->OnRtnTrade(&(rtnTrade.data));
 }
 
 
