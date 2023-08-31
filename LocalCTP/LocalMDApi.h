@@ -1,9 +1,36 @@
-#pragma once
+ï»¿#pragma once
 
 #include <ThostFtdcMdApi.h>
 #include <ThostFtdcTraderApi.h>
 #include <memory>
 
+
+
+
+class semaphore
+{
+public:
+    semaphore(int value = 1) :count(value) {}
+
+    void wait()
+    {
+        std::unique_lock<std::mutex> lck(mt);
+        if (--count < 0)//èµ„æºä¸è¶³æŒ‚èµ·çº¿ç¨‹
+            cv.wait(lck);
+    }
+
+    void signal()
+    {
+        std::unique_lock<std::mutex> lck(mt);
+        if (++count <= 0)//æœ‰çº¿ç¨‹æŒ‚èµ·ï¼Œå”¤é†’ä¸€ä¸ª
+            cv.notify_one();
+    }
+
+private:
+    int count;
+    std::mutex mt;
+    std::condition_variable cv;
+};
 
 class CLocalMdSpi : public CThostFtdcMdSpi {
 public:
@@ -13,9 +40,10 @@ public:
     void OnRspUserLogin(CThostFtdcRspUserLoginField* pRspUserLogin,
         CThostFtdcRspInfoField* pRspInfo, int nRequestID, bool bIsLast);
     void OnRtnDepthMarketData(CThostFtdcDepthMarketDataField* pDepthMarketData);
-    HANDLE xinhao; //ÐÐÇé»Øµ÷Ëø¶¨£¬²»¶®µÄ£¬ÊÔÊÔ¿´
+    //HANDLE xinhao; //è¡Œæƒ…å›žè°ƒé”å®šï¼Œä¸æ‡‚çš„ï¼Œè¯•è¯•çœ‹
+    semaphore xinhao;
 private:
-    // Ö¸ÏòCThostFtdcMduserApiÊµÀýµÄÖ¸Õë
+    // æŒ‡å‘CThostFtdcMduserApiå®žä¾‹çš„æŒ‡é’ˆ
     CThostFtdcMdApi* m_pUserMdApi;    
     CThostFtdcTraderApi* m_pUserTdApi;
 };

@@ -1166,7 +1166,8 @@ void CLocalTraderApi::Init() {
     m_pMDApi->Init();
     
     //等待行情服务器登陆成功
-    WaitForSingleObject(m_pMdSpi->xinhao, INFINITE);
+    //WaitForSingleObject(m_pMdSpi->xinhao, INFINITE);
+    m_pMdSpi->xinhao.wait();
 
     //订阅所有的合约
     SubscribeMarketData();

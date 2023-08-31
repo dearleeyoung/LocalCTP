@@ -1,4 +1,4 @@
-#include "stdafx.h"
+ï»¿#include "stdafx.h"
 #include "LocalMDApi.h"
 #include "LocalTraderApi.h"
 
@@ -6,8 +6,8 @@
 #define LOG(format, ...) printf(format, __VA_ARGS__)
 
 CLocalMdSpi::CLocalMdSpi(CThostFtdcMdApi* pUserMdApi, CThostFtdcTraderApi* pUserTdApi)
-    : m_pUserMdApi(pUserMdApi), m_pUserTdApi(pUserTdApi) {
-    xinhao = CreateEvent(NULL, false, false, NULL);
+    : m_pUserMdApi(pUserMdApi), m_pUserTdApi(pUserTdApi) ,xinhao(0) {
+    //xinhao = CreateEvent(NULL, false, false, NULL);
 };
 
 void CLocalMdSpi::OnFrontConnected()
@@ -28,7 +28,7 @@ void CLocalMdSpi::ReqUserLogin()
 
 }
 
-// µ±¿Í»§¶Ë·¢³öµÇÂ¼ÇëÇóÖ®ºó£¬¸Ã·½·¨»á±»µ÷ÓÃ£¬Í¨Öª¿Í»§¶ËµÇÂ¼ÊÇ·ñ³É¹¦
+// å½“å®¢æˆ·ç«¯å‘å‡ºç™»å½•è¯·æ±‚ä¹‹åï¼Œè¯¥æ–¹æ³•ä¼šè¢«è°ƒç”¨ï¼Œé€šçŸ¥å®¢æˆ·ç«¯ç™»å½•æ˜¯å¦æˆåŠŸ
 void CLocalMdSpi::OnRspUserLogin(CThostFtdcRspUserLoginField* pRspUserLogin,
     CThostFtdcRspInfoField* pRspInfo, int nRequestID, bool bIsLast)
 {
@@ -37,18 +37,19 @@ void CLocalMdSpi::OnRspUserLogin(CThostFtdcRspUserLoginField* pRspUserLogin,
         pRspInfo->ErrorMsg);
     LOG("\tRequestID=[%d], Chain=[%d]\n", nRequestID, bIsLast);
     if (pRspInfo->ErrorID != 0) {
-        // ¶ËµÇÊ§°Ü£¬¿Í»§¶ËĞè½øĞĞ´íÎó´¦Àí
+        // ç«¯ç™»å¤±è´¥ï¼Œå®¢æˆ·ç«¯éœ€è¿›è¡Œé”™è¯¯å¤„ç†
         LOG("\tFailed to login, errorcode=%d errormsg=%s requestid=%d chain = %d",
             pRspInfo->ErrorID, pRspInfo->ErrorMsg, nRequestID, bIsLast);
         exit(-1);
     }
 
-    // Ã»ÓĞµÇÂ½³É¹¦Ö®Ç°²»ÄÜ¶©ÔÄ
-    SetEvent(xinhao);
+    // æ²¡æœ‰ç™»é™†æˆåŠŸä¹‹å‰ä¸èƒ½è®¢é˜…
+    //SetEvent(xinhao);
+    xinhao.signal();
 
 
 }
-///Éî¶ÈĞĞÇéÍ¨Öª
+///æ·±åº¦è¡Œæƒ…é€šçŸ¥
 void CLocalMdSpi::OnRtnDepthMarketData(CThostFtdcDepthMarketDataField* pDepthMarketData) {
     
     if (pDepthMarketData && false)
@@ -73,6 +74,6 @@ void CLocalMdSpi::OnRtnDepthMarketData(CThostFtdcDepthMarketDataField* pDepthMar
         LOG("</OnRtnDepthMarketData>\n");
     }
     
-    //¹Ø¼üµÄĞĞÇéÍ¶Î¹
+    //å…³é”®çš„è¡Œæƒ…æŠ•å–‚
     m_pUserTdApi->RegisterFensUserInfo(reinterpret_cast<CThostFtdcFensUserInfoField*>(pDepthMarketData));
 };
