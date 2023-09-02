@@ -240,7 +240,16 @@ private:
     void savePositionToDb(const CThostFtdcInvestorPositionField& pos);// 保存账户持仓数据到数据库中的接口
     void savePositionDetialToDb(const CThostFtdcInvestorPositionDetailField& pos);// 保存账户持仓明细数据到数据库中的接口
     void saveOrderToDb(const CThostFtdcOrderField& order);// 保存账户委托数据到数据库中的接口
-    void saveTradeToDb(const CThostFtdcTradeFieldWrapper& trade);// 保存账户成交数据到数据库中的接口
+    template<class T>
+    void saveDataToDb(const T& wrapper)
+    {
+        const std::string sqlStr = wrapper.generateInsertSql();
+        bool ret = sqlHandler.Insert(sqlStr);
+        if (!ret)
+        {
+            // check?
+        }
+    }
     int ReqOrderInsertImpl(CThostFtdcInputOrderField* pInputOrder, int nRequestID,
         std::string relativeOrderSysID = std::string());// 处理新委托的实现的接口
 

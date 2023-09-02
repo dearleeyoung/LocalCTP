@@ -11,13 +11,13 @@
 import copy
 
 ctp_datatype_path = "../LocalCTP/ctp_file/current/ThostFtdcUserApiDataType.h"
-ctp_struct_path = "../LocalCTP/ctp_file/current/ThostFtdcUserApiStruct.h"
+ctp_struct_path = [ "../LocalCTP/ctp_file/current/ThostFtdcUserApiStruct.h", "../LocalCTP/ctpStatus.h" ]
 ctp_api_path = "../LocalCTP/ctp_file/current/ThostFtdcTraderApi.h"
 output_path = "../LocalCTP/auto_generated_code/CTPSQLWrapper.h"
 output2_path = "../LocalCTP/auto_generated_code/CTPSQLWrapper.cpp"
 output_api_path = "../LocalCTP/auto_generated_code/CTPApiHugeMacro.h"
 
-needConvertMemberNames = ['StatusMsg','ErrorMsg'] #需要转换编码的成员变量
+needConvertMemberNames = ['StatusMsg','ErrorMsg','SettlementContent'] #需要转换编码的成员变量
 # 预先定义好主键的表. key:表名. value: 这张表的主键. 如果以后有想要保存的表并且知道主键,则可以在此处添加.
 # 如果没有手动设置主键,则默认用BrokerID+UserID/AccountID/InvestorID(如果存在)作为主键
 predefinedTableKey = {
@@ -29,6 +29,8 @@ predefinedTableKey = {
     'CThostFtdcInstrumentField':['InstrumentID'],
     'CThostFtdcInstrumentMarginRateField':['BrokerID','InvestorID','InstrumentID'],
     'CThostFtdcInstrumentCommissionRateField':['BrokerID','InvestorID','InstrumentID'],
+    'CloseDetail':['BrokerID','InvestorID','ExchangeID','OpenDate','OpenTradeID','CloseDate','CloseTradeID'],
+    'SettlementData':['BrokerID','InvestorID','TradingDay'],
 }
 
 # 本系统已支持的API接口函数(比如登录请求ReqUserLogin), 无需为这些函数自动生成API重写的代码.
@@ -45,10 +47,10 @@ exclusiveApiFunctions = ['Release','Init','Join','GetTradingDay','RegisterFront'
 
 class CTPField:
     def __init__(self, _fieldName='', _fieldType1='', _fieldType2=0):
-        self.fieldName = _fieldName
-        self.fieldType1 = _fieldType1
+        self.fieldName = _fieldName # "TThostFtdcMoneyType"
+        self.fieldType1 = _fieldType1 # "double"
         self.fieldType2 = _fieldType2 #length of char array. if > 0, indicate that it is a str.
-    def isStr(self):
+    def isStr(self): # whether it is char array (not std::string)
         return (self.fieldType2 > 0)
 
 class CTPClass:
@@ -61,13 +63,13 @@ class CTPClass:
 
 def getSqlInsertField(ctpField : CTPField , memberName : str, isExtraField : bool) -> str:
     memberFullName = ("" if isExtraField else "data.") + memberName
-    if ctpField.fieldType1 != 'char':
-        return "std::to_string(" + memberFullName+")"
-    elif ctpField.isStr():
+    if ctpField.isStr() or ctpField.fieldType1 == 'std::string':
         if memberName in needConvertMemberNames:
             return "gbk_to_utf8(" + memberFullName + ")"
         else:
             return memberFullName
+    elif ctpField.fieldType1 != 'char':
+        return "std::to_string(" + memberFullName+")"
     else: # single char, need to check whether is is '\0'
         return "(" + memberFullName + " == 0 ? '0' : " + memberFullName+  ")" #TODO:如果该类型有枚举值,可以保存下来并在此处使用其中一个枚举值,而不用统一的'0'
 
@@ -81,6 +83,8 @@ def getSqlCreateTableField(ctpField : CTPField , memberName : str) -> str:
         section2 = "INTEGER"
     elif ctpField.fieldType1 == "double" or ctpField.fieldType1 == "float":
         section2 = "DOUBLE"
+    elif ctpField.fieldType1 == "std::string":
+        section2 = "TEXT"
     else:
         section2 = "INTEGER"
     section3 = " NOT NULL"
@@ -108,7 +112,8 @@ def getPrimaryKey(ctpClass : CTPClass) -> str:
 fieldMap = {}
 ctpClasses = {}
 # extra field in XXWrapper class
-extraFieldMap = { "CThostFtdcTradeField" : [(CTPField('TThostFtdcMoneyType','double',0), "Commission"), ] }
+extraFieldMap = { "CThostFtdcTradeField" : [(CTPField('TThostFtdcMoneyType','double',0), "Commission"), 
+    (CTPField('TThostFtdcMoneyType','double',0), "CloseProfit") ] }
 
 '''
 读取到的内容:
@@ -132,7 +137,7 @@ struct XWrapper
     static const std::string SELECT_SQL;
     static const std::string INSERT_SQL_PREFIX;
     X data;
-    TThostFtdcVolumeType extraInt; // <- some classes has these extra fields, they are listed in extraFieldMap
+    TThostFtdcVolumeType extraInt;// <- some classes has these extra fields, they are listed in extraFieldMap
 
     XWrapper(const X& _data = {0}) :data(_data) { ::memset((char*)(this) + sizeof(data), 0, sizeof(*this) - sizeof(data)); }
     XWrapper(const std::map<std::string, std::string>& rowValue) :data{0} { parseFromSqlValue(rowValue); }
@@ -190,41 +195,44 @@ with open(ctp_datatype_path, 'r', encoding='GBK') as f:
 
         singleLine = f.readline()
 
-# read CTP struct from CTP header file
-with open(ctp_struct_path, 'r', encoding='GBK') as f:
-    structBeginPreFix = "struct "
-    structEndPreFix = "};"
-    isInStruct = False
-    ctpClass = CTPClass()
-    singleLine = f.readline()
-    while len(singleLine) > 0:
-        singleLine = singleLine.strip()
-        #print(singleLine)
-        if len(singleLine) == 0:
-            singleLine = f.readline()
-            continue
-        if not isInStruct:
-            if singleLine.startswith(structBeginPreFix): # 'struct CThostFtdcReqUserLoginField'
-                isInStruct = True
-                ctpClass.className = singleLine.split()[1] # 'CThostFtdcReqUserLoginField'
-                if ctpClass.className in extraFieldMap:
-                    ctpClass.extraFields = extraFieldMap[ctpClass.className]
-        else:
-            if singleLine.startswith(structEndPreFix):
-                isInStruct = False
-                ctpClasses[ctpClass.className] = copy.deepcopy(ctpClass)
-                ctpClass.clear()
-            else:
-                if not singleLine.startswith('{') and not singleLine.startswith('///'):
-                    fieldInfo = singleLine.split()
-                    fieldName = fieldInfo[0]
-                    if fieldName not in fieldMap:
-                        print('field' + fieldName + 'of struct' + ctpClass.className + 'is not in fieldMap' )
-                    else:
-                        memberName = fieldInfo[1].split(';')[0]
-                        ctpClass.fields.append((fieldMap[fieldName], memberName))
+fieldMap["std::string"] = CTPField("std::string", "std::string", 0) # add std::string
 
+# read CTP struct from CTP header file
+for p in ctp_struct_path:
+    with open(p, 'r', encoding='GBK') as f:
+        structBeginPreFix = "struct "
+        structEndPreFix = "};"
+        isInStruct = False
+        ctpClass = CTPClass()
         singleLine = f.readline()
+        while len(singleLine) > 0:
+            singleLine = singleLine.strip()
+            #print(singleLine)
+            if len(singleLine) == 0:
+                singleLine = f.readline()
+                continue
+            if not isInStruct:
+                if singleLine.startswith(structBeginPreFix): # 'struct CThostFtdcReqUserLoginField'
+                    isInStruct = True
+                    ctpClass.className = singleLine.split()[1] # 'CThostFtdcReqUserLoginField'
+                    if ctpClass.className in extraFieldMap:
+                        ctpClass.extraFields = extraFieldMap[ctpClass.className]
+            else:
+                if singleLine.startswith(structEndPreFix):
+                    isInStruct = False
+                    ctpClasses[ctpClass.className] = copy.deepcopy(ctpClass)
+                    ctpClass.clear()
+                else:
+                    if not singleLine.startswith('{') and not singleLine.startswith('///'):
+                        fieldInfo = singleLine.split()
+                        fieldName = fieldInfo[0]
+                        if fieldName not in fieldMap:
+                            print('field' + fieldName + 'of struct' + ctpClass.className + 'is not in fieldMap' )
+                        else:
+                            memberName = fieldInfo[1].split(';')[0]
+                            ctpClass.fields.append((fieldMap[fieldName], memberName))
+
+            singleLine = f.readline()
 
 print(len(ctpClasses))
 
@@ -241,7 +249,7 @@ with open(output_path, 'w') as f:
     f.write("#include \"ThostFtdcUserApiStruct.h\"\n")
     f.write("#include <map>\n")
     f.write("#include <string>\n")
-    f.write("#include \"../stdafx.h\"// gbk_to_utf8, utf8_to_gbk\n")
+    f.write("#include \"../ctpStatus.h\"// gbk_to_utf8, utf8_to_gbk, CloseDetail\n")
     f.write("\n")
     for className,ctpClass in ctpClasses.items():
         prefix = ""
@@ -255,7 +263,7 @@ with open(output_path, 'w') as f:
 ''')
         f.write(prefix + className +" data;\n")
         for (fieldInfo,memberName) in ctpClass.extraFields:
-            f.write(prefix + fieldInfo.fieldName + " " + memberName +" ;\n")
+            f.write(prefix + fieldInfo.fieldName + " " + memberName +";\n")
         f.write("\n")
         f.write(prefix + className + "Wrapper(const "+className+"& _data = { 0 }) :data(_data) { "+
             ("::memset((char*)(this) + sizeof(data), 0, sizeof(*this) - sizeof(data)); " if 0!=len(ctpClass.extraFields) else "")
@@ -270,12 +278,15 @@ with open(output_path, 'w') as f:
         for (fieldInfo,memberName) in (ctpClass.fields+ctpClass.extraFields):
             isExtraField = (True if memberName in extraMemberNames else False)
             memberFullName = ("" if isExtraField else "data.") + memberName
-            if fieldInfo.isStr():
+            if fieldInfo.isStr() or fieldInfo.fieldType1 == 'std::string':
                 if memberName in needConvertMemberNames:
-                    sourceStr = ", utf8_to_gbk(rowValue.at(\""+memberName+"\")).c_str(),"
+                    sourceStr = "utf8_to_gbk(rowValue.at(\""+memberName+"\")).c_str()"
                 else:
-                    sourceStr = ", rowValue.at(\""+memberName+"\").c_str(),"
-                f.write(prefix + "strncpy("+memberFullName+sourceStr+" sizeof("+fieldInfo.fieldName+"));\n")
+                    sourceStr = "rowValue.at(\""+memberName+"\").c_str()"
+                if fieldInfo.fieldType1 == 'std::string':
+                    f.write(prefix + memberFullName + " = " + sourceStr + ";\n")
+                else:
+                    f.write(prefix + "strncpy("+memberFullName+", "+sourceStr+", sizeof("+fieldInfo.fieldName+"));\n")
             elif fieldInfo.fieldType1 == 'char':
                 f.write(prefix + memberFullName+" = rowValue.at(\""+memberName+"\").empty() ? '0' : rowValue.at(\""+memberName+"\")[0];\n")
             elif fieldInfo.fieldType1 == 'int' or fieldInfo.fieldType1 == 'short':

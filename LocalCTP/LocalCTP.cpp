@@ -481,11 +481,10 @@ void CLocalTraderApi::OrderData::sendRtnOrder()
 
 void CLocalTraderApi::OrderData::sendRtnTrade(CThostFtdcTradeFieldWrapper& rtnTrade)
 {
-    api.saveTradeToDb(rtnTrade);
+    api.saveDataToDb(rtnTrade);
     if (api.getSpi() == nullptr) return;
     api.getSpi()->OnRtnTrade(&(rtnTrade.data));
 }
-
 
 CThostFtdcInvestorPositionDetailField CLocalTraderApi::PositionData::getPositionDetailFromOpenTrade(
     const CThostFtdcTradeField& trade)
@@ -499,11 +498,14 @@ CThostFtdcInvestorPositionDetailField CLocalTraderApi::PositionData::getPosition
     posDetail.HedgeFlag = trade.HedgeFlag;
     posDetail.OpenPrice = trade.Price;
     strncpy(posDetail.TradingDay, trade.TradingDay, sizeof(posDetail.TradingDay));
+    strncpy(posDetail.OpenDate, trade.TradingDay, sizeof(posDetail.OpenDate));
     strncpy(posDetail.TradeID, trade.TradeID, sizeof(posDetail.TradeID));
     posDetail.Volume = trade.Volume;
     posDetail.Direction = trade.Direction;
     posDetail.TradeType = trade.TradeType;
     posDetail.CloseVolume = 0;
+    posDetail.SettlementPrice = trade.Price;
+    posDetail.LastSettlementPrice = trade.Price;
     //持仓明细中的盈亏等数据并不更新
     return posDetail;
 }

@@ -62,3 +62,52 @@ inline std::string getStatusMsgByStatus(TThostFtdcOrderStatusType status)
             return "未知";
     }
 }
+
+
+///平仓明细
+struct CloseDetail
+{
+    ///经纪公司代码
+    TThostFtdcBrokerIDType BrokerID;
+    ///投资者代码
+    TThostFtdcInvestorIDType InvestorID;
+    ///交易所代码
+    TThostFtdcExchangeIDType ExchangeID;
+    ///合约代码
+    TThostFtdcInstrumentIDType InstrumentID;
+    ///开仓日期(交易日)
+    TThostFtdcDateType OpenDate;
+    ///开仓价格
+    TThostFtdcPriceType OpenPrice;
+    ///开仓成交编号
+    TThostFtdcTradeIDType OpenTradeID;
+    ///平仓日期(交易日)
+    TThostFtdcDateType CloseDate;
+    ///平仓时间
+    TThostFtdcTimeType CloseTime;
+    ///平仓成交价格
+    TThostFtdcPriceType ClosePrice;
+    ///平仓成交编号
+    TThostFtdcTradeIDType CloseTradeID;
+    ///平仓盈亏
+    TThostFtdcMoneyType CloseProfit;
+    ///实际平仓类型(平今or平昨)
+    TThostFtdcOffsetFlagType CloseFlag;
+};
+
+///结算单
+struct SettlementData
+{
+    ///经纪公司代码
+    TThostFtdcBrokerIDType BrokerID;
+    ///投资者代码
+    TThostFtdcInvestorIDType InvestorID;
+    ///结算单内容
+    std::string SettlementContent;
+    ///结算单日期(交易日)
+    TThostFtdcDateType TradingDay;
+    ///确认日期(交易日)
+    TThostFtdcDateType ConfirmDay;
+    ///确认时间
+    TThostFtdcTimeType ConfirmTime;
+};
