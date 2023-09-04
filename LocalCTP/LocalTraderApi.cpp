@@ -535,6 +535,7 @@ void CLocalTraderApi::updateByTrade(const CThostFtdcTradeFieldWrapper& t)
                     pTrade->Volume * pTrade->Price * itPos->second.volumeMultiple;
                 pos.OpenCost +=
                     pTrade->Volume * pTrade->Price * itPos->second.volumeMultiple;
+                pos.TodayPosition += pTrade->Volume;
                 savePositionToDb(pos);
             }
         }
@@ -677,6 +678,7 @@ void CLocalTraderApi::updateByTrade(const CThostFtdcTradeFieldWrapper& t)
             pos.CloseVolume += pTrade->Volume;//更新持仓的平仓量
             pos.CloseAmount +=
                 pTrade->Volume * pTrade->Price * itPos->second.volumeMultiple;//更新持仓的平仓金额
+            pos.TodayPosition -= closeTodayVolume;
             savePositionToDb(pos);
             // 汇总计算资金
             updatePNL(true);
@@ -1053,9 +1055,9 @@ const char* CLocalTraderApi::GetTradingDay() {
     // 3. 2023-08-04 20:00(Fri) -> 2023-08-05 02:00(Sat) -> 2023-08-07 02:00(Mon) -> return "20230807"
     static std::string tradingDay;
     auto checkTime = CLeeDateTime::now() + CLeeDateTimeSpan(0, 4, 0, 0);
-    if (checkTime.GetDayOfWeek() == 6)
+    while (checkTime.GetDayOfWeek() == 6 || checkTime.GetDayOfWeek() == 0)
     {
-        checkTime += CLeeDateTimeSpan(2, 0, 0, 0);
+        checkTime += CLeeDateTimeSpan(1, 0, 0, 0);
     }
     tradingDay = checkTime.Format("%Y%m%d");
     return tradingDay.c_str();
