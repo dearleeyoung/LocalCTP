@@ -2,6 +2,8 @@
 #include "LocalTraderApi.h"
 #include <iostream>
 
+using namespace localCTP;
+
 #define CHECK_LOGIN(p, memberName) \
     if(p==nullptr) return -1; \
     if(!m_logined) return -1; \
@@ -21,6 +23,9 @@ std::atomic<int> CLocalTraderApi::maxSessionID(0);
 std::map<std::string, long long> CLocalTraderApi::m_orderSysID; // 当前最大委托编号
 std::map<std::string, long long> CLocalTraderApi::m_tradeID; // 当前最大成交编号
 CSqliteHandler CLocalTraderApi::sqlHandler("LocalCTP.db");
+CLocalTraderApi::CSettlementHandler& CLocalTraderApi::settlementHandler =
+    CLocalTraderApi::CSettlementHandler::getSettlementHandler(
+        CLocalTraderApi::sqlHandler);
 std::mutex CLocalTraderApi::m_mdMtx;
 CLocalTraderApi::MarketDataMap CLocalTraderApi::m_mdData; //行情数据
 const long long CLocalTraderApi::initStartTime = CLeeDateTime::GetCurrentTime().Get_time_t() * 1000 +
@@ -97,7 +102,7 @@ bool CLocalTraderApi::isMatchTrade(TThostFtdcDirectionType direction, double ord
 
 
 CLocalTraderApi::CLocalTraderApi(const char *pszFlowPath/* = ""*/)
-	: m_bRunning(true), m_authenticated(false), m_logined(false)
+	: m_bRunning(false), m_authenticated(false), m_logined(false)
     , m_frontID(static_cast<int>(CLeeDateTime::GetCurrentTime().Get_time_t())), m_sessionID(0)
     , m_tradingAccount{ 0 }, m_pSpi(nullptr)
     , m_successRspInfo{ 0, "success" }, m_errorRspInfo{ -1, "error" }
@@ -614,6 +619,7 @@ void CLocalTraderApi::updateByTrade(const CThostFtdcTradeFieldWrapper& t)
                     CloseDetail cd = { 0 };
                     strncpy(cd.BrokerID, pTrade->BrokerID, sizeof(cd.BrokerID));
                     strncpy(cd.InvestorID, pTrade->InvestorID, sizeof(cd.InvestorID));
+                    strncpy(cd.ExchangeID, pTrade->ExchangeID, sizeof(cd.ExchangeID));
                     strncpy(cd.InstrumentID, pTrade->InstrumentID, sizeof(cd.InstrumentID));
                     strncpy(cd.OpenDate, p.OpenDate, sizeof(cd.OpenDate));
                     cd.OpenPrice = p.OpenPrice;
@@ -874,6 +880,7 @@ void CLocalTraderApi::Release() {
 ///初始化
 ///@remark 初始化运行环境,只有调用后,接口才开始工作
 void CLocalTraderApi::Init() {
+    m_bRunning = true;
 	// 从当前目录(或环境变量中的目录)的 instrument.csv 以及数据库中的合约表中读取合约信息
     std::ifstream ifs("instrument.csv");
     if (!ifs.is_open())
@@ -1055,7 +1062,7 @@ const char* CLocalTraderApi::GetTradingDay() {
     // 3. 2023-08-04 20:00(Fri) -> 2023-08-05 02:00(Sat) -> 2023-08-07 02:00(Mon) -> return "20230807"
     static std::string tradingDay;
     auto checkTime = CLeeDateTime::now() + CLeeDateTimeSpan(0, 4, 0, 0);
-    while (checkTime.GetDayOfWeek() == 6 || checkTime.GetDayOfWeek() == 0)
+    while (!isTradingDay(checkTime))
     {
         checkTime += CLeeDateTimeSpan(1, 0, 0, 0);
     }
@@ -1124,7 +1131,7 @@ void CLocalTraderApi::SubscribePublicTopic(THOST_TE_RESUME_TYPE nResumeType) { r
 
 ///客户端认证请求
 int CLocalTraderApi::ReqAuthenticate(CThostFtdcReqAuthenticateField *pReqAuthenticateField, int nRequestID) {
-    if (pReqAuthenticateField == nullptr) return -1;
+    if (pReqAuthenticateField == nullptr || !m_bRunning) return -1;
     CThostFtdcRspAuthenticateField RspAuthenticateField = { 0 };
     memcpy(&RspAuthenticateField, pReqAuthenticateField, sizeof(CThostFtdcRspAuthenticateField));
     if (strlen(pReqAuthenticateField->UserID) == 0 ||
@@ -1452,8 +1459,8 @@ int CLocalTraderApi::ReqOrderInsertImpl(CThostFtdcInputOrderField * pInputOrder,
                 if (closable < orderNum)
                 {
                     return std::make_pair(false,
-                        (isSpecialExchange(itInstr->second.ExchangeID) && pInputOrder->CombOffsetFlag[0] == THOST_FTDC_OF_CloseToday) ?
-                        ERRMSG_AVAILABLE_POSITION_NOT_ENOUGH : ERRMSG_AVAILABLE_TODAY_POSITION_NOT_ENOUGH
+                        ((isSpecialExchange(itInstr->second.ExchangeID) && pInputOrder->CombOffsetFlag[0] == THOST_FTDC_OF_CloseToday) ?
+                            ERRMSG_AVAILABLE_TODAY_POSITION_NOT_ENOUGH : ERRMSG_AVAILABLE_POSITION_NOT_ENOUGH)
                         + std::to_string(closable) + " on " + instr);
                 }
                 if (!preCheck)
@@ -1727,6 +1734,14 @@ int CLocalTraderApi::ReqOrderAction(CThostFtdcInputOrderActionField *pInputOrder
 ///投资者结算结果确认
 int CLocalTraderApi::ReqSettlementInfoConfirm(CThostFtdcSettlementInfoConfirmField *pSettlementInfoConfirm, int nRequestID) {
     CHECK_LOGIN_INVESTOR(pSettlementInfoConfirm);
+    const std::string UPDATE_NEWEST_SETTLEMENT_RECORD_TO_CONFIRMED =
+        std::string("UPDATE 'SettlementData' SET ConfirmDay='") + GetTradingDay() 
+        + "', ConfirmTime='" + CLeeDateTime::GetCurrentTime().Format("%H:%M:%S")
+        + "' where BrokerID='" + m_brokerID
+        + "' and InvestorID='" + m_userID + "' and ConfirmDay='';";
+    CSqliteHandler::SQL_VALUES posSqlValues;
+    sqlHandler.Update(UPDATE_NEWEST_SETTLEMENT_RECORD_TO_CONFIRMED);
+
     if (m_pSpi == nullptr) return 0;
     CThostFtdcSettlementInfoConfirmField SettlementInfoConfirm = *pSettlementInfoConfirm;
     m_pSpi->OnRspSettlementInfoConfirm(&SettlementInfoConfirm, &m_successRspInfo, nRequestID, true);
@@ -2030,7 +2045,57 @@ int CLocalTraderApi::ReqQryDepthMarketData(CThostFtdcQryDepthMarketDataField *pQ
 int CLocalTraderApi::ReqQrySettlementInfo(CThostFtdcQrySettlementInfoField *pQrySettlementInfo, int nRequestID) {
     CHECK_LOGIN_INVESTOR(pQrySettlementInfo);
     if (m_pSpi == nullptr) return 0;
-    m_pSpi->OnRspQrySettlementInfo(nullptr, &m_successRspInfo, nRequestID, true);
+
+    const std::string SELECT_NEWEST_SETTLEMENT_RECORD =
+        "SELECT * FROM 'SettlementData' where BrokerID='" + m_brokerID
+        + "' and InvestorID='" + m_userID + "' ORDER BY TradingDay DESC LIMIT 1;";
+    CSqliteHandler::SQL_VALUES posSqlValues;
+    sqlHandler.SelectData(SELECT_NEWEST_SETTLEMENT_RECORD, posSqlValues);
+    if (m_pSpi == nullptr) return 0;
+    for (auto it = posSqlValues.begin(); it != posSqlValues.end(); ++it)
+    {
+        if (it->empty())
+        {
+            m_pSpi->OnRspQrySettlementInfo(nullptr, &m_successRspInfo, nRequestID,
+                (it + 1 == posSqlValues.end() ? true : false));
+        }
+        else
+        {
+            const std::string SettlementContent = base64_decode(it->at("SettlementContent"));
+            for (size_t now_index = 0; now_index < SettlementContent.size();)//遍历结算单正文, 持续推送直到完成.
+            {
+                bool bIsLast = false;//是否为最后一条记录
+
+                CThostFtdcSettlementInfoField SettlementInfo = { 0 };
+                strncpy(SettlementInfo.TradingDay, it->at("TradingDay").c_str(), sizeof(SettlementInfo.BrokerID));
+                strncpy(SettlementInfo.BrokerID, pQrySettlementInfo->BrokerID, sizeof(SettlementInfo.BrokerID));
+                strncpy(SettlementInfo.InvestorID, pQrySettlementInfo->InvestorID, sizeof(SettlementInfo.InvestorID));
+                strncpy(SettlementInfo.AccountID, pQrySettlementInfo->InvestorID, sizeof(SettlementInfo.AccountID));
+                strncpy(SettlementInfo.CurrencyID, "CNY", sizeof(SettlementInfo.CurrencyID));
+                if (now_index + (sizeof(SettlementInfo.Content) - 1) < SettlementContent.size())
+                {
+                    strncpy(SettlementInfo.Content,
+                        SettlementContent.substr(now_index, sizeof(SettlementInfo.Content) - 1).c_str(),
+                        sizeof(SettlementInfo.Content) - 1);
+                    now_index += sizeof(SettlementInfo.Content) - 1;
+                }
+                else
+                {
+                    strncpy(SettlementInfo.Content,
+                        SettlementContent.substr(now_index, SettlementContent.size() - now_index).c_str(),
+                        SettlementContent.size() - now_index);
+                    now_index += SettlementContent.size() - now_index;
+                    bIsLast = true;
+                }
+                m_pSpi->OnRspQrySettlementInfo(&SettlementInfo, &m_successRspInfo, nRequestID, bIsLast);
+            }
+            break;
+        }
+    }
+    if (posSqlValues.empty())
+    {
+        m_pSpi->OnRspQrySettlementInfo(nullptr, &m_successRspInfo, nRequestID, true);
+    }
     return 0;
 }
 
@@ -2067,12 +2132,37 @@ int CLocalTraderApi::ReqQryInvestorPositionDetail(CThostFtdcQryInvestorPositionD
 ///请求查询结算信息确认
 int CLocalTraderApi::ReqQrySettlementInfoConfirm(CThostFtdcQrySettlementInfoConfirmField *pQrySettlementInfoConfirm, int nRequestID) {
     CHECK_LOGIN_INVESTOR(pQrySettlementInfoConfirm);
+    const std::string SELECT_NEWEST_SETTLEMENT_RECORD =
+        "SELECT ConfirmDay,ConfirmTime FROM 'SettlementData' where BrokerID='" + m_brokerID
+        + "' and InvestorID='" + m_userID + "' ORDER BY TradingDay DESC LIMIT 1;";
+    CSqliteHandler::SQL_VALUES posSqlValues;
+    sqlHandler.SelectData(SELECT_NEWEST_SETTLEMENT_RECORD, posSqlValues);
     if (m_pSpi == nullptr) return 0;
-    CThostFtdcSettlementInfoConfirmField SettlementInfoConfirm = { 0 };
-    strncpy(SettlementInfoConfirm.BrokerID, pQrySettlementInfoConfirm->BrokerID, sizeof(SettlementInfoConfirm.BrokerID));
-    strncpy(SettlementInfoConfirm.InvestorID, pQrySettlementInfoConfirm->InvestorID, sizeof(SettlementInfoConfirm.InvestorID));
-    strncpy(SettlementInfoConfirm.ConfirmDate, GetTradingDay(), sizeof(SettlementInfoConfirm.ConfirmDate));
-    m_pSpi->OnRspQrySettlementInfoConfirm(&SettlementInfoConfirm, &m_successRspInfo, nRequestID, true);
+    for (auto it = posSqlValues.begin(); it != posSqlValues.end(); ++it)
+    {
+        if (it->empty() || it->at("ConfirmDay").empty())
+        {
+            m_pSpi->OnRspQrySettlementInfoConfirm(nullptr, &m_successRspInfo, nRequestID,
+                (it + 1 == posSqlValues.end() ? true : false));
+        }
+        else
+        {
+            CThostFtdcSettlementInfoConfirmField SettlementInfoConfirm = { 0 };
+            strncpy(SettlementInfoConfirm.BrokerID, pQrySettlementInfoConfirm->BrokerID, sizeof(SettlementInfoConfirm.BrokerID));
+            strncpy(SettlementInfoConfirm.InvestorID, pQrySettlementInfoConfirm->InvestorID, sizeof(SettlementInfoConfirm.InvestorID));
+            strncpy(SettlementInfoConfirm.ConfirmDate, it->at("ConfirmDay").c_str(), sizeof(SettlementInfoConfirm.ConfirmDate));
+            strncpy(SettlementInfoConfirm.ConfirmTime, it->at("ConfirmTime").c_str(), sizeof(SettlementInfoConfirm.ConfirmTime));
+            strncpy(SettlementInfoConfirm.AccountID, pQrySettlementInfoConfirm->InvestorID, sizeof(SettlementInfoConfirm.AccountID));
+            strncpy(SettlementInfoConfirm.CurrencyID, "CNY", sizeof(SettlementInfoConfirm.CurrencyID));
+            m_pSpi->OnRspQrySettlementInfoConfirm(&SettlementInfoConfirm, &m_successRspInfo, nRequestID,
+                (it + 1 == posSqlValues.end() ? true : false));
+        }
+    }
+    if (posSqlValues.empty())
+    {
+        m_pSpi->OnRspQrySettlementInfoConfirm(nullptr, &m_successRspInfo, nRequestID, true);
+    }
+    
     return 0;
 }
 

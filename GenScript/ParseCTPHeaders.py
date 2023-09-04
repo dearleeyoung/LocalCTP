@@ -17,7 +17,7 @@ output_path = "../LocalCTP/auto_generated_code/CTPSQLWrapper.h"
 output2_path = "../LocalCTP/auto_generated_code/CTPSQLWrapper.cpp"
 output_api_path = "../LocalCTP/auto_generated_code/CTPApiHugeMacro.h"
 
-needConvertMemberNames = ['StatusMsg','ErrorMsg','SettlementContent'] #需要转换编码的成员变量
+needConvertMemberNames = ['StatusMsg','ErrorMsg'] #需要转换编码的成员变量
 # 预先定义好主键的表. key:表名. value: 这张表的主键. 如果以后有想要保存的表并且知道主键,则可以在此处添加.
 # 如果没有手动设置主键,则默认用BrokerID+UserID/AccountID/InvestorID(如果存在)作为主键
 predefinedTableKey = {
@@ -243,6 +243,8 @@ tapStr = ' ' * 4 # not use '\t' because its width is not certain
 f2.write("#include \"CTPSQLWrapper.h\"\n")
 f2.write(noticeStr + "\n")
 f2.write("\n")
+f2.write("using namespace localCTP;\n")
+f2.write("\n")
 with open(output_path, 'w') as f:
     f.write("#pragma once\n")
     f.write(noticeStr + "\n")
@@ -250,6 +252,8 @@ with open(output_path, 'w') as f:
     f.write("#include <map>\n")
     f.write("#include <string>\n")
     f.write("#include \"../ctpStatus.h\"// gbk_to_utf8, utf8_to_gbk, CloseDetail\n")
+    f.write("\n")
+    f.write("namespace localCTP{\n")
     f.write("\n")
     for className,ctpClass in ctpClasses.items():
         prefix = ""
@@ -336,7 +340,7 @@ with open(output_path, 'w') as f:
         f2.write("const std::string "+className+"Wrapper::INSERT_SQL_PREFIX = \"REPLACE INTO '"+className+"' VALUES (\";\n")
         f2.write("\n")
         f.write(prefix + "\n")
-
+    f.write("} // end namespace localCTP\n")
 f2.close()
 
 

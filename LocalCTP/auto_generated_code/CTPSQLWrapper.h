@@ -5,6 +5,8 @@
 #include <string>
 #include "../ctpStatus.h"// gbk_to_utf8, utf8_to_gbk, CloseDetail
 
+namespace localCTP{
+
 struct CThostFtdcDisseminationFieldWrapper
 {
 
@@ -13031,14 +13033,14 @@ struct SettlementDataWrapper
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         strncpy(data.BrokerID, rowValue.at("BrokerID").c_str(), sizeof(TThostFtdcBrokerIDType));
         strncpy(data.InvestorID, rowValue.at("InvestorID").c_str(), sizeof(TThostFtdcInvestorIDType));
-        data.SettlementContent = utf8_to_gbk(rowValue.at("SettlementContent")).c_str();
+        data.SettlementContent = rowValue.at("SettlementContent").c_str();
         strncpy(data.TradingDay, rowValue.at("TradingDay").c_str(), sizeof(TThostFtdcDateType));
         strncpy(data.ConfirmDay, rowValue.at("ConfirmDay").c_str(), sizeof(TThostFtdcDateType));
         strncpy(data.ConfirmTime, rowValue.at("ConfirmTime").c_str(), sizeof(TThostFtdcTimeType));
     }
     std::string generateInsertSql() const {
         const auto insertSqlBody = std::string() + "'" +
-            data.BrokerID + "','" + data.InvestorID + "','" + gbk_to_utf8(data.SettlementContent) + "','" + data.TradingDay + "','" + data.ConfirmDay + "','" + data.ConfirmTime
+            data.BrokerID + "','" + data.InvestorID + "','" + data.SettlementContent + "','" + data.TradingDay + "','" + data.ConfirmDay + "','" + data.ConfirmTime
             + "'";
         return INSERT_SQL_PREFIX + insertSqlBody + ");";
     }
@@ -13050,3 +13052,4 @@ struct SettlementDataWrapper
     }
 };
 
+} // end namespace localCTP

@@ -1,5 +1,6 @@
 ﻿#include "stdafx.h"
 #include "LocalTraderApi.h"
+#include <iostream>
 
 #define READ_CHAR_ARRAY_MEMBER(m) \
     { std::getline(i, temp, ','); \
@@ -9,6 +10,9 @@
     { std::getline(i, temp, ','); \
       std::istringstream iss(temp); \
       iss >> instr.m; }
+
+namespace localCTP
+{
 
 std::istream& operator>>(std::istream& i, CThostFtdcInstrumentField& instr)
 {
@@ -529,3 +533,77 @@ void CLocalTraderApi::PositionData::addPositionDetail(
     else// 若此笔持仓明细已存在,则更新
         *it = posDetail;
 }
+
+CLocalTraderApi::CSettlementHandler::CSettlementHandler(CSqliteHandler& _sqlHandler)
+    : m_sqlHandler(_sqlHandler)
+    , m_running(true)
+    , m_sleepSecond(1)
+    , m_settlementStartHour(11)
+    , m_count(0)
+    , m_timerThread([this]() {
+        if (!checkSettlement())//启动后先判断结算一次
+        {
+            doSettlement();
+        }
+        while (m_running)
+        {
+            //别在一次sleep中sleep太长时间(影响Join的等待时间)
+            std::this_thread::sleep_for(std::chrono::seconds(m_sleepSecond));
+            if (++m_count >= 60 * 2 / m_sleepSecond)//每隔固定时间间隔,检查是否需要结算
+            {
+                m_count = 0;
+            }
+            else
+            {
+                continue;
+            }
+            if (!checkSettlement())
+            {
+                doSettlement();
+            }
+        }
+    })
+{
+}
+
+CLocalTraderApi::CSettlementHandler::~CSettlementHandler()
+{
+    m_running = false;
+    if (m_timerThread.joinable())
+        m_timerThread.join();
+}
+
+bool CLocalTraderApi::CSettlementHandler::checkSettlement()
+{
+    // 在什么情况下需要进行结算? 需要满足以下三个条件:
+    // 1.当前日期是交易日
+    // 2.当前时间大于结算开始时间(如 16:00 )
+    // 3.数据库结算表中没有当天的结算记录
+    const auto nowTime = CLeeDateTime::GetCurrentTime();
+    if (!isTradingDay(nowTime))
+    {
+        return true;
+    }
+    if (nowTime.GetHour() < m_settlementStartHour)
+    {
+        return true;
+    }
+    CSqliteHandler::SQL_VALUES sqlValues;
+    m_sqlHandler.SelectData(
+        "SELECT * FROM 'SettlementData' where TradingDay='" + nowTime.Format("%Y%m%d") + "';",
+        sqlValues);
+    if (sqlValues.empty())
+    {
+        return false;
+    }
+    return true;
+}
+
+
+void CLocalTraderApi::CSettlementHandler::doSettlement()
+{
+    std::cout << "Let's start doSettlement !" << std::endl;
+    return;
+}
+
+} // end namespace localCTP

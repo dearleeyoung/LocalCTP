@@ -3,6 +3,8 @@
 #include "ThostFtdcUserApiDataType.h"
 #include "stdafx.h"
 
+namespace localCTP{
+
 constexpr TThostFtdcErrorMsgType ErrMsgUserInfoIsEmpty = "CTP:认证失败(UserID和BrokerID不能为空哦)";
 constexpr TThostFtdcErrorMsgType ErrMsgUserInfoNotSameAsLastTime = "CTP:认证失败(UserID和BrokerID需要和上次登录时相同哦)";
 constexpr TThostFtdcErrorMsgType ErrMsgNotAuth = "CTP:登录失败(没有认证)";
@@ -63,6 +65,85 @@ inline std::string getStatusMsgByStatus(TThostFtdcOrderStatusType status)
     }
 }
 
+inline bool isTradingDay(const CLeeDateTime& date = CLeeDateTime::GetCurrentTime())
+{
+    const int dayOfWeek = date.GetDayOfWeek();
+    if (dayOfWeek == 6 || dayOfWeek == 0)//TODO:不会判断长假假日
+    {
+        return false;
+    }
+    return true;
+}
+
+inline std::string get_direction_name(const std::string& direction)
+{
+    static const std::map<std::string, std::string> direction_name_map{
+        {std::string(1, THOST_FTDC_D_Buy), "买   "},
+        {std::string(1, THOST_FTDC_D_Sell), "   卖"}
+    };
+    auto it_direction = direction_name_map.find(direction);
+    if (it_direction != direction_name_map.end())
+    {
+        return it_direction->second;
+    }
+    else
+    {
+        return "未知";
+    }
+}
+inline std::string get_direction_name(TThostFtdcDirectionType dir)
+{
+    return get_direction_name(std::string(1, dir));
+}
+inline std::string get_exchange_name(const std::string& ExchangeID)
+{
+    static const std::map<std::string, std::string> exchange_name_map{
+        {"INE", "能源中心"},
+        {"SHFE", "上期所"},
+        {"CFFEX", "中金所"},
+        {"DCE", "大商所"},
+        {"CZCE", "郑商所"},
+        {"GFEX", "广期所"},
+        {"BSE", "北交所"},
+        {"SSE", "上交所"},
+        {"SHSE", "上交所"},
+        {"SZSE", "深交所"}
+    };
+    auto it_exchange = exchange_name_map.find(ExchangeID);
+    if (it_exchange != exchange_name_map.end())
+    {
+        return it_exchange->second;
+    }
+    else
+    {
+        return "未知";
+    }
+}
+inline std::string get_open_close_name(const std::string& open_or_close)
+{
+    static const std::map<std::string, std::string> open_or_close_name_map{
+        {std::string(1, THOST_FTDC_OF_Open), "开"},
+        {std::string(1, THOST_FTDC_OF_Close), "  平"},
+        {std::string(1, THOST_FTDC_OF_CloseToday), "平今"},
+        {std::string(1, THOST_FTDC_OF_CloseYesterday), "平昨"},
+        {std::string(1, THOST_FTDC_OF_ForceClose), "强平"},
+        {std::string(1, THOST_FTDC_OF_ForceOff), "强减"},
+        {std::string(1, THOST_FTDC_OF_LocalForceClose), "本地强平"}
+    };
+    auto it_open_or_close = open_or_close_name_map.find(open_or_close);
+    if (it_open_or_close != open_or_close_name_map.end())
+    {
+        return it_open_or_close->second;
+    }
+    else
+    {
+        return "未知";
+    }
+}
+inline std::string get_open_close_name(TThostFtdcOffsetFlagType open_or_close)
+{
+    return get_open_close_name(std::string(1, open_or_close));
+}
 
 ///平仓明细
 struct CloseDetail
@@ -111,3 +192,5 @@ struct SettlementData
     ///确认时间
     TThostFtdcTimeType ConfirmTime;
 };
+
+} // end namespace localCTP

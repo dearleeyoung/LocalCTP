@@ -36,6 +36,7 @@
 #define ISLIB
 #define LIB_TRADER_API_EXPORT
 
+namespace localCTP{
 
 constexpr double EPS = 1e-8;
 inline bool EQ(double d1, double d2, double ep = EPS)
@@ -117,32 +118,19 @@ public:
     ~CodecvtByname() = default;
 };
 
-inline std::string gbk_to_utf8(const std::string& str)
-{
-#ifdef _WIN32
-    const char* GBK_LOCALE_NAME = ".936";// GBK locale name in windows
-#else
-    const char* GBK_LOCALE_NAME = "zh_CN.gb18030";// GBK locale name in linux
-#endif
-    static std::wstring_convert<CodecvtByname<wchar_t, char, mbstate_t>> convert(
-        new CodecvtByname<wchar_t, char, mbstate_t>(GBK_LOCALE_NAME));
-    std::wstring tmp_wstr = convert.from_bytes(str);
+std::string gbk_to_utf8(const std::string& str);
+std::string utf8_to_gbk(const std::string& str);
 
-    static std::wstring_convert<std::codecvt_utf8<wchar_t>> cv2;
-    return cv2.to_bytes(tmp_wstr);
+inline bool is_base64(unsigned char c) {
+    return (isalnum(c) || (c == '+') || (c == '/'));
 }
 
-inline std::string utf8_to_gbk(const std::string& str)
-{
-#ifdef _WIN32
-    const char* GBK_LOCALE_NAME = ".936";// GBK locale name in windows
-#else
-    const char* GBK_LOCALE_NAME = "zh_CN.gb18030";// GBK locale name in linux
-#endif
-    static std::wstring_convert<std::codecvt_utf8<wchar_t> > conv;
-    std::wstring tmp_wstr = conv.from_bytes(str);
+const std::string base64_chars =
+"ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+"abcdefghijklmnopqrstuvwxyz"
+"0123456789+/";
 
-    static std::wstring_convert<CodecvtByname<wchar_t, char, mbstate_t>> convert(
-        new CodecvtByname<wchar_t, char, mbstate_t>(GBK_LOCALE_NAME));
-    return convert.to_bytes(tmp_wstr);
-}
+std::string base64_encode(unsigned char const* bytes_to_encode, unsigned int in_len);
+std::string base64_decode(std::string const& encoded_string);
+
+} // end namespace localCTP

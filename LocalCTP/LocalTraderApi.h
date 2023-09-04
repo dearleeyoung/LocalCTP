@@ -6,6 +6,9 @@
 #include "ctpStatus.h"
 #include "CSqliteHandler.h"
 #include "CTPSQLWrapper.h"
+#include <thread>
+
+namespace localCTP {
 
 std::istream& operator>>(std::istream& i, CThostFtdcInstrumentField& instr);
 
@@ -78,7 +81,7 @@ private:
 
         const CThostFtdcInputOrderField inputOrder;
         CThostFtdcOrderField rtnOrder;
-        std::vector<CThostFtdcTradeFieldWrapper> rtnTrades;
+        std::vector<localCTP::CThostFtdcTradeFieldWrapper> rtnTrades;
 
     private:
         static CThostFtdcInputOrderField genrateInputOrderFromRtnOrder(
@@ -87,20 +90,42 @@ private:
             const CThostFtdcInputOrderField& inputO);
         void dealTestReqOrderInsertNormal(const CThostFtdcInputOrderField& InputOrder,
             const std::string& relativeOrderSysID);
-        void sendRtnTrade(CThostFtdcTradeFieldWrapper& rtnTrade);
+        void sendRtnTrade(localCTP::CThostFtdcTradeFieldWrapper& rtnTrade);
         void getRtnTrade(const TradePriceVec& tradePriceVec,
-            int tradedSize, std::vector<CThostFtdcTradeFieldWrapper>& Trades);
+            int tradedSize, std::vector<localCTP::CThostFtdcTradeFieldWrapper>& Trades);
 
         CLocalTraderApi& api;
         bool isConditionalOrder;
     };
 
+    class CSettlementHandler
+    {
+        CSettlementHandler(CSqliteHandler& _sqlHandler);
+        CSqliteHandler& m_sqlHandler;
+        std::atomic<bool> m_running;
+        const int m_sleepSecond;
+        const int m_settlementStartHour;
+        int m_count;
+        std::thread m_timerThread;
+
+        bool checkSettlement();//检查结算情况
+        void doSettlement();//开始结算!
+    public:
+        //单实例模式
+        static CSettlementHandler& getSettlementHandler(CSqliteHandler& _sqlHandler)
+        {
+            static CSettlementHandler h(_sqlHandler);
+            return h;
+        }
+        ~CSettlementHandler();
+    };
 public:
     static std::set<SP_TRADE_API> trade_api_set;// 储存交易API智能指针的集合
     static std::atomic<int> maxSessionID; // 当前最大会话编号
     static std::map<std::string, long long> m_orderSysID; // 当前最大委托编号
     static std::map<std::string, long long> m_tradeID; // 当前最大成交编号
     static CSqliteHandler sqlHandler; // SQL管理器
+    static CSettlementHandler& settlementHandler; // 结算管理器
     static std::mutex m_mdMtx; // 行情数据互斥体
     static MarketDataMap m_mdData; // 行情数据
     static const long long initStartTime;
@@ -233,7 +258,7 @@ private:
     void onSnapshot(const CThostFtdcDepthMarketDataField& mdData);// 处理行情快照的接口
     void updatePNL(bool needTotalCalc = false);// 更新PNL(盈亏)的接口
     void updateByCancel(const CThostFtdcOrderField& o);// 根据已撤单的委托更新账户数据的接口,在委托被撤单后被调用
-    void updateByTrade(const CThostFtdcTradeFieldWrapper& t);// 根据成交更新账户数据的接口,在发生成交后被调用
+    void updateByTrade(const localCTP::CThostFtdcTradeFieldWrapper& t);// 根据成交更新账户数据的接口,在发生成交后被调用
     void reloadAccountData();// 从数据库中重新加载账户数据的接口
     void saveTradingAccountToDb();// 保存账户资金数据到数据库中的接口
     void savePositionToDb(const PositionData& pos);// 保存账户持仓数据到数据库中的接口
@@ -404,3 +429,5 @@ public:
     // 以下是本系统不支持的CTP API接口
     UNSUPPORTED_CTP_API_FUNC
 };
+
+} // end namespace localCTP
