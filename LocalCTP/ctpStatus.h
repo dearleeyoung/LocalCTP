@@ -75,6 +75,14 @@ inline bool isTradingDay(const CLeeDateTime& date = CLeeDateTime::GetCurrentTime
     return true;
 }
 
+inline std::string getNextTradingDay(CLeeDateTime dt)
+{
+    do {
+        dt += CLeeDateTimeSpan(1, 0, 0, 0);
+    } while (!isTradingDay(dt));
+    return dt.Format("%Y%m%d");
+}
+
 inline std::string get_direction_name(const std::string& direction)
 {
     static const std::map<std::string, std::string> direction_name_map{

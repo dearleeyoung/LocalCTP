@@ -1081,11 +1081,13 @@ void CLocalTraderApi::CSettlementHandler::doSettlement()
 
         doUserSettlement(tradingAccountFieldWrapper, TradingDay);
     }
-    doWorkAfterSettlement(TradingDay);//结算后的工作
+    const std::string newTradingDay = getNextTradingDay(TradingDay);
+    doWorkAfterSettlement(TradingDay, newTradingDay);//结算后的工作
     return;
 }
 
-void CLocalTraderApi::CSettlementHandler::doWorkAfterSettlement(const std::string& TradingDay)
+void CLocalTraderApi::CSettlementHandler::doWorkAfterSettlement(
+    const std::string& oldTradingDay, const std::string& newTradingDay)
 {
     //结算后更新所有账户的持仓明细
     //1. 删除持仓数量为0的持仓明细
@@ -1093,16 +1095,22 @@ void CLocalTraderApi::CSettlementHandler::doWorkAfterSettlement(const std::strin
     //3. 修改"昨结算价"为与结算价相等
     //4. 持仓盈亏与逐日平仓盈亏与逐笔平仓盈亏改为0
     //5. 平仓量和平仓金额改为0
-    //6. 修改合约到期的合约的持仓明细, 将其持仓数量修改为0等.
+    //6. 删除合约到期的合约的持仓明细.
     const std::string positiondetailUpdateAfterSettlementSql1
         = "DELETE FROM CThostFtdcInvestorPositionDetailField WHERE Volume = 0;";
     const std::string positiondetailUpdateAfterSettlementSql2
         = "UPDATE CThostFtdcInvestorPositionDetailField \
-SET TradingDay = '" + TradingDay + "', LastSettlementPrice = SettlementPrice, \
+SET TradingDay = '" + newTradingDay + "', LastSettlementPrice = SettlementPrice, \
 CloseProfitByDate = 0, CloseProfitByTrade = 0, PositionProfitByDate = 0, \
 CloseVolume = 0, CloseAmount = 0;";
+    const std::string positiondetailUpdateAfterSettlementSql3
+        = "DELETE FROM CThostFtdcInvestorPositionDetailField \
+ WHERE CThostFtdcInvestorPositionDetailField.InstrumentID in \
+   (SELECT CThostFtdcInstrumentField.InstrumentID from CThostFtdcInstrumentField \
+ WHERE CThostFtdcInstrumentField.ExpireDate <= '" + oldTradingDay +"');";
     m_sqlHandler.Delete(positiondetailUpdateAfterSettlementSql1);
     m_sqlHandler.Update(positiondetailUpdateAfterSettlementSql2);
+    m_sqlHandler.Delete(positiondetailUpdateAfterSettlementSql3);
 
     //结算后更新所有账户的持仓
     //1. 删除持仓数量为0的持仓
@@ -1115,12 +1123,12 @@ CloseVolume = 0, CloseAmount = 0;";
     //8. "开仓量"与"平仓量"与相应的金额改为0
     //9. "手续费"改为0
     //10. TodayPosition(今日持仓)改为0
-    //11. 修改合约到期的合约的持仓, 将其持仓数量修改为0等.
+    //11. 删除合约到期的合约的持仓.
     const std::string positionUpdateSqlAfterSettlementSql1 =
         "DELETE FROM CThostFtdcInvestorPositionField WHERE Position = 0;";
 
     const std::string positionUpdateSqlAfterSettlementSql2 =
-        "UPDATE CThostFtdcInvestorPositionField SET TradingDay = '" + TradingDay 
+        "UPDATE CThostFtdcInvestorPositionField SET TradingDay = '" + newTradingDay
         + "', PreSettlementPrice = SettlementPrice, \
 PositionCost = SettlementPrice * Position * \
 (SELECT VolumeMultiple from CThostFtdcInstrumentField WHERE \
@@ -1130,9 +1138,14 @@ LongFrozen = 0, ShortFrozen = 0, LongFrozenAmount = 0, ShortFrozenAmount = 0, \
 FrozenMargin = 0, FrozenCash = 0, FrozenCommission = 0, YdPosition = Position, \
 OpenVolume = 0, CloseVolume = 0, OpenAmount = 0, CloseAmount = 0, \
 Commission = 0, TodayPosition = 0, CombLongFrozen = 0, CombShortFrozen = 0;";
-
+    const std::string positionUpdateSqlAfterSettlementSql3
+        = "DELETE FROM CThostFtdcInvestorPositionField \
+ WHERE CThostFtdcInvestorPositionField.InstrumentID in \
+   (SELECT CThostFtdcInstrumentField.InstrumentID from CThostFtdcInstrumentField \
+ WHERE CThostFtdcInstrumentField.ExpireDate <= '" + oldTradingDay + "');";
     m_sqlHandler.Delete(positionUpdateSqlAfterSettlementSql1);
     m_sqlHandler.Update(positionUpdateSqlAfterSettlementSql2);
+    m_sqlHandler.Delete(positionUpdateSqlAfterSettlementSql3);
     //结算后更新所有账户的资金
     //1. "交易日"改为新的交易日
     //2. "平仓盈亏"与"持仓盈亏"改为0
@@ -1142,7 +1155,7 @@ Commission = 0, TodayPosition = 0, CombLongFrozen = 0, CombShortFrozen = 0;";
     //6. 入金与出金改为0
     const std::string tradingAccountUpdateSqlAfterSettlement
         = "UPDATE CThostFtdcTradingAccountField SET \
-TradingDay = '" + TradingDay + "', CloseProfit = 0, PositionProfit = 0, \
+TradingDay = '" + newTradingDay + "', CloseProfit = 0, PositionProfit = 0, \
 Commission = 0, PreBalance = Balance, PreMargin = CurrMargin, \
 Deposit = 0, Withdraw = 0;";
     m_sqlHandler.Update(tradingAccountUpdateSqlAfterSettlement);

@@ -205,7 +205,8 @@ private:
         void doUserSettlement(
             const CThostFtdcTradingAccountFieldWrapper& tradingAccountFieldWrapper,
             const std::string& TradingDay);//对单个用户的结算
-        void doWorkAfterSettlement(const std::string& TradingDay);//处理结算后的工作
+        void doWorkAfterSettlement(const std::string& oldTradingDay,
+            const std::string& newTradingDay);//处理结算后的工作
     public:
         //单实例模式
         static CSettlementHandler& getSettlementHandler(CSqliteHandler& _sqlHandler)
