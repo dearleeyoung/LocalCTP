@@ -166,6 +166,11 @@ void CLeeDateTime::SetDateTime(int year, int month, int day, int hour /*= 0*/, i
 	*this = CLeeDateTime(year, month, day, hour, minute, second, millisecond);
 }
 
+void CLeeDateTime::SetMiddleNight()
+{
+    m_dt = floor(m_dt);
+}
+
 void CLeeDateTime::ParseDateTime(const string& str) 
 {
 	std::istringstream iss(str);

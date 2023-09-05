@@ -90,7 +90,7 @@ public:
 #endif
 	CLeeDateTime(int year, int month, int day, 
 		int hour = 0, int minute = 0, int second = 0, int millisecond = 0) ;
-	CLeeDateTime(const string& str) ;
+	explicit CLeeDateTime(const string& str) ;
 	CLeeDateTime(const CLeeDateTime& c) : m_dt(c.m_dt) { }//拷贝构造函数
 	CLeeDateTime& operator=(const CLeeDateTime& rhs);//赋值函数
 
@@ -99,6 +99,7 @@ public:
 
 	void SetDateTime(int year, int month, int day,
 		int hour = 0, int minute = 0, int second = 0, int millisecond = 0) ;//设置日期时间
+    void SetMiddleNight();
 	void ParseDateTime(const string& str) ;//从字符串中解析日期时间
 
 	int GetYear() const;

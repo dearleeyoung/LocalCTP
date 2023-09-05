@@ -1073,7 +1073,7 @@ void CLocalTraderApi::CSettlementHandler::doSettlement()
 
     CSqliteHandler::SQL_VALUES sqlValues;
     m_sqlHandler.SelectData(CThostFtdcTradingAccountFieldWrapper::SELECT_SQL, sqlValues);
-    const CLeeDateTime nowTime = CLeeDateTime::GetCurrentTime();
+    CLeeDateTime nowTime = CLeeDateTime::GetCurrentTime();
     const std::string TradingDay = nowTime.Format("%Y%m%d");
     for (const auto& userSqlValue : sqlValues)
     {
@@ -1081,7 +1081,8 @@ void CLocalTraderApi::CSettlementHandler::doSettlement()
 
         doUserSettlement(tradingAccountFieldWrapper, TradingDay);
     }
-    const std::string newTradingDay = getNextTradingDay(TradingDay);
+    nowTime.SetMiddleNight();
+    const std::string newTradingDay = getNextTradingDay(nowTime);
     doWorkAfterSettlement(TradingDay, newTradingDay);//结算后的工作
     return;
 }
@@ -1159,6 +1160,15 @@ TradingDay = '" + newTradingDay + "', CloseProfit = 0, PositionProfit = 0, \
 Commission = 0, PreBalance = Balance, PreMargin = CurrMargin, \
 Deposit = 0, Withdraw = 0;";
     m_sqlHandler.Update(tradingAccountUpdateSqlAfterSettlement);
+
+    //结算后, 更新交易日
+    CLocalTraderApi::tradingDay = newTradingDay;
+
+    //结算后, 更新各个账户的数据
+    for (auto& api : CLocalTraderApi::trade_api_set)
+    {
+        api->reloadAccountData();
+    }
 }
 
 struct MergedPositionData

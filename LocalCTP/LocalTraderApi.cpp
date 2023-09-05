@@ -33,6 +33,7 @@ std::mutex CLocalTraderApi::m_mdMtx;
 CLocalTraderApi::MarketDataMap CLocalTraderApi::m_mdData; //行情数据
 const long long CLocalTraderApi::initStartTime = CLeeDateTime::GetCurrentTime().Get_time_t() * 1000 +
      CLeeDateTime::GetCurrentTime().GetMillisecond(); // 1612345678 999
+std::string CLocalTraderApi::tradingDay;
 
 void CLocalTraderApi::GetSingleContractFromCombinationContract(const std::string& CombinationContractID,
     std::vector<std::string>& SingleContracts)
@@ -617,11 +618,11 @@ void CLocalTraderApi::updateByTrade(const CThostFtdcTradeFieldWrapper& t)
                 p.CloseAmount +=
                     tradeVolumeInThisPosDetail * pTrade->Price * itPos->second.volumeMultiple;
                 const double positionCostOfThiPosDetail =
-                    p.Volume * it->second.VolumeMultiple *
                     (strcmp(p.OpenDate, p.TradingDay) == 0 ?
-                        p.OpenPrice : p.LastSettlementPrice);
+                        p.OpenPrice : p.LastSettlementPrice)
+                    * p.Volume * it->second.VolumeMultiple;
                 const double openCostOfThiPosDetail =
-                    p.Volume * it->second.VolumeMultiple * p.OpenPrice;
+                    p.OpenPrice * p.Volume * it->second.VolumeMultiple;
                 p.PositionProfitByTrade = (p.Direction == THOST_FTDC_D_Buy ? 1 : -1) *
                     (pTrade->Price * it->second.VolumeMultiple * p.Volume
                         - openCostOfThiPosDetail);//更新持仓明细的逐笔对冲持仓盈亏
@@ -742,9 +743,10 @@ void CLocalTraderApi::updateByTrade(const CThostFtdcTradeFieldWrapper& t)
     }
 }
 
-// 从数据库中重新加载账户数据但并不读取委托和成交表
+// 从数据库中重新加载账户数据
 void CLocalTraderApi::reloadAccountData()
 {
+    if (!m_logined) return;
     const std::string& TradingDay = GetTradingDay();
     auto reloadPosition = [&]() {
         m_positionData.clear();
@@ -823,11 +825,11 @@ void CLocalTraderApi::reloadAccountData()
     std::vector<CThostFtdcOrderField> ordersInDb;
     std::vector<CThostFtdcTradeFieldWrapper> tradesInDb;
     auto reloadOrder = [&]() {
-        CSqliteHandler::SQL_VALUES posSqlValues;
+        CSqliteHandler::SQL_VALUES orderSqlValues;
         sqlHandler.SelectData(
             CThostFtdcOrderFieldWrapper::generateSelectSqlByUserID(m_brokerID, m_userID),
-            posSqlValues);
-        for (const auto& rowData : posSqlValues)
+            orderSqlValues);
+        for (const auto& rowData : orderSqlValues)
         {
             CThostFtdcOrderFieldWrapper wrapper(rowData);
             if (TradingDay !=  wrapper.data.TradingDay)// only select today's orders
@@ -838,11 +840,11 @@ void CLocalTraderApi::reloadAccountData()
         }
     };
     auto reloadTrade = [&]() {
-        CSqliteHandler::SQL_VALUES posSqlValues;
+        CSqliteHandler::SQL_VALUES tradeSqlValues;
         sqlHandler.SelectData(
             CThostFtdcTradeFieldWrapper::generateSelectSqlByUserID(m_brokerID, m_userID),
-            posSqlValues);
-        for (const auto& rowData : posSqlValues)
+            tradeSqlValues);
+        for (const auto& rowData : tradeSqlValues)
         {
             CThostFtdcTradeFieldWrapper wrapper(rowData);
             if (TradingDay != wrapper.data.TradingDay)// only select today's trades
@@ -1137,20 +1139,48 @@ int CLocalTraderApi::Join() {
 ///@retrun 获取到的交易日
 ///@remark 只有登录成功后,才能得到正确的交易日
 const char* CLocalTraderApi::GetTradingDay() {
-    // use ( now time + 4 hours) as trading date,
-    // it will consider the weekend, but not the holiday.
-    // for example:
-    // 1. 2023-08-07 10:00 -> 2023-08-07 14:00 -> return "20230807"
-    // 2. 2023-08-07 20:00 -> 2023-08-08 02:00 -> return "20230808"
-    // 3. 2023-08-04 20:00(Fri) -> 2023-08-05 02:00(Sat) -> 2023-08-07 02:00(Mon) -> return "20230807"
-    static std::string tradingDay;
-    auto checkTime = CLeeDateTime::now() + CLeeDateTimeSpan(0, 4, 0, 0);
-    while (!isTradingDay(checkTime))
+    if (CLocalTraderApi::tradingDay.empty())
     {
-        checkTime += CLeeDateTimeSpan(1, 0, 0, 0);
+        auto getRawTradingDay = []() ->std::string
+        {
+            // use ( now time + 4 hours) as trading date,
+            // it will consider the weekend, but not the holiday.
+            // for example:
+            // 1. 2023-08-07 10:00 -> 2023-08-07 14:00 -> return "20230807"
+            // 2. 2023-08-07 20:00 -> 2023-08-08 02:00 -> return "20230808"
+            // 3. 2023-08-04 20:00(Fri) -> 2023-08-05 02:00(Sat) -> 2023-08-07 02:00(Mon) -> return "20230807"
+            auto checkTime = CLeeDateTime::now() + CLeeDateTimeSpan(0, 4, 0, 0);
+            if (isTradingDay(checkTime))
+            {
+                return checkTime.Format("%Y%m%d");
+            }
+            else
+            {
+                return getNextTradingDay(checkTime);
+            }
+        };
+        const std::string rawTradingDay = getRawTradingDay();
+        CSqliteHandler::SQL_VALUES sqlValues;
+        CLocalTraderApi::sqlHandler.SelectData(
+            "SELECT TradingDay FROM 'SettlementData' ORDER BY TradingDay DESC LIMIT 1;",
+            sqlValues);
+        if (sqlValues.empty())
+        {
+            CLocalTraderApi::tradingDay = rawTradingDay;
+        }
+        else
+        {
+            std::string tradingDayFromSettlementData = sqlValues.front().at("TradingDay");
+            CLeeDateTime tradingDateFromSettlementData(
+                std::stoi(tradingDayFromSettlementData.substr(0, 4)),
+                std::stoi(tradingDayFromSettlementData.substr(4, 2)),
+                std::stoi(tradingDayFromSettlementData.substr(6, 2)));
+            tradingDayFromSettlementData = getNextTradingDay(tradingDateFromSettlementData);
+
+            CLocalTraderApi::tradingDay = (std::max)(tradingDayFromSettlementData, rawTradingDay);
+        }
     }
-    tradingDay = checkTime.Format("%Y%m%d");
-    return tradingDay.c_str();
+    return CLocalTraderApi::tradingDay.c_str();
 }
 
 ///注册前置机网络地址

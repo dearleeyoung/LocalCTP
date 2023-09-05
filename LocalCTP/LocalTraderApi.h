@@ -229,6 +229,7 @@ public:
     static std::mutex m_mdMtx; // 行情数据互斥体
     static MarketDataMap m_mdData; // 行情数据
     static const long long initStartTime;
+    static std::string tradingDay;
 
     // 生成会话的key
     static std::string generateSessionKey(int frontID, int sessionID)
@@ -330,6 +331,7 @@ public:
     CThostFtdcTraderSpi* getSpi() const { return m_pSpi; }
     int getFrontID() const { return m_frontID; }
     int getSessionID() const { return m_sessionID; }
+    void reloadAccountData();// 从数据库中重新加载账户数据的接口
 
 private:
 	std::atomic<bool> m_bRunning; // 是否在运行
@@ -357,7 +359,6 @@ private:
     void updatePNL(bool needTotalCalc = false);// 更新PNL(盈亏)的接口
     void updateByCancel(const CThostFtdcOrderField& o);// 根据已撤单的委托更新账户数据的接口,在委托被撤单后被调用
     void updateByTrade(const localCTP::CThostFtdcTradeFieldWrapper& t);// 根据成交更新账户数据的接口,在发生成交后被调用
-    void reloadAccountData();// 从数据库中重新加载账户数据的接口
     void saveTradingAccountToDb();// 保存账户资金数据到数据库中的接口
     void savePositionToDb(const PositionData& pos);// 保存账户持仓数据到数据库中的接口
     void savePositionToDb(const CThostFtdcInvestorPositionField& pos);// 保存账户持仓数据到数据库中的接口
