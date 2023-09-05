@@ -156,10 +156,12 @@ Linux中, 还可以将`current`设置为指向实际CTP头文件目录软链接,
 1. 合约表 - `CThostFtdcInstrumentField`
 1. 合约保证金率表 - `CThostFtdcInstrumentMarginRateField`
 1. 合约手续费率表 - `CThostFtdcInstrumentCommissionRateField`
+1. 平仓明细表 - `CloseDetail`
+1. 结算单表 - `SettlementData`
 
 如果登录数据库中还不存在的账户,则会添加该账户到表中并初始化为资金为2000万和持仓为空.
 
-Windows中可使用 [DB Browser for SQLite](https://sqlitebrowser.org/) 以查看和修改数据库中的账户数据.
+Windows中可使用 [DB Browser for SQLite](https://sqlitebrowser.org/) 等软件以查看和修改数据库中的账户数据.
 
 
 #### 结算功能
@@ -198,6 +200,7 @@ Windows中可使用 [DB Browser for SQLite](https://sqlitebrowser.org/) 以查�
 |  涨停价 | UpperLimitPrice  | BidOrderRef | 浮点数<->字符串 |
 |  跌停价 | LowerLimitPrice  | AskOrderRef | 浮点数<->字符串 |
 |  上次结算价(昨结算价) | PreSettlementPrice  | QuoteRef | 浮点数<->字符串 |
+|  结算价 | SettlementPrice  | ForQuoteSysID  | 浮点数<->字符串 |
 |  持仓量 | OpenInterest  | BusinessUnit | 浮点数<->字符串 |
 
 

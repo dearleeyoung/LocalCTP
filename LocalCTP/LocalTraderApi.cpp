@@ -257,10 +257,12 @@ void CLocalTraderApi::onSnapshot(const CThostFtdcDepthMarketDataField& mdData)
         }
     }
 
-    if (!isPriceValid(mdData.LastPrice))
+    if (!isPriceValid(mdData.LastPrice) && !isPriceValid(mdData.SettlementPrice))
     {
         return;
     }
+    const double priceForCal = isPriceValid(mdData.SettlementPrice) ?
+        mdData.SettlementPrice : mdData.LastPrice;//优先使用结算价进行计算
     double diffPositionProfit(0.0);
     for (auto dir : { THOST_FTDC_D_Buy, THOST_FTDC_D_Sell })
     {
@@ -276,25 +278,25 @@ void CLocalTraderApi::onSnapshot(const CThostFtdcDepthMarketDataField& mdData)
                 for (auto& posDetail : itPos->second.posDetailData)
                 {
                     const double positionCostOfThiPosDetail =
-                        posDetail.Volume * it->second.VolumeMultiple *
-                        (strcmp(posDetail.OpenDate, posDetail.TradingDay)==0 ?
-                            posDetail.OpenPrice : posDetail.LastSettlementPrice);
+                        (strcmp(posDetail.OpenDate, posDetail.TradingDay) == 0 ?
+                            posDetail.OpenPrice : posDetail.LastSettlementPrice)
+                        * posDetail.Volume * it->second.VolumeMultiple;
                     const double openCostOfThiPosDetail =
-                        posDetail.Volume * it->second.VolumeMultiple * posDetail.OpenPrice;
+                        posDetail.OpenPrice * posDetail.Volume * it->second.VolumeMultiple;
                     posDetail.PositionProfitByTrade = (dir == THOST_FTDC_D_Buy ? 1 : -1) *
-                        (mdData.LastPrice * it->second.VolumeMultiple * posDetail.Volume
+                        (priceForCal * it->second.VolumeMultiple * posDetail.Volume
                             - openCostOfThiPosDetail);
                     posDetail.PositionProfitByDate = (dir == THOST_FTDC_D_Buy ? 1 : -1) *
-                        (mdData.LastPrice * it->second.VolumeMultiple * posDetail.Volume
+                        (priceForCal * it->second.VolumeMultiple * posDetail.Volume
                             - positionCostOfThiPosDetail);
-                    posDetail.SettlementPrice = mdData.LastPrice;
+                    posDetail.SettlementPrice = priceForCal;
                 }
 
-                itPos->second.pos.SettlementPrice = mdData.LastPrice;
+                itPos->second.pos.SettlementPrice = priceForCal;
                 auto& PositionProfit = itPos->second.pos.PositionProfit;
                 double oldPositionProfit = PositionProfit;
                 PositionProfit = (dir == THOST_FTDC_D_Buy ? 1 : -1) *
-                    (mdData.LastPrice * it->second.VolumeMultiple * itPos->second.pos.Position
+                    (priceForCal * it->second.VolumeMultiple * itPos->second.pos.Position
                         - itPos->second.pos.PositionCost);
                 diffPositionProfit += PositionProfit - oldPositionProfit;
             }
@@ -1466,7 +1468,7 @@ int CLocalTraderApi::ReqOrderInsertImpl(CThostFtdcInputOrderField * pInputOrder,
                 strncpy(tempPos.pos.ExchangeID, pInputOrder->ExchangeID, sizeof(tempPos.pos.ExchangeID));// 交易所代码
                 strncpy(tempPos.pos.InstrumentID, instr.c_str(), sizeof(tempPos.pos.InstrumentID));// 合约代码
                 tempPos.pos.PreSettlementPrice = itDepthMarketData->second.PreSettlementPrice;
-                tempPos.pos.SettlementPrice = itDepthMarketData->second.LastPrice;
+                tempPos.pos.SettlementPrice = itDepthMarketData->second.SettlementPrice;
                 strncpy(tempPos.pos.TradingDay, GetTradingDay(), sizeof(tempPos.pos.TradingDay));
                 if (!preCheck)
                 {
@@ -2269,6 +2271,7 @@ int CLocalTraderApi::ReqQrySettlementInfoConfirm(CThostFtdcQrySettlementInfoConf
 // 涨停价: UpperLimitPrice -> BidOrderRef(字符串类型) 请将它转换为字符串.
 // 跌停价: LowerLimitPrice -> AskOrderRef(字符串类型) 请将它转换为字符串.
 // 上次结算价(昨结算价): PreSettlementPrice -> QuoteRef(字符串类型) 请将它转换为字符串.
+// 结算价: SettlementPrice -> ForQuoteSysID(字符串类型) 请将它转换为字符串.
 // 持仓量: OpenInterest -> BusinessUnit(字符串类型) 请将它转换为字符串.
 //      如: LastPrice (100.5) -> UserID ("100.5")
 //      转换示例: python: x.UserID = str(100.5)
@@ -2302,6 +2305,7 @@ int CLocalTraderApi::ReqQuoteInsert(CThostFtdcInputQuoteField* pInputQuote, int 
     try
     {
         newMd.LastPrice = std::stod(pInputQuote->UserID);
+        newMd.SettlementPrice = std::stod(pInputQuote->ForQuoteSysID);
         newMd.UpperLimitPrice = std::stod(pInputQuote->BidOrderRef);
         newMd.LowerLimitPrice = std::stod(pInputQuote->AskOrderRef);
         newMd.PreSettlementPrice = std::stod(pInputQuote->QuoteRef);
