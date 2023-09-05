@@ -108,8 +108,104 @@ private:
         int m_count;
         std::thread m_timerThread;
 
+        std::string format_settlement_header1;
+        std::string format_settlement_header2;
+        std::string format_settlement_header3;
+        std::string format_settlement_header4;
+        std::string format_settlement_header5;
+        std::string format_settlement_header6;
+        std::string format_settlement_header7;
+        std::string format_settlement_header8;
+        std::string format_settlement_header9;
+        std::string format_settlement_header10;
+        std::string format_settlement_account_summary1;
+        std::string format_settlement_account_summary2;
+        std::string format_settlement_account_summary3;
+        std::string format_settlement_account_summary4;
+        std::string format_settlement_account_summary5;
+        std::string format_settlement_account_summary6;
+        std::string format_settlement_account_summary7;
+        std::string format_settlement_account_summary8;
+        std::string format_settlement_account_summary9;
+        std::string format_settlement_account_summary10;
+        std::string format_settlement_account_summary11;
+        std::string format_settlement_account_summary12;
+        std::string format_settlement_account_summary13;
+        std::string format_settlement_account_summary14;
+        std::string format_settlement_account_summary15;
+        std::string format_settlement_account_summary16;
+        std::string format_settlement_deposit_withdrawal_head1;
+        std::string format_settlement_deposit_withdrawal_head2;
+        std::string format_settlement_deposit_withdrawal_head3;
+        std::string format_settlement_deposit_withdrawal_head4;
+        std::string format_settlement_deposit_withdrawal_head5;
+        std::string format_settlement_deposit_withdrawal_single_record1;
+        std::string format_settlement_deposit_withdrawal_end1;
+        std::string format_settlement_deposit_withdrawal_end2;
+        std::string format_settlement_deposit_withdrawal_end3;
+        std::string format_settlement_deposit_withdrawal_end4;
+        std::string format_settlement_deposit_withdrawal_end5;
+        std::string format_settlement_trade_head1;
+        std::string format_settlement_trade_head2;
+        std::string format_settlement_trade_head3;
+        std::string format_settlement_trade_head4;
+        std::string format_settlement_trade_head5;
+        std::string format_settlement_trade_single_record1;
+        std::string format_settlement_trade_end1;
+        std::string format_settlement_trade_end2;
+        std::string format_settlement_trade_end3;
+        std::string format_settlement_trade_end4;
+        std::string format_settlement_trade_end5;
+        std::string format_settlement_trade_end6;
+        std::string format_settlement_trade_end7;
+        std::string format_settlement_trade_end8;
+        std::string format_settlement_position_closed_head1;
+        std::string format_settlement_position_closed_head2;
+        std::string format_settlement_position_closed_head3;
+        std::string format_settlement_position_closed_head4;
+        std::string format_settlement_position_closed_head5;
+        std::string format_settlement_position_closed_single_record1;
+        std::string format_settlement_position_closed_end1;
+        std::string format_settlement_position_closed_end2;
+        std::string format_settlement_position_closed_end3;
+        std::string format_settlement_position_closed_end4;
+        std::string format_settlement_position_closed_end5;
+        std::string format_settlement_position_closed_end6;
+        std::string format_settlement_position_detail_head1;
+        std::string format_settlement_position_detail_head2;
+        std::string format_settlement_position_detail_head3;
+        std::string format_settlement_position_detail_head4;
+        std::string format_settlement_position_detail_head5;
+        std::string format_settlement_position_detail_single_record1;
+        std::string format_settlement_position_detail_end1;
+        std::string format_settlement_position_detail_end2;
+        std::string format_settlement_position_detail_end3;
+        std::string format_settlement_position_detail_end4;
+        std::string format_settlement_position_detail_end5;
+        std::string format_settlement_position_detail_end6;
+        std::string format_settlement_position_detail_end7;
+        std::string format_settlement_position_head1;
+        std::string format_settlement_position_head2;
+        std::string format_settlement_position_head3;
+        std::string format_settlement_position_head4;
+        std::string format_settlement_position_head5;
+        std::string format_settlement_position_single_record1;
+        std::string format_settlement_position_end1;
+        std::string format_settlement_position_end2;
+        std::string format_settlement_position_end3;
+        std::string format_settlement_position_end4;
+        std::string format_settlement_position_end5;
+        std::string format_settlement_position_end6;
+        std::string format_settlement_position_end7;
+        std::string format_settlement_position_end8;
+
+        void init_format_settlement();
         bool checkSettlement();//检查结算情况
         void doSettlement();//开始结算!
+        void doUserSettlement(
+            const CThostFtdcTradingAccountFieldWrapper& tradingAccountFieldWrapper,
+            const std::string& TradingDay);//对单个用户的结算
+        void doWorkAfterSettlement(const std::string& TradingDay);//处理结算后的工作
     public:
         //单实例模式
         static CSettlementHandler& getSettlementHandler(CSqliteHandler& _sqlHandler)
@@ -124,6 +220,9 @@ public:
     static std::atomic<int> maxSessionID; // 当前最大会话编号
     static std::map<std::string, long long> m_orderSysID; // 当前最大委托编号
     static std::map<std::string, long long> m_tradeID; // 当前最大成交编号
+    static InstrMap m_instrData; //合约数据
+    static std::map<std::string, CThostFtdcExchangeField> m_exchanges;// 交易所数据. key:交易所代码
+    static std::map<std::string, CThostFtdcProductField> m_products;// 品种数据. key:品种代码
     static CSqliteHandler sqlHandler; // SQL管理器
     static CSettlementHandler& settlementHandler; // 结算管理器
     static std::mutex m_mdMtx; // 行情数据互斥体
@@ -223,6 +322,7 @@ public:
         else
             return THOST_FTDC_PSD_Today;
     }
+    static void initInstrMap();
 
     CLocalTraderApi(const char* pszFlowPath = "");
     ~CLocalTraderApi();
@@ -238,7 +338,6 @@ private:
     std::string m_brokerID;// 期货公司代码
     const int m_frontID;// 本连接前置编号. 每次启动进程时值是不同的.
     int m_sessionID;// 本连接会话编号. 从0开始自增.
-    InstrMap m_instrData; //合约数据
 
     std::mutex m_orderMtx;// 订单数据互斥体
     std::map<std::string, std::map<int, OrderData>> m_orderData;// 订单数据. outer key:FrontID+SessionID(generateSessionKey生成), inner key:OrderRef(报单引用).
@@ -248,8 +347,6 @@ private:
     std::map<std::string, CThostFtdcInstrumentCommissionRateField> m_instrumentCommissionRateData;// 合约手续费数据. key:合约代码.
     CThostFtdcTradingAccountField m_tradingAccount;// 资金数据
     std::vector<OrderData*> m_contionalOrders;// 条件报单数据
-    std::map<std::string, CThostFtdcExchangeField> m_exchanges;// 交易所数据. key:交易所代码
-    std::map<std::string, CThostFtdcProductField> m_products;// 品种数据. key:品种代码
 	CThostFtdcTraderSpi* m_pSpi;// 回调接口类的指针
 
     CThostFtdcRspInfoField m_successRspInfo;// 成功的响应信息

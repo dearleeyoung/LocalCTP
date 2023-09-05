@@ -597,12 +597,12 @@ struct CThostFtdcExchangeFieldWrapper
     operator CThostFtdcExchangeField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         strncpy(data.ExchangeID, rowValue.at("ExchangeID").c_str(), sizeof(TThostFtdcExchangeIDType));
-        strncpy(data.ExchangeName, rowValue.at("ExchangeName").c_str(), sizeof(TThostFtdcExchangeNameType));
+        strncpy(data.ExchangeName, utf8_to_gbk(rowValue.at("ExchangeName")).c_str(), sizeof(TThostFtdcExchangeNameType));
         data.ExchangeProperty = rowValue.at("ExchangeProperty").empty() ? '0' : rowValue.at("ExchangeProperty")[0];
     }
     std::string generateInsertSql() const {
         const auto insertSqlBody = std::string() + "'" +
-            data.ExchangeID + "','" + data.ExchangeName + "','" + (data.ExchangeProperty == 0 ? '0' : data.ExchangeProperty)
+            data.ExchangeID + "','" + gbk_to_utf8(data.ExchangeName) + "','" + (data.ExchangeProperty == 0 ? '0' : data.ExchangeProperty)
             + "'";
         return INSERT_SQL_PREFIX + insertSqlBody + ");";
     }
@@ -621,7 +621,7 @@ struct CThostFtdcProductFieldWrapper
     operator CThostFtdcProductField() { return data; }
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         strncpy(data.reserve1, rowValue.at("reserve1").c_str(), sizeof(TThostFtdcOldInstrumentIDType));
-        strncpy(data.ProductName, rowValue.at("ProductName").c_str(), sizeof(TThostFtdcProductNameType));
+        strncpy(data.ProductName, utf8_to_gbk(rowValue.at("ProductName")).c_str(), sizeof(TThostFtdcProductNameType));
         strncpy(data.ExchangeID, rowValue.at("ExchangeID").c_str(), sizeof(TThostFtdcExchangeIDType));
         data.ProductClass = rowValue.at("ProductClass").empty() ? '0' : rowValue.at("ProductClass")[0];
         data.VolumeMultiple = std::stoi(rowValue.at("VolumeMultiple"));
@@ -642,7 +642,7 @@ struct CThostFtdcProductFieldWrapper
     }
     std::string generateInsertSql() const {
         const auto insertSqlBody = std::string() + "'" +
-            data.reserve1 + "','" + data.ProductName + "','" + data.ExchangeID + "','" + (data.ProductClass == 0 ? '0' : data.ProductClass) + "','" + std::to_string(data.VolumeMultiple) + "','" + std::to_string(data.PriceTick) + "','" + std::to_string(data.MaxMarketOrderVolume) + "','" + std::to_string(data.MinMarketOrderVolume) + "','" + std::to_string(data.MaxLimitOrderVolume) + "','" + std::to_string(data.MinLimitOrderVolume) + "','" + (data.PositionType == 0 ? '0' : data.PositionType) + "','" + (data.PositionDateType == 0 ? '0' : data.PositionDateType) + "','" + (data.CloseDealType == 0 ? '0' : data.CloseDealType) + "','" + data.TradeCurrencyID + "','" + (data.MortgageFundUseRange == 0 ? '0' : data.MortgageFundUseRange) + "','" + data.reserve2 + "','" + std::to_string(data.UnderlyingMultiple) + "','" + data.ProductID + "','" + data.ExchangeProductID
+            data.reserve1 + "','" + gbk_to_utf8(data.ProductName) + "','" + data.ExchangeID + "','" + (data.ProductClass == 0 ? '0' : data.ProductClass) + "','" + std::to_string(data.VolumeMultiple) + "','" + std::to_string(data.PriceTick) + "','" + std::to_string(data.MaxMarketOrderVolume) + "','" + std::to_string(data.MinMarketOrderVolume) + "','" + std::to_string(data.MaxLimitOrderVolume) + "','" + std::to_string(data.MinLimitOrderVolume) + "','" + (data.PositionType == 0 ? '0' : data.PositionType) + "','" + (data.PositionDateType == 0 ? '0' : data.PositionDateType) + "','" + (data.CloseDealType == 0 ? '0' : data.CloseDealType) + "','" + data.TradeCurrencyID + "','" + (data.MortgageFundUseRange == 0 ? '0' : data.MortgageFundUseRange) + "','" + data.reserve2 + "','" + std::to_string(data.UnderlyingMultiple) + "','" + data.ProductID + "','" + data.ExchangeProductID
             + "'";
         return INSERT_SQL_PREFIX + insertSqlBody + ");";
     }
@@ -662,7 +662,7 @@ struct CThostFtdcInstrumentFieldWrapper
     void parseFromSqlValue(const std::map<std::string, std::string>& rowValue) {
         strncpy(data.reserve1, rowValue.at("reserve1").c_str(), sizeof(TThostFtdcOldInstrumentIDType));
         strncpy(data.ExchangeID, rowValue.at("ExchangeID").c_str(), sizeof(TThostFtdcExchangeIDType));
-        strncpy(data.InstrumentName, rowValue.at("InstrumentName").c_str(), sizeof(TThostFtdcInstrumentNameType));
+        strncpy(data.InstrumentName, utf8_to_gbk(rowValue.at("InstrumentName")).c_str(), sizeof(TThostFtdcInstrumentNameType));
         strncpy(data.reserve2, rowValue.at("reserve2").c_str(), sizeof(TThostFtdcOldExchangeInstIDType));
         strncpy(data.reserve3, rowValue.at("reserve3").c_str(), sizeof(TThostFtdcOldInstrumentIDType));
         data.ProductClass = rowValue.at("ProductClass").empty() ? '0' : rowValue.at("ProductClass")[0];
@@ -698,7 +698,7 @@ struct CThostFtdcInstrumentFieldWrapper
     }
     std::string generateInsertSql() const {
         const auto insertSqlBody = std::string() + "'" +
-            data.reserve1 + "','" + data.ExchangeID + "','" + data.InstrumentName + "','" + data.reserve2 + "','" + data.reserve3 + "','" + (data.ProductClass == 0 ? '0' : data.ProductClass) + "','" + std::to_string(data.DeliveryYear) + "','" + std::to_string(data.DeliveryMonth) + "','" + std::to_string(data.MaxMarketOrderVolume) + "','" + std::to_string(data.MinMarketOrderVolume) + "','" + std::to_string(data.MaxLimitOrderVolume) + "','" + std::to_string(data.MinLimitOrderVolume) + "','" + std::to_string(data.VolumeMultiple) + "','" + std::to_string(data.PriceTick) + "','" + data.CreateDate + "','" + data.OpenDate + "','" + data.ExpireDate + "','" + data.StartDelivDate + "','" + data.EndDelivDate + "','" + (data.InstLifePhase == 0 ? '0' : data.InstLifePhase) + "','" + std::to_string(data.IsTrading) + "','" + (data.PositionType == 0 ? '0' : data.PositionType) + "','" + (data.PositionDateType == 0 ? '0' : data.PositionDateType) + "','" + std::to_string(data.LongMarginRatio) + "','" + std::to_string(data.ShortMarginRatio) + "','" + (data.MaxMarginSideAlgorithm == 0 ? '0' : data.MaxMarginSideAlgorithm) + "','" + data.reserve4 + "','" + std::to_string(data.StrikePrice) + "','" + (data.OptionsType == 0 ? '0' : data.OptionsType) + "','" + std::to_string(data.UnderlyingMultiple) + "','" + (data.CombinationType == 0 ? '0' : data.CombinationType) + "','" + data.InstrumentID + "','" + data.ExchangeInstID + "','" + data.ProductID + "','" + data.UnderlyingInstrID
+            data.reserve1 + "','" + data.ExchangeID + "','" + gbk_to_utf8(data.InstrumentName) + "','" + data.reserve2 + "','" + data.reserve3 + "','" + (data.ProductClass == 0 ? '0' : data.ProductClass) + "','" + std::to_string(data.DeliveryYear) + "','" + std::to_string(data.DeliveryMonth) + "','" + std::to_string(data.MaxMarketOrderVolume) + "','" + std::to_string(data.MinMarketOrderVolume) + "','" + std::to_string(data.MaxLimitOrderVolume) + "','" + std::to_string(data.MinLimitOrderVolume) + "','" + std::to_string(data.VolumeMultiple) + "','" + std::to_string(data.PriceTick) + "','" + data.CreateDate + "','" + data.OpenDate + "','" + data.ExpireDate + "','" + data.StartDelivDate + "','" + data.EndDelivDate + "','" + (data.InstLifePhase == 0 ? '0' : data.InstLifePhase) + "','" + std::to_string(data.IsTrading) + "','" + (data.PositionType == 0 ? '0' : data.PositionType) + "','" + (data.PositionDateType == 0 ? '0' : data.PositionDateType) + "','" + std::to_string(data.LongMarginRatio) + "','" + std::to_string(data.ShortMarginRatio) + "','" + (data.MaxMarginSideAlgorithm == 0 ? '0' : data.MaxMarginSideAlgorithm) + "','" + data.reserve4 + "','" + std::to_string(data.StrikePrice) + "','" + (data.OptionsType == 0 ? '0' : data.OptionsType) + "','" + std::to_string(data.UnderlyingMultiple) + "','" + (data.CombinationType == 0 ? '0' : data.CombinationType) + "','" + data.InstrumentID + "','" + data.ExchangeInstID + "','" + data.ProductID + "','" + data.UnderlyingInstrID
             + "'";
         return INSERT_SQL_PREFIX + insertSqlBody + ");";
     }
@@ -13002,12 +13002,15 @@ struct CloseDetailWrapper
         strncpy(data.CloseTime, rowValue.at("CloseTime").c_str(), sizeof(TThostFtdcTimeType));
         data.ClosePrice = std::stod(rowValue.at("ClosePrice"));
         strncpy(data.CloseTradeID, rowValue.at("CloseTradeID").c_str(), sizeof(TThostFtdcTradeIDType));
+        data.CloseVolume = std::stoi(rowValue.at("CloseVolume"));
+        data.Direction = rowValue.at("Direction").empty() ? '0' : rowValue.at("Direction")[0];
+        data.PreSettlementPrice = std::stod(rowValue.at("PreSettlementPrice"));
         data.CloseProfit = std::stod(rowValue.at("CloseProfit"));
         data.CloseFlag = rowValue.at("CloseFlag").empty() ? '0' : rowValue.at("CloseFlag")[0];
     }
     std::string generateInsertSql() const {
         const auto insertSqlBody = std::string() + "'" +
-            data.BrokerID + "','" + data.InvestorID + "','" + data.ExchangeID + "','" + data.InstrumentID + "','" + data.OpenDate + "','" + std::to_string(data.OpenPrice) + "','" + data.OpenTradeID + "','" + data.CloseDate + "','" + data.CloseTime + "','" + std::to_string(data.ClosePrice) + "','" + data.CloseTradeID + "','" + std::to_string(data.CloseProfit) + "','" + (data.CloseFlag == 0 ? '0' : data.CloseFlag)
+            data.BrokerID + "','" + data.InvestorID + "','" + data.ExchangeID + "','" + data.InstrumentID + "','" + data.OpenDate + "','" + std::to_string(data.OpenPrice) + "','" + data.OpenTradeID + "','" + data.CloseDate + "','" + data.CloseTime + "','" + std::to_string(data.ClosePrice) + "','" + data.CloseTradeID + "','" + std::to_string(data.CloseVolume) + "','" + (data.Direction == 0 ? '0' : data.Direction) + "','" + std::to_string(data.PreSettlementPrice) + "','" + std::to_string(data.CloseProfit) + "','" + (data.CloseFlag == 0 ? '0' : data.CloseFlag)
             + "'";
         return INSERT_SQL_PREFIX + insertSqlBody + ");";
     }

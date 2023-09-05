@@ -41,6 +41,29 @@ bool CSqliteHandler::CreateTable(const std::string& sql)
     return ret == SQLITE_OK;
 }
 
+//开启事务
+bool CSqliteHandler::BeginTransaction()
+{
+    char* errMsg = nullptr;
+    int ret = sqlite3_exec(m_pDB, "begin", nullptr, nullptr, &errMsg);
+    if (errMsg)
+    {
+        sqlite3_free(errMsg);
+    }
+    return ret == SQLITE_OK;
+}
+
+//提交事务
+bool CSqliteHandler::Commit()
+{
+    char* errMsg = nullptr;
+    int ret = sqlite3_exec(m_pDB, "commit", nullptr, nullptr, &errMsg);
+    if (errMsg)
+    {
+        sqlite3_free(errMsg);
+    }
+    return ret == SQLITE_OK;
+}
 
 bool CSqliteHandler::Insert(const std::string& sql)
 {

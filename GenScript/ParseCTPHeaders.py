@@ -17,7 +17,7 @@ output_path = "../LocalCTP/auto_generated_code/CTPSQLWrapper.h"
 output2_path = "../LocalCTP/auto_generated_code/CTPSQLWrapper.cpp"
 output_api_path = "../LocalCTP/auto_generated_code/CTPApiHugeMacro.h"
 
-needConvertMemberNames = ['StatusMsg','ErrorMsg'] #需要转换编码的成员变量
+needConvertMemberNames = ['StatusMsg','ErrorMsg','InstrumentName','ProductName','ExchangeName'] #需要转换编码的成员变量
 # 预先定义好主键的表. key:表名. value: 这张表的主键. 如果以后有想要保存的表并且知道主键,则可以在此处添加.
 # 如果没有手动设置主键,则默认用BrokerID+UserID/AccountID/InvestorID(如果存在)作为主键
 predefinedTableKey = {

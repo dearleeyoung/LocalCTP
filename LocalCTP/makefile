@@ -1,5 +1,5 @@
 DEBUG = -g
-CFLAGS = $(DEBUG) -Wall -c -fPIC -std=c++11 
+CFLAGS = $(DEBUG) -Wall -Wno-format-security -c -fPIC -std=c++11 
 CFLAGS2 = $(DEBUG) -Wall -c -fPIC 
 RM = rm -rf
 

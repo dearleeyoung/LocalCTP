@@ -4,6 +4,7 @@
 #include <iostream>
 #include <cstring>
 #include <string>
+#include <fstream> // std::ofstream
 #include "ThostFtdcTraderApi.h"//CTP交易的头文件
 
 CThostFtdcInputOrderField generateNewOrderMsg(const char* OrderRef, const char* InstrumentID = "MA401")
@@ -115,6 +116,23 @@ class MySpi : public CThostFtdcTraderSpi
                 << std::endl;
         }
     }
+    void OnRspQrySettlementInfo(CThostFtdcSettlementInfoField* pSettlementInfo, CThostFtdcRspInfoField* pRspInfo, int nRequestID, bool bIsLast) {
+        std::cout << "收到查询结算单响应! " << " errorID:" << pRspInfo->ErrorID << " errorMsg:" << pRspInfo->ErrorMsg
+            << ", bIsLast:" << bIsLast << std::endl;
+        if (pSettlementInfo)
+        {
+            //将结算单保存到本地文件中,文件名包含 账户名 和 结算单的交易日
+            static std::ofstream o(std::string("./") + pSettlementInfo->AccountID
+                + "_" + pSettlementInfo->TradingDay + "_settlement.log");
+            o << pSettlementInfo->Content;//Content末尾可能正好有中文字符被截断(即分别在两个不同的消息里返回), 这里没有做处理
+            o.flush();
+
+            std::cout << "结算单 交易日:" << pSettlementInfo->TradingDay
+                << ", 消息正文:" << pSettlementInfo->Content
+                << std::endl;
+            
+        }
+    }
     void OnRspOrderInsert(CThostFtdcInputOrderField* pInputOrder, CThostFtdcRspInfoField* pRspInfo, int nRequestID, bool bIsLast) {
         std::cout << "\n收到(有错误的)报单响应! " << " UserID:" << pInputOrder->UserID
             << " InstrumentID:" << pInputOrder->InstrumentID
@@ -137,6 +155,7 @@ class MySpi : public CThostFtdcTraderSpi
             << " InstrumentID:" << pInputOrderAction->InstrumentID
             << " errorID:" << pRspInfo->ErrorID << " errorMsg:" << pRspInfo->ErrorMsg << std::endl;
     }
+
 };
 
 int main()
@@ -147,11 +166,18 @@ int main()
     std::cout << pApi->GetTradingDay() << std::endl;
     MySpi spi;
     pApi->RegisterSpi(&spi);
-    pApi->Init();//读取 instrument.csv 合约文件, 以及数据库中的合约表和费率表
+    pApi->Init();
 
+    std::cout << "请输入任意数字以登录..." << std::endl;
+    int i;
+    std::cin >> i;
     CThostFtdcReqUserLoginField ReqUserLoginField = { "", "9876", "TestUserID", "TestPassword" };
     pApi->ReqUserLogin(&ReqUserLoginField, 100);
-
+    CThostFtdcQrySettlementInfoField QrySettlementInfo = { "9876", "TestUserID" };
+    pApi->ReqQrySettlementInfo(&QrySettlementInfo, 0);//查询结算单
+    CThostFtdcSettlementInfoConfirmField confirm = { "9876", "TestUserID" };
+    pApi->ReqSettlementInfoConfirm(&confirm, 0);//确认结算单
+    
     CThostFtdcQryInstrumentField QryInstrument = { 0 };
     strcpy(QryInstrument.ProductID, "IC");
     pApi->ReqQryInstrument(&QryInstrument, 108);
@@ -225,7 +251,7 @@ int main()
     ret = pApi->ReqQryInvestorPosition(&QryInvestorPosition, 100);
 
     std::cout << ret << std::endl;
-    int i;
+
     std::cin >> i;
     return 0;
 }

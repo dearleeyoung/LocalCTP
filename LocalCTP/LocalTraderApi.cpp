@@ -22,6 +22,9 @@ std::set<CLocalTraderApi::SP_TRADE_API> CLocalTraderApi::trade_api_set;
 std::atomic<int> CLocalTraderApi::maxSessionID(0);
 std::map<std::string, long long> CLocalTraderApi::m_orderSysID; // 当前最大委托编号
 std::map<std::string, long long> CLocalTraderApi::m_tradeID; // 当前最大成交编号
+CLocalTraderApi::InstrMap CLocalTraderApi::m_instrData; //合约数据
+std::map<std::string, CThostFtdcExchangeField> CLocalTraderApi::m_exchanges;// 交易所数据. key:交易所代码
+std::map<std::string, CThostFtdcProductField> CLocalTraderApi::m_products;// 品种数据. key:品种代码
 CSqliteHandler CLocalTraderApi::sqlHandler("LocalCTP.db");
 CLocalTraderApi::CSettlementHandler& CLocalTraderApi::settlementHandler =
     CLocalTraderApi::CSettlementHandler::getSettlementHandler(
@@ -266,10 +269,27 @@ void CLocalTraderApi::onSnapshot(const CThostFtdcDepthMarketDataField& mdData)
             auto posKey = CLocalTraderApi::generatePositionKey(instrumentID,
                 dir, dateType);
             std::lock_guard<std::mutex> posGuard(m_positionMtx);
-            // 更新持仓中的PNL,但并不更新持仓明细中的PNL
+            // 更新持仓中的PNL
             auto itPos = m_positionData.find(posKey);
             if (itPos != m_positionData.end())
             {
+                for (auto& posDetail : itPos->second.posDetailData)
+                {
+                    const double positionCostOfThiPosDetail =
+                        posDetail.Volume * it->second.VolumeMultiple *
+                        (strcmp(posDetail.OpenDate, posDetail.TradingDay)==0 ?
+                            posDetail.OpenPrice : posDetail.LastSettlementPrice);
+                    const double openCostOfThiPosDetail =
+                        posDetail.Volume * it->second.VolumeMultiple * posDetail.OpenPrice;
+                    posDetail.PositionProfitByTrade = (dir == THOST_FTDC_D_Buy ? 1 : -1) *
+                        (mdData.LastPrice * it->second.VolumeMultiple * posDetail.Volume
+                            - openCostOfThiPosDetail);
+                    posDetail.PositionProfitByDate = (dir == THOST_FTDC_D_Buy ? 1 : -1) *
+                        (mdData.LastPrice * it->second.VolumeMultiple * posDetail.Volume
+                            - positionCostOfThiPosDetail);
+                    posDetail.SettlementPrice = mdData.LastPrice;
+                }
+
                 itPos->second.pos.SettlementPrice = mdData.LastPrice;
                 auto& PositionProfit = itPos->second.pos.PositionProfit;
                 double oldPositionProfit = PositionProfit;
@@ -524,6 +544,8 @@ void CLocalTraderApi::updateByTrade(const CThostFtdcTradeFieldWrapper& t)
                 posDetail.MarginRateByVolume = (pTrade->Direction == THOST_FTDC_D_Buy ?
                     itMarginRate->second.LongMarginRatioByVolume :
                     itMarginRate->second.ShortMarginRatioByVolume);
+                posDetail.LastSettlementPrice = itDepthMarketData->second.PreSettlementPrice;
+                posDetail.Margin = marginOfTrade;
                 itPos->second.addPositionDetail(posDetail);// 添加持仓明细到持仓中
                 savePositionDetialToDb(posDetail);
 
@@ -541,6 +563,7 @@ void CLocalTraderApi::updateByTrade(const CThostFtdcTradeFieldWrapper& t)
                 pos.OpenCost +=
                     pTrade->Volume * pTrade->Price * itPos->second.volumeMultiple;
                 pos.TodayPosition += pTrade->Volume;
+                pos.SettlementPrice = pTrade->Price;
                 savePositionToDb(pos);
             }
         }
@@ -591,10 +614,31 @@ void CLocalTraderApi::updateByTrade(const CThostFtdcTradeFieldWrapper& t)
                 p.CloseVolume += tradeVolumeInThisPosDetail;
                 p.CloseAmount +=
                     tradeVolumeInThisPosDetail * pTrade->Price * itPos->second.volumeMultiple;
+                const double positionCostOfThiPosDetail =
+                    p.Volume * it->second.VolumeMultiple *
+                    (strcmp(p.OpenDate, p.TradingDay) == 0 ?
+                        p.OpenPrice : p.LastSettlementPrice);
+                const double openCostOfThiPosDetail =
+                    p.Volume * it->second.VolumeMultiple * p.OpenPrice;
+                p.PositionProfitByTrade = (p.Direction == THOST_FTDC_D_Buy ? 1 : -1) *
+                    (pTrade->Price * it->second.VolumeMultiple * p.Volume
+                        - openCostOfThiPosDetail);//更新持仓明细的逐笔对冲持仓盈亏
+                p.PositionProfitByDate = (p.Direction == THOST_FTDC_D_Buy ? 1 : -1) *
+                    (pTrade->Price * it->second.VolumeMultiple * p.Volume
+                        - positionCostOfThiPosDetail);//更新持仓明细的逐日盯市持仓盈亏
+                p.Margin = positionCostOfThiPosDetail *
+                    (pos.PosiDirection == THOST_FTDC_PD_Long ?
+                        itMarginRate->second.LongMarginRatioByMoney :
+                        itMarginRate->second.ShortMarginRatioByMoney)
+                    + p.Volume *
+                    (pos.PosiDirection == THOST_FTDC_PD_Long ?
+                        itMarginRate->second.LongMarginRatioByVolume :
+                        itMarginRate->second.ShortMarginRatioByVolume);// 更新持仓的保证金
+                p.SettlementPrice = pTrade->Price;
                 // 持仓明细的平仓盈亏汇总计算中,昨仓用昨结算价,今仓用开仓价
                 double closeProfitOfThisPosDetailInThisTrade = 0;
                 TThostFtdcOffsetFlagType _closeFlag = THOST_FTDC_OF_Close;
-                if (strcmp(p.OpenDate, GetTradingDay()) != 0)//昨仓
+                if (strcmp(p.OpenDate, p.TradingDay) != 0)//昨仓
                 {
                     closeYesterdayVolume += tradeVolumeInThisPosDetail;
                     closeProfitOfThisPosDetailInThisTrade =
@@ -628,6 +672,9 @@ void CLocalTraderApi::updateByTrade(const CThostFtdcTradeFieldWrapper& t)
                     strncpy(cd.CloseTime, pTrade->TradeTime, sizeof(cd.CloseTime));
                     cd.ClosePrice = pTrade->Price;
                     strncpy(cd.CloseTradeID, pTrade->TradeID, sizeof(cd.CloseTradeID));
+                    cd.CloseVolume = tradeVolumeInThisPosDetail;
+                    cd.Direction = pTrade->Direction;
+                    cd.PreSettlementPrice = itDepthMarketData->second.PreSettlementPrice;
                     cd.CloseProfit = closeProfitOfThisPosDetailInThisTrade;
                     cd.CloseFlag = _closeFlag;
                     saveDataToDb(CloseDetailWrapper(cd));
@@ -658,7 +705,7 @@ void CLocalTraderApi::updateByTrade(const CThostFtdcTradeFieldWrapper& t)
             {
                 pos.Position += p.Volume;
                 pos.PositionCost += p.Volume *
-                    (strcmp(p.OpenDate, GetTradingDay())==0 ? p.OpenPrice : pos.PreSettlementPrice)
+                    (strcmp(p.OpenDate, p.TradingDay)==0 ? p.OpenPrice : pos.PreSettlementPrice)
                     * itPos->second.volumeMultiple;// 持仓明细的持仓成本汇总计算中,昨仓用昨结算价,今仓用开仓价
                 pos.OpenCost += p.Volume * p.OpenPrice * itPos->second.volumeMultiple;
             }
@@ -685,6 +732,7 @@ void CLocalTraderApi::updateByTrade(const CThostFtdcTradeFieldWrapper& t)
             pos.CloseAmount +=
                 pTrade->Volume * pTrade->Price * itPos->second.volumeMultiple;//更新持仓的平仓金额
             pos.TodayPosition -= closeTodayVolume;
+            pos.SettlementPrice = pTrade->Price;
             savePositionToDb(pos);
             // 汇总计算资金
             updatePNL(true);
@@ -695,6 +743,7 @@ void CLocalTraderApi::updateByTrade(const CThostFtdcTradeFieldWrapper& t)
 // 从数据库中重新加载账户数据但并不读取委托和成交表
 void CLocalTraderApi::reloadAccountData()
 {
+    const std::string& TradingDay = GetTradingDay();
     auto reloadPosition = [&]() {
         m_positionData.clear();
         CSqliteHandler::SQL_VALUES posSqlValues;
@@ -731,9 +780,9 @@ void CLocalTraderApi::reloadAccountData()
                     if (isSpecialExchange(posData.pos.ExchangeID))
                     {
                         if (posData.pos.PositionDate == THOST_FTDC_PSD_Today)
-                            return strcmp(posDetail.OpenDate, GetTradingDay()) == 0;
+                            return strcmp(posDetail.OpenDate, posDetail.TradingDay) == 0;
                         else
-                            return strcmp(posDetail.OpenDate, GetTradingDay()) != 0;
+                            return strcmp(posDetail.OpenDate, posDetail.TradingDay) != 0;
                     }
                     else
                     {
@@ -779,7 +828,7 @@ void CLocalTraderApi::reloadAccountData()
         for (const auto& rowData : posSqlValues)
         {
             CThostFtdcOrderFieldWrapper wrapper(rowData);
-            if (strcmp(GetTradingDay(), wrapper.data.TradingDay) != 0)// only select today's orders
+            if (TradingDay !=  wrapper.data.TradingDay)// only select today's orders
             {
                 continue;
             }
@@ -794,7 +843,7 @@ void CLocalTraderApi::reloadAccountData()
         for (const auto& rowData : posSqlValues)
         {
             CThostFtdcTradeFieldWrapper wrapper(rowData);
-            if (strcmp(GetTradingDay(), wrapper.data.TradingDay) != 0)// only select today's trades
+            if (TradingDay != wrapper.data.TradingDay)// only select today's trades
             {
                 continue;
             }
@@ -877,35 +926,50 @@ void CLocalTraderApi::Release() {
     CLocalTraderApi::trade_api_set.erase(sp_this);
 }
 
-///初始化
-///@remark 初始化运行环境,只有调用后,接口才开始工作
-void CLocalTraderApi::Init() {
-    m_bRunning = true;
-	// 从当前目录(或环境变量中的目录)的 instrument.csv 以及数据库中的合约表中读取合约信息
-    std::ifstream ifs("instrument.csv");
-    if (!ifs.is_open())
+void CLocalTraderApi::initInstrMap()
+{
+    static bool bFirstRun = true;
+    static std::mutex mtx;
+    std::lock_guard<std::mutex> lck(mtx);
+    if (!bFirstRun)
     {
         return;
     }
-    std::string singleLine;
-    if (!std::getline(ifs, singleLine))//第一行是表头
+    else
     {
-        return;
+        bFirstRun = false;
     }
-    while (std::getline(ifs, singleLine))
+    auto readInstrumentFromCsvFile = [&]() -> bool
     {
-        if (singleLine.empty())
+        // 从当前目录(或环境变量中的目录)的 instrument.csv 以及数据库中的合约表中读取合约信息
+        std::ifstream ifs("instrument.csv");
+        if (!ifs.is_open())
         {
-            break;
+            return false;
         }
-        std::istringstream iss(singleLine);
-        CThostFtdcInstrumentField instr = { 0 };
-        iss >> instr;
-        m_instrData[instr.InstrumentID] = instr;
-    }
+        std::string singleLine;
+        if (!std::getline(ifs, singleLine))//第一行是表头
+        {
+            return false;
+        }
+        while (std::getline(ifs, singleLine))
+        {
+            if (singleLine.empty())
+            {
+                break;
+            }
+            std::istringstream iss(singleLine);
+            CThostFtdcInstrumentField instr = { 0 };
+            iss >> instr;
+            m_instrData[instr.InstrumentID] = instr;
+        }
 #ifdef _DEBUG
-    std::cout << "Total instrument count from instrument.csv: " << m_instrData.size() << std::endl;
+        std::cout << "Total instrument count from instrument.csv: " << m_instrData.size() << std::endl;
 #endif
+        return true;
+    };
+    const bool readRet = readInstrumentFromCsvFile();
+    const auto readFromCsvFile = m_instrData;
 
     CSqliteHandler::SQL_VALUES instrumentSqlValues;
     sqlHandler.SelectData(CThostFtdcInstrumentFieldWrapper::SELECT_SQL, instrumentSqlValues);
@@ -918,6 +982,17 @@ void CLocalTraderApi::Init() {
     std::cout << "Total instrument count from instrument table in database: "
         << instrumentSqlValues.size() << std::endl;
 #endif
+    // 将从csv文件获取的合约数据,重新写入数据库中
+    if (readRet)
+    {
+        sqlHandler.BeginTransaction();
+        for (const auto& instr : readFromCsvFile)
+        {
+            sqlHandler.Insert(
+                CThostFtdcInstrumentFieldWrapper(instr.second).generateInsertSql());
+        }
+        sqlHandler.Commit();
+    }
 
     auto initProductsAndExchanges = [&]() {
         for (const auto& instrPair : m_instrData)
@@ -988,7 +1063,13 @@ void CLocalTraderApi::Init() {
         }
     };
     initProductsAndExchanges();
+}
 
+///初始化
+///@remark 初始化运行环境,只有调用后,接口才开始工作
+void CLocalTraderApi::Init() {
+    m_bRunning = true;
+    CLocalTraderApi::initInstrMap();
 
     // 从数据库中读取合约的保证金率和手续费.
     // 临时措施:对数据库中没有数据的合约,将合约的保证金率和手续费率初始化(保证金率为10%,手续费为1元每手)
@@ -1734,9 +1815,10 @@ int CLocalTraderApi::ReqOrderAction(CThostFtdcInputOrderActionField *pInputOrder
 ///投资者结算结果确认
 int CLocalTraderApi::ReqSettlementInfoConfirm(CThostFtdcSettlementInfoConfirmField *pSettlementInfoConfirm, int nRequestID) {
     CHECK_LOGIN_INVESTOR(pSettlementInfoConfirm);
+    const auto nowTime = CLeeDateTime::GetCurrentTime();
     const std::string UPDATE_NEWEST_SETTLEMENT_RECORD_TO_CONFIRMED =
-        std::string("UPDATE 'SettlementData' SET ConfirmDay='") + GetTradingDay() 
-        + "', ConfirmTime='" + CLeeDateTime::GetCurrentTime().Format("%H:%M:%S")
+        std::string("UPDATE 'SettlementData' SET ConfirmDay='") + nowTime.Format("%Y%m%d")
+        + "', ConfirmTime='" + nowTime.Format("%H:%M:%S")
         + "' where BrokerID='" + m_brokerID
         + "' and InvestorID='" + m_userID + "' and ConfirmDay='';";
     CSqliteHandler::SQL_VALUES posSqlValues;
@@ -2067,7 +2149,7 @@ int CLocalTraderApi::ReqQrySettlementInfo(CThostFtdcQrySettlementInfoField *pQry
                 bool bIsLast = false;//是否为最后一条记录
 
                 CThostFtdcSettlementInfoField SettlementInfo = { 0 };
-                strncpy(SettlementInfo.TradingDay, it->at("TradingDay").c_str(), sizeof(SettlementInfo.BrokerID));
+                strncpy(SettlementInfo.TradingDay, it->at("TradingDay").c_str(), sizeof(SettlementInfo.TradingDay));
                 strncpy(SettlementInfo.BrokerID, pQrySettlementInfo->BrokerID, sizeof(SettlementInfo.BrokerID));
                 strncpy(SettlementInfo.InvestorID, pQrySettlementInfo->InvestorID, sizeof(SettlementInfo.InvestorID));
                 strncpy(SettlementInfo.AccountID, pQrySettlementInfo->InvestorID, sizeof(SettlementInfo.AccountID));

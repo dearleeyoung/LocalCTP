@@ -17,6 +17,8 @@ public:
     bool OpenSqlDB(const std::string& dbPath);
     bool CreateTable(const std::string& sql);
 
+    bool BeginTransaction();
+    bool Commit();
     bool Insert(const std::string& sql);
     bool Delete(const std::string& sql);
     bool Update(const std::string& sql);
