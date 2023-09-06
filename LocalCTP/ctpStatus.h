@@ -28,6 +28,7 @@ constexpr TThostFtdcErrorMsgType ERRMSG_AVAILABLE_NOT_ENOUGH = "CTP:可用资金不足
 constexpr TThostFtdcErrorMsgType ERRMSG_AVAILABLE_POSITION_NOT_ENOUGH = "CTP:平仓时持仓不足,当前可平数量是:";
 constexpr TThostFtdcErrorMsgType ERRMSG_AVAILABLE_TODAY_POSITION_NOT_ENOUGH = "CTP:平今时持仓不足,当前可平数量是:";
 constexpr char CONDITIONAL_ORDER_SYSID_PREFIX[10] = "TJBD_";
+constexpr char STR_YUE[10] = "月";
 
 // 通过触发条件类型,判断是否是(符合本系统需求的)条件单
 inline bool isConditionalType(TThostFtdcContingentConditionType	contingentCondition)

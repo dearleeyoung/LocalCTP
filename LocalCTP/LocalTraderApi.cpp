@@ -144,8 +144,8 @@ CThostFtdcRspInfoField* CLocalTraderApi::setErrorMsgAndGetRspInfo(const char* er
 
 // 收到行情快照的处理
 // 接收到行情快照时，需要更新行情的合约对应的持仓的持仓盈亏，然后更新账户的动态权益等资金数据。
-// 多头持仓的持仓盈亏 = （最新价计算得到的成本 - 持仓成本） * 合约数量乘数 * 持仓数量
-// 空头持仓的持仓盈亏 = （持仓成本 - 最新价计算得到的成本） * 合约数量乘数 * 持仓数量
+// 多头持仓的持仓盈亏 = （最新结算价计算得到的成本 - 持仓成本） * 合约数量乘数 * 持仓数量
+// 空头持仓的持仓盈亏 = （持仓成本 - 最新结算价计算得到的成本） * 合约数量乘数 * 持仓数量
 void CLocalTraderApi::onSnapshot(const CThostFtdcDepthMarketDataField& mdData)
 {
     const std::string instrumentID = mdData.InstrumentID;
@@ -160,7 +160,7 @@ void CLocalTraderApi::onSnapshot(const CThostFtdcDepthMarketDataField& mdData)
         return;
     }
 
-    auto isPriceValid = [](const bool price) {return LT(price, DBL_MAX); };
+    auto isPriceValid = [](const double price) ->bool {return LT(price, DBL_MAX); };
     //处理条件单的触发
     for (auto contionalOrderPtr : m_contionalOrders)
     {
@@ -1014,6 +1014,11 @@ void CLocalTraderApi::initInstrMap()
             if (m_products.find(instr.ProductID) == m_products.end())
             {
                 auto getRemoveLastNumberStr = [&](std::string s) -> std::string {
+                    //去除末尾的"月"字. example: 菜油1月 -> 菜油1
+                    if (s.substr(s.size() - 2, 2) == STR_YUE)
+                    {
+                        s = s.substr(0, s.size() - 2);
+                    }
                     //去除字符串末尾的数字. example: 黄金2402 -> 黄金
                     auto lastNotNumberIndex = s.find_last_not_of("0123456789");
                     if (lastNotNumberIndex == std::string::npos)
