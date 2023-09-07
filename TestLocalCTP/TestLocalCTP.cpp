@@ -200,13 +200,15 @@ int main()
     strcpy(md.InstrumentID, "MA309");
     md.BidPrice1 = 1000;
     md.AskPrice1 = 1010;
-    md.PreSettlementPrice = 1020;
+    md.SettlementPrice = md.PreSettlementPrice = 1020;
+    pApi->RegisterFensUserInfo((CThostFtdcFensUserInfoField*)&md);//喂一个行情快照给API
     pApi->RegisterFensUserInfo((CThostFtdcFensUserInfoField*)&md);//喂一个行情快照给API
     strcpy(md.InstrumentID, "MA401");
     md.BidPrice1 = 2000;
     md.AskPrice1 = 2010;
-    md.PreSettlementPrice = 2020;
+    md.SettlementPrice = md.PreSettlementPrice = 2020;
     pApi->RegisterFensUserInfo((CThostFtdcFensUserInfoField*)&md);//喂一个行情快照给API
+
     InputOrder = generateNewOrderMsg("1000", "SPD MA309&MA401");
     InputOrder.LimitPrice = -985;//实际会以1010-2000 = (-990)元的差价成交
     ret = pApi->ReqOrderInsert(&InputOrder, 109);//有行情数据后,再下一单(买入开仓成交)
@@ -232,6 +234,7 @@ int main()
     marketData.AskPrice = 1010;
     strcpy(marketData.QuoteRef, "1020.0");// PreSettlementPrice
     strcpy(marketData.UserID, "4999");// LastPrice.   4999 > 4998
+    strcpy(marketData.ForQuoteSysID, "4999");// SettlementPrice
     int Volume = 88888;
     pApi->ReqQuoteInsert(&marketData, Volume);//使用ReqQuoteInsert接口, 喂一个行情快照给API(以触发条件单), 
 

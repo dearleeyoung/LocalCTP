@@ -265,6 +265,7 @@ void CLocalTraderApi::onSnapshot(const CThostFtdcDepthMarketDataField& mdData)
     const double priceForCal = isPriceValid(mdData.SettlementPrice) ?
         mdData.SettlementPrice : mdData.LastPrice;//优先使用结算价进行计算
     double diffPositionProfit(0.0);
+    sqlHandler.BeginTransaction();
     for (auto dir : { THOST_FTDC_D_Buy, THOST_FTDC_D_Sell })
     {
         for (auto dateType : { THOST_FTDC_PSD_Today, THOST_FTDC_PSD_History })
@@ -291,6 +292,23 @@ void CLocalTraderApi::onSnapshot(const CThostFtdcDepthMarketDataField& mdData)
                         (priceForCal * it->second.VolumeMultiple * posDetail.Volume
                             - positionCostOfThiPosDetail);
                     posDetail.SettlementPrice = priceForCal;
+
+                    // only update some fields in position detail table
+                    const std::string updatePositionDetailProfitSql =
+                        std::string("UPDATE 'CThostFtdcInvestorPositionDetailField' SET PositionProfitByTrade=")
+                        + std::to_string(posDetail.PositionProfitByTrade)
+                        + ", PositionProfitByDate=" + std::to_string(posDetail.PositionProfitByDate)
+                        + ", SettlementPrice=" + std::to_string(posDetail.SettlementPrice)
+                        + " WHERE BrokerID='" + posDetail.BrokerID
+                        + "' AND InvestorID='" + posDetail.InvestorID
+                        + "' AND HedgeFlag='" + posDetail.HedgeFlag
+                        + "' AND InstrumentID='" + posDetail.InstrumentID
+                        + "' AND Direction='" + posDetail.Direction
+                        + "' AND TradeType='" + posDetail.TradeType
+                        + "' AND OpenDate='" + posDetail.OpenDate
+                        + "' AND TradeID='" + posDetail.TradeID
+                        + "';";
+                    sqlHandler.Update(updatePositionDetailProfitSql);
                 }
 
                 itPos->second.pos.SettlementPrice = priceForCal;
@@ -300,11 +318,25 @@ void CLocalTraderApi::onSnapshot(const CThostFtdcDepthMarketDataField& mdData)
                     (priceForCal * it->second.VolumeMultiple * itPos->second.pos.Position
                         - itPos->second.pos.PositionCost);
                 diffPositionProfit += PositionProfit - oldPositionProfit;
+
+                // only update some fields in position table
+                const std::string updatePositionProfitSql =
+                    std::string("UPDATE 'CThostFtdcInvestorPositionField' SET PositionProfit=")
+                    + std::to_string(PositionProfit)
+                    + ", SettlementPrice=" + std::to_string(itPos->second.pos.SettlementPrice)
+                    + " WHERE BrokerID='" + itPos->second.pos.BrokerID
+                    + "' AND InvestorID='" + itPos->second.pos.InvestorID
+                    + "' AND HedgeFlag='" + itPos->second.pos.HedgeFlag
+                    + "' AND InstrumentID='" + itPos->second.pos.InstrumentID
+                    + "' AND PosiDirection='" + itPos->second.pos.PosiDirection
+                    + "' AND PositionDate='" + itPos->second.pos.PositionDate + "';";
+                sqlHandler.Update(updatePositionProfitSql);
             }
         }
     }
     m_tradingAccount.PositionProfit += diffPositionProfit;
     updatePNL();
+    sqlHandler.Commit();
 }
 
 
