@@ -103,6 +103,9 @@ private:
         CSettlementHandler(CSqliteHandler& _sqlHandler);
         CSqliteHandler& m_sqlHandler;
         std::atomic<bool> m_running;
+        const std::string m_tradingAccountUpdateFromPositionSql1;
+        const std::string m_tradingAccountUpdateFromPositionSql2;
+        const std::string m_tradingAccountUpdateFromPositionSql3;
         const int m_sleepSecond;
         const int m_settlementStartHour;
         int m_count;
@@ -202,11 +205,13 @@ private:
         void init_format_settlement();
         bool checkSettlement();//检查结算情况
         void doSettlement();//开始结算!
-        void doUserSettlement(
+        void doGenerateUserSettlement(
             const CThostFtdcTradingAccountFieldWrapper& tradingAccountFieldWrapper,
-            const std::string& TradingDay);//对单个用户的结算
+            const std::string& TradingDay);//为单个用户生成结算单
+        void doWorkInitialSettlement(const std::string& oldTradingDay);//处理结算的初步工作
         void doWorkAfterSettlement(const std::string& oldTradingDay,
             const std::string& newTradingDay);//处理结算后的工作
+        void accumulateTradingAccountFromPosition();
     public:
         //单实例模式
         static CSettlementHandler& getSettlementHandler(CSqliteHandler& _sqlHandler)
@@ -358,11 +363,11 @@ private:
     void onSnapshot(const CThostFtdcDepthMarketDataField& mdData);// 处理行情快照的接口
     void updatePNL(bool needTotalCalc = false);// 更新PNL(盈亏)的接口
     void updateByCancel(const CThostFtdcOrderField& o);// 根据已撤单的委托更新账户数据的接口,在委托被撤单后被调用
-    void updateByTrade(const localCTP::CThostFtdcTradeFieldWrapper& t);// 根据成交更新账户数据的接口,在发生成交后被调用
+    void updateByTrade(const CThostFtdcTradeFieldWrapper& t);// 根据成交更新账户数据的接口,在发生成交后被调用
     void saveTradingAccountToDb();// 保存账户资金数据到数据库中的接口
     void savePositionToDb(const PositionData& pos);// 保存账户持仓数据到数据库中的接口
     void savePositionToDb(const CThostFtdcInvestorPositionField& pos);// 保存账户持仓数据到数据库中的接口
-    void savePositionDetialToDb(const CThostFtdcInvestorPositionDetailField& pos);// 保存账户持仓明细数据到数据库中的接口
+    void savePositionDetialToDb(const CThostFtdcInvestorPositionDetailField& posDetail);// 保存账户持仓明细数据到数据库中的接口
     void saveOrderToDb(const CThostFtdcOrderField& order);// 保存账户委托数据到数据库中的接口
     template<class T>
     void saveDataToDb(const T& wrapper)

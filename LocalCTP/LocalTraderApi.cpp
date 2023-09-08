@@ -359,9 +359,14 @@ void CLocalTraderApi::updatePNL(bool needTotalCalc /*= false*/)
             m_tradingAccount.FrozenMargin += P.second.pos.FrozenMargin;
         }
     }
-    m_tradingAccount.Balance = m_tradingAccount.PreBalance + m_tradingAccount.Deposit - m_tradingAccount.Withdraw
-        + m_tradingAccount.PositionProfit + m_tradingAccount.CloseProfit - m_tradingAccount.Commission;
-    m_tradingAccount.Available = m_tradingAccount.Balance - m_tradingAccount.CurrMargin - m_tradingAccount.FrozenMargin;
+    m_tradingAccount.Balance = m_tradingAccount.PreBalance
+        + m_tradingAccount.Deposit - m_tradingAccount.Withdraw
+        + m_tradingAccount.PositionProfit + m_tradingAccount.CloseProfit
+        + m_tradingAccount.CashIn
+        - m_tradingAccount.Commission;
+    m_tradingAccount.Available = m_tradingAccount.Balance
+        - m_tradingAccount.CurrMargin - m_tradingAccount.FrozenMargin
+        - m_tradingAccount.FrozenCash;
 
     // PNL更新时保存资金数据到数据库中. 可根据需要修改控制保存的时机(如定时保存等).
     saveTradingAccountToDb();
@@ -538,23 +543,19 @@ void CLocalTraderApi::updateByTrade(const CThostFtdcTradeFieldWrapper& t)
     // 开仓成交时,增加一笔新的持仓明细,减少冻结保证金,更新持仓和资金
     if (isOpen(pTrade->OffsetFlag))
     {
-        double frozenMargin = itDepthMarketData->second.PreSettlementPrice *
-            it->second.VolumeMultiple * pTrade->Volume *
-            (pTrade->Direction == THOST_FTDC_D_Buy ?
-                itMarginRate->second.LongMarginRatioByMoney :
-                itMarginRate->second.ShortMarginRatioByMoney)
-            + pTrade->Volume * (pTrade->Direction == THOST_FTDC_D_Buy ?
-                itMarginRate->second.LongMarginRatioByVolume :
-                itMarginRate->second.ShortMarginRatioByVolume);
-        double marginOfTrade = pTrade->Price * it->second.VolumeMultiple *
-            pTrade->Volume *
-            (pTrade->Direction == THOST_FTDC_D_Buy ?
-                itMarginRate->second.LongMarginRatioByMoney :
-                itMarginRate->second.ShortMarginRatioByMoney)
-            + pTrade->Volume * (pTrade->Direction == THOST_FTDC_D_Buy ?
-                itMarginRate->second.LongMarginRatioByVolume :
-                itMarginRate->second.ShortMarginRatioByVolume);
-        double feeOfTrade = pTrade->Price * it->second.VolumeMultiple *
+        const double MarginRatioByMoney = (pTrade->Direction == THOST_FTDC_D_Buy ?
+            itMarginRate->second.LongMarginRatioByMoney :
+            itMarginRate->second.ShortMarginRatioByMoney);
+        const double MarginRatioByVolume = (pTrade->Direction == THOST_FTDC_D_Buy ?
+            itMarginRate->second.LongMarginRatioByVolume :
+            itMarginRate->second.ShortMarginRatioByVolume);
+        const double frozenMargin = itDepthMarketData->second.PreSettlementPrice *
+            it->second.VolumeMultiple * pTrade->Volume * MarginRatioByMoney
+            + pTrade->Volume * MarginRatioByVolume;
+        const double marginOfTrade = pTrade->Price * it->second.VolumeMultiple *
+            pTrade->Volume * MarginRatioByMoney
+            + pTrade->Volume * MarginRatioByVolume;
+        const double feeOfTrade = pTrade->Price * it->second.VolumeMultiple *
             pTrade->Volume * itCommissionRate->second.OpenRatioByMoney +
             pTrade->Volume * itCommissionRate->second.OpenRatioByVolume;
         const_cast<CThostFtdcTradeFieldWrapper&>(t).Commission = feeOfTrade;
@@ -573,13 +574,10 @@ void CLocalTraderApi::updateByTrade(const CThostFtdcTradeFieldWrapper& t)
             else
             {
                 auto posDetail = PositionData::getPositionDetailFromOpenTrade(*pTrade);
-                posDetail.MarginRateByMoney = (pTrade->Direction == THOST_FTDC_D_Buy ?
-                    itMarginRate->second.LongMarginRatioByMoney :
-                    itMarginRate->second.ShortMarginRatioByMoney);
-                posDetail.MarginRateByVolume = (pTrade->Direction == THOST_FTDC_D_Buy ?
-                    itMarginRate->second.LongMarginRatioByVolume :
-                    itMarginRate->second.ShortMarginRatioByVolume);
+                posDetail.MarginRateByMoney = MarginRatioByMoney;
+                posDetail.MarginRateByVolume = MarginRatioByVolume;
                 posDetail.LastSettlementPrice = itDepthMarketData->second.PreSettlementPrice;
+                posDetail.SettlementPrice = itDepthMarketData->second.SettlementPrice;
                 posDetail.Margin = marginOfTrade;
                 itPos->second.addPositionDetail(posDetail);// 添加持仓明细到持仓中
                 savePositionDetialToDb(posDetail);
@@ -598,7 +596,6 @@ void CLocalTraderApi::updateByTrade(const CThostFtdcTradeFieldWrapper& t)
                 pos.OpenCost +=
                     pTrade->Volume * pTrade->Price * itPos->second.volumeMultiple;
                 pos.TodayPosition += pTrade->Volume;
-                pos.SettlementPrice = pTrade->Price;
                 savePositionToDb(pos);
             }
         }
@@ -669,7 +666,6 @@ void CLocalTraderApi::updateByTrade(const CThostFtdcTradeFieldWrapper& t)
                     (pos.PosiDirection == THOST_FTDC_PD_Long ?
                         itMarginRate->second.LongMarginRatioByVolume :
                         itMarginRate->second.ShortMarginRatioByVolume);// 更新持仓的保证金
-                p.SettlementPrice = pTrade->Price;
                 // 持仓明细的平仓盈亏汇总计算中,昨仓用昨结算价,今仓用开仓价
                 double closeProfitOfThisPosDetailInThisTrade = 0;
                 TThostFtdcOffsetFlagType _closeFlag = THOST_FTDC_OF_Close;
@@ -767,7 +763,6 @@ void CLocalTraderApi::updateByTrade(const CThostFtdcTradeFieldWrapper& t)
             pos.CloseAmount +=
                 pTrade->Volume * pTrade->Price * itPos->second.volumeMultiple;//更新持仓的平仓金额
             pos.TodayPosition -= closeTodayVolume;
-            pos.SettlementPrice = pTrade->Price;
             savePositionToDb(pos);
             // 汇总计算资金
             updatePNL(true);
@@ -837,11 +832,11 @@ void CLocalTraderApi::reloadAccountData()
     reloadPosition();
 
     auto reloadTradingAccount = [&]() -> bool {
-        CSqliteHandler::SQL_VALUES posSqlValues;
+        CSqliteHandler::SQL_VALUES sqlValues;
         sqlHandler.SelectData(
             CThostFtdcTradingAccountFieldWrapper::generateSelectSqlByUserID(m_brokerID, m_userID),
-            posSqlValues);
-        for (const auto& rowData : posSqlValues)
+            sqlValues);
+        for (const auto& rowData : sqlValues)
         {
             CThostFtdcTradingAccountFieldWrapper wrapper(rowData);
             m_tradingAccount = wrapper;
@@ -928,9 +923,9 @@ void CLocalTraderApi::savePositionToDb(const CThostFtdcInvestorPositionField& po
     return saveDataToDb(CThostFtdcInvestorPositionFieldWrapper(pos));
 }
 
-void CLocalTraderApi::savePositionDetialToDb(const CThostFtdcInvestorPositionDetailField& pos)
+void CLocalTraderApi::savePositionDetialToDb(const CThostFtdcInvestorPositionDetailField& posDetail)
 {
-    return saveDataToDb(CThostFtdcInvestorPositionDetailFieldWrapper(pos));
+    return saveDataToDb(CThostFtdcInvestorPositionDetailFieldWrapper(posDetail));
 }
 
 void CLocalTraderApi::saveOrderToDb(const CThostFtdcOrderField& order)
@@ -1510,15 +1505,15 @@ int CLocalTraderApi::ReqOrderInsertImpl(CThostFtdcInputOrderField * pInputOrder,
         // (请求查询函数ReqQryBrokerTradingParams, 响应函数OnRspQryBrokerTradingParams)
         // 本系统以昨结算价作为计算冻结保证金的基准价格,
         // 而以昨结算价(对昨仓)和开仓成交价格(对今仓)作为计算持仓保证金时的基准价格
-        double frozenMargin = itDepthMarketData->second.PreSettlementPrice *
-            itInstr->second.VolumeMultiple * orderNum *
-            (directionT == THOST_FTDC_D_Buy ?
-                itMarginRate->second.LongMarginRatioByMoney
-                : itMarginRate->second.ShortMarginRatioByMoney)
-            +
-            orderNum * (directionT == THOST_FTDC_D_Buy ?
-                itMarginRate->second.LongMarginRatioByVolume
-                : itMarginRate->second.ShortMarginRatioByVolume);
+        const double MarginRatioByMoney = (directionT == THOST_FTDC_D_Buy ?
+            itMarginRate->second.LongMarginRatioByMoney
+            : itMarginRate->second.ShortMarginRatioByMoney);
+        const double MarginRatioByVolume = (directionT == THOST_FTDC_D_Buy ?
+            itMarginRate->second.LongMarginRatioByVolume
+            : itMarginRate->second.ShortMarginRatioByVolume);
+        const double frozenMargin = itDepthMarketData->second.PreSettlementPrice *
+            itInstr->second.VolumeMultiple * orderNum * MarginRatioByMoney
+            + orderNum * MarginRatioByVolume;
         totalFrozenMargin += frozenMargin;
 
         PositionDataMap::iterator itPos;
@@ -1543,6 +1538,8 @@ int CLocalTraderApi::ReqOrderInsertImpl(CThostFtdcInputOrderField * pInputOrder,
                 }
                 tempPos.pos.PosiDirection = getPositionDirectionFromDirection(directionT);// 持仓方向
                 tempPos.pos.PositionDate = THOST_FTDC_PSD_Today;// 持仓日期类型(今仓)
+                tempPos.pos.MarginRateByMoney = MarginRatioByMoney;
+                tempPos.pos.MarginRateByVolume = MarginRatioByVolume;
                 std::tie(itPos, std::ignore) = m_positionData.emplace(posKey, tempPos);
             }
             else

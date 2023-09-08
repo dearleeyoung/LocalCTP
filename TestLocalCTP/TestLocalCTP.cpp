@@ -177,7 +177,7 @@ int main()
     pApi->ReqQrySettlementInfo(&QrySettlementInfo, 0);//查询结算单
     CThostFtdcSettlementInfoConfirmField confirm = { "9876", "TestUserID" };
     pApi->ReqSettlementInfoConfirm(&confirm, 0);//确认结算单
-    
+
     CThostFtdcQryInstrumentField QryInstrument = { 0 };
     strcpy(QryInstrument.ProductID, "IC");
     pApi->ReqQryInstrument(&QryInstrument, 108);
@@ -201,7 +201,6 @@ int main()
     md.BidPrice1 = 1000;
     md.AskPrice1 = 1010;
     md.SettlementPrice = md.PreSettlementPrice = 1020;
-    pApi->RegisterFensUserInfo((CThostFtdcFensUserInfoField*)&md);//喂一个行情快照给API
     pApi->RegisterFensUserInfo((CThostFtdcFensUserInfoField*)&md);//喂一个行情快照给API
     strcpy(md.InstrumentID, "MA401");
     md.BidPrice1 = 2000;
