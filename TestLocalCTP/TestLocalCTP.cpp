@@ -79,6 +79,19 @@ class MySpi : public CThostFtdcTraderSpi
                 << std::endl;
         }
     }
+    void OnRspQryClassifiedInstrument(CThostFtdcInstrumentField* pInstrument, CThostFtdcRspInfoField* pRspInfo, int nRequestID, bool bIsLast) {
+        std::cout << "收到查询分类合约响应! " << " errorID:" << pRspInfo->ErrorID << " errorMsg:" << pRspInfo->ErrorMsg
+            << ", bIsLast:" << bIsLast << std::endl;
+        if (pInstrument)
+        {
+            std::cout << "InstrumentID:" << pInstrument->InstrumentID
+                << ", ExchangeID:" << pInstrument->ExchangeID
+                << ", InstrumentName:" << pInstrument->InstrumentName
+                << ", PriceTick:" << pInstrument->PriceTick
+                << ", VolumeMultiple:" << pInstrument->VolumeMultiple
+                << std::endl;
+        }
+    }
     void OnRspQryOrder(CThostFtdcOrderField* pOrder, CThostFtdcRspInfoField* pRspInfo, int nRequestID, bool bIsLast) {
         std::cout << "收到查询报单响应! " << " errorID:" << pRspInfo->ErrorID << " errorMsg:" << pRspInfo->ErrorMsg
             << ", bIsLast:" << bIsLast << std::endl;
@@ -181,6 +194,12 @@ int main()
     CThostFtdcQryInstrumentField QryInstrument = { 0 };
     strcpy(QryInstrument.ProductID, "IC");
     pApi->ReqQryInstrument(&QryInstrument, 108);
+#if 0
+    CThostFtdcQryClassifiedInstrumentField QryClassifiedInstrument = { 0 };
+    strcpy(QryClassifiedInstrument.ProductID, "IF");
+    QryClassifiedInstrument.ClassType = THOST_FTDC_INS_ALL;
+    pApi->ReqQryClassifiedInstrument(&QryClassifiedInstrument, 108);
+#endif
 
     CThostFtdcQryProductField QryProduct = { 0 };
     strcpy(QryProduct.ProductID, "jd");
@@ -215,6 +234,7 @@ int main()
     strcpy(InputOrder.OrderRef, "1001");
     InputOrder.Direction = THOST_FTDC_D_Sell;
     InputOrder.CombOffsetFlag[0] = THOST_FTDC_OF_Close;
+    //    InputOrder.LimitPrice = -1111;//卖出时价格足够低则会成交
     ret = pApi->ReqOrderInsert(&InputOrder, 109);//有行情数据后,再下一单(卖出平仓)
 
     auto InputOrderAction = generateCancelOrderMsg("1001", "SPD MA309&MA401", g_frontID, g_sessionID);

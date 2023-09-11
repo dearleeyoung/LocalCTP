@@ -15,8 +15,6 @@ using namespace localCTP;
 
 #define CHECK_LOGIN_ACCOUNT(p) CHECK_LOGIN(p, AccountID)
 
-#define COMPARE_MEMBER_MATCH(a, b, memberName) \
-    (strlen(a->memberName) == 0 || strcmp((a->memberName),(b.memberName)) == 0)
 
 std::set<CLocalTraderApi::SP_TRADE_API> CLocalTraderApi::trade_api_set;
 std::atomic<int> CLocalTraderApi::maxSessionID(0);
@@ -1245,18 +1243,8 @@ void CLocalTraderApi::RegisterNameServer(char *pszNsAddress) { return; }
 void CLocalTraderApi::RegisterFensUserInfo(CThostFtdcFensUserInfoField* pFensUserInfo) {
     if (pFensUserInfo == nullptr) return;
     CThostFtdcDepthMarketDataField* md = reinterpret_cast<CThostFtdcDepthMarketDataField*>(pFensUserInfo);
-    CThostFtdcDepthMarketDataField newMd(*md);
-    if (strlen(md->InstrumentID) == 0)
-    {
-        // the old InstrumentID in struct before 6.5.1
-        strncpy(newMd.InstrumentID, md->reserve1, sizeof(md->reserve1));
-    }
-    else
-    {
-        // the new InstrumentID in struct since 6.5.1
-    }
 
-    onSnapshot(newMd);
+    onSnapshot(*md);
 }
 
 ///注册回调接口
@@ -2357,17 +2345,7 @@ int CLocalTraderApi::ReqQuoteInsert(CThostFtdcInputQuoteField* pInputQuote, int 
     strncpy(newMd.TradingDay, pInputQuote->BrokerID, sizeof(newMd.TradingDay));
     strncpy(newMd.ActionDay, pInputQuote->InvestorID, sizeof(newMd.ActionDay));
     strncpy(newMd.ExchangeID, pInputQuote->ExchangeID, sizeof(newMd.ExchangeID));
-    if (strlen(pInputQuote->InstrumentID) == 0)
-    {
-        // the old InstrumentID in struct before 6.5.1
-        strncpy(newMd.InstrumentID, pInputQuote->reserve1, sizeof(pInputQuote->reserve1));
-    }
-    else
-    {
-        // the new InstrumentID in struct since 6.5.1
-        strncpy(newMd.InstrumentID, pInputQuote->InstrumentID, sizeof(pInputQuote->InstrumentID));
-    }
-
+    strncpy(newMd.InstrumentID, pInputQuote->InstrumentID, sizeof(pInputQuote->InstrumentID));
     strncpy(newMd.UpdateTime, pInputQuote->ClientID, sizeof(newMd.UpdateTime));
     newMd.UpdateMillisec = pInputQuote->RequestID;
     newMd.Volume = nRequestID;
@@ -2391,53 +2369,5 @@ int CLocalTraderApi::ReqQuoteInsert(CThostFtdcInputQuoteField* pInputQuote, int 
     }
 
     onSnapshot(newMd);
-    return 0;
-}
-
-///请求查询分类合约
-int CLocalTraderApi::ReqQryClassifiedInstrument(CThostFtdcQryClassifiedInstrumentField *pQryClassifiedInstrument, int nRequestID) {
-    if (pQryClassifiedInstrument == nullptr || !m_logined) return -1;
-    if (m_pSpi == nullptr) return 0;
-    std::vector<CThostFtdcInstrumentField*> v;
-    v.reserve(1000); // maybe less than this count ?
-    for (auto& instrPair : m_instrData)
-    {
-        CThostFtdcInstrumentField& instr = instrPair.second;
-        auto matchClassType = [&]() -> bool {
-            switch (pQryClassifiedInstrument->ClassType)
-            {
-            case THOST_FTDC_INS_ALL:
-                return true;
-            case THOST_FTDC_INS_FUTURE:
-                return instr.ProductClass == THOST_FTDC_PC_Futures || instr.ProductClass == THOST_FTDC_PC_Spot ||
-                    instr.ProductClass == THOST_FTDC_PC_EFP || instr.ProductClass == THOST_FTDC_PC_TAS ||
-                    instr.ProductClass == THOST_FTDC_PC_MI;
-            case THOST_FTDC_INS_OPTION:
-                return instr.ProductClass == THOST_FTDC_PC_Options || instr.ProductClass == THOST_FTDC_PC_SpotOption;
-            case THOST_FTDC_INS_COMB:
-                return instr.ProductClass == THOST_FTDC_PC_Combination;
-            default:
-                return false;
-            }
-        };
-        if (!matchClassType())
-        {
-            continue;
-        }
-        if (COMPARE_MEMBER_MATCH(pQryClassifiedInstrument, instr, ExchangeID) &&
-            COMPARE_MEMBER_MATCH(pQryClassifiedInstrument, instr, ProductID) &&
-            COMPARE_MEMBER_MATCH(pQryClassifiedInstrument, instr, InstrumentID))
-        {
-            v.emplace_back(&instr);
-        }
-    }
-    for (auto it = v.begin(); it != v.end(); ++it)
-    {
-        m_pSpi->OnRspQryClassifiedInstrument(*it, &m_successRspInfo, nRequestID, (it + 1 == v.end() ? true : false));
-    }
-    if (v.empty())
-    {
-        m_pSpi->OnRspQryClassifiedInstrument(nullptr, &m_successRspInfo, nRequestID, true);
-    }
     return 0;
 }

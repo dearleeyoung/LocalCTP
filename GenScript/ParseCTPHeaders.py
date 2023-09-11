@@ -41,7 +41,7 @@ exclusiveApiFunctions = ['Release','Init','Join','GetTradingDay','RegisterFront'
     'ReqOrderAction','ReqSettlementInfoConfirm','ReqRemoveParkedOrder','ReqRemoveParkedOrderAction',
     'ReqQryOrder','ReqQryTrade','ReqQryInvestorPosition','ReqQryTradingAccount','ReqQryInvestor','ReqQryInstrumentMarginRate',
     'ReqQryInstrumentCommissionRate','ReqQryExchange','ReqQryProduct','ReqQryInstrument','ReqQryDepthMarketData',
-    'ReqQrySettlementInfo','ReqQryInvestorPositionDetail','ReqQrySettlementInfoConfirm','ReqQryClassifiedInstrument',
+    'ReqQrySettlementInfo','ReqQryInvestorPositionDetail','ReqQrySettlementInfoConfirm',
     'ReqQuoteInsert',
 ]
 
@@ -412,17 +412,69 @@ with open(ctp_api_path, 'r', encoding='GBK') as f:
             apiFuncInfos.append(apiFuncInfo)
         singleLine = f.readline()
 
+ReqQryClassifiedInstrumentStr = '''/* Special func */ \\
+virtual int ReqQryClassifiedInstrument(CThostFtdcQryClassifiedInstrumentField* pQryClassifiedInstrument, int nRequestID) override { \\
+    if (pQryClassifiedInstrument == nullptr || !m_logined) return -1; \\
+    if (m_pSpi == nullptr) return 0; \\
+    std::vector<CThostFtdcInstrumentField*> v; \\
+    v.reserve(1000); /* maybe less than this count ? */ \\
+    for (auto& instrPair : m_instrData) \\
+    { \\
+        CThostFtdcInstrumentField& instr = instrPair.second; \\
+        auto matchClassType = [&]() -> bool { \\
+            switch (pQryClassifiedInstrument->ClassType) \\
+            { \\
+            case THOST_FTDC_INS_ALL: \\
+                return true; \\
+            case THOST_FTDC_INS_FUTURE: \\
+                return instr.ProductClass == THOST_FTDC_PC_Futures || instr.ProductClass == THOST_FTDC_PC_Spot || \\
+                    instr.ProductClass == THOST_FTDC_PC_EFP || instr.ProductClass == THOST_FTDC_PC_TAS || \\
+                    instr.ProductClass == THOST_FTDC_PC_MI; \\
+            case THOST_FTDC_INS_OPTION: \\
+                return instr.ProductClass == THOST_FTDC_PC_Options || instr.ProductClass == THOST_FTDC_PC_SpotOption; \\
+            case THOST_FTDC_INS_COMB: \\
+                return instr.ProductClass == THOST_FTDC_PC_Combination; \\
+            default: \\
+                return false; \\
+            } \\
+        }; \\
+        if (!matchClassType()) \\
+        { \\
+            continue; \\
+        } \\
+        if (COMPARE_MEMBER_MATCH(pQryClassifiedInstrument, instr, ExchangeID) && \\
+            COMPARE_MEMBER_MATCH(pQryClassifiedInstrument, instr, ProductID) && \\
+            COMPARE_MEMBER_MATCH(pQryClassifiedInstrument, instr, InstrumentID)) \\
+        { \\
+            v.emplace_back(&instr); \\
+        } \\
+    } \\
+    for (auto it = v.begin(); it != v.end(); ++it) \\
+    { \\
+        m_pSpi->OnRspQryClassifiedInstrument(*it, &m_successRspInfo, nRequestID, (it + 1 == v.end() ? true : false)); \\
+    } \\
+    if (v.empty()) \\
+    { \\
+        m_pSpi->OnRspQryClassifiedInstrument(nullptr, &m_successRspInfo, nRequestID, true); \\
+    } \\
+    return 0; \\
+} \\
+'''
+
 # write the api functions marcro to cpp code file, with encoding of utf-8 with BOM
 with open(output_api_path, 'w', encoding='utf-8-sig') as f:
     f.write("#pragma once\n")
     f.write(noticeStr + "\n")
+    f.write("#include \"../stdafx.h\"\n")
     #f.write("#pragma warning(disable: 4010)\n")
     f.write("\n")
-    f.write("#ifndef UNSUPPORTED_CTP_API_FUN\n")
+    f.write("#ifndef UNSUPPORTED_CTP_API_FUNC\n")
     f.write("#define UNSUPPORTED_CTP_API_FUNC \\\n")
     for i in range(len(apiFuncInfos)):
         apiFuncInfo = apiFuncInfos[i]
-        if apiFuncInfo.funcName not in exclusiveApiFunctions:
+        if apiFuncInfo.funcName == 'ReqQryClassifiedInstrument':
+            f.write(ReqQryClassifiedInstrumentStr)
+        elif apiFuncInfo.funcName not in exclusiveApiFunctions:
             f.write(apiFuncInfo.funcComment)
             postFix = macroPostFix if i < len(apiFuncInfos)-1 else "\n"
             f.write(tapStr + apiFuncInfo.funcContent + postFix)

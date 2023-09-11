@@ -8,6 +8,9 @@
 #include "CTPSQLWrapper.h"
 #include <thread>
 
+#define COMPARE_MEMBER_MATCH(a, b, memberName) \
+    (strlen(a->memberName) == 0 || strcmp((a->memberName),(b.memberName)) == 0)
+
 namespace localCTP {
 
 std::istream& operator>>(std::istream& i, CThostFtdcInstrumentField& instr);
@@ -526,11 +529,9 @@ public:
     // 本接口被改造为接收行情快照数据的接口.
     virtual int ReqQuoteInsert(CThostFtdcInputQuoteField* pInputQuote, int nRequestID) override;
 
-    ///请求查询分类合约
-    // 这是自v6.5.1版本加入的函数.如果使用低版本API头文件则可以把这个接口注释掉
-    virtual int ReqQryClassifiedInstrument(CThostFtdcQryClassifiedInstrumentField *pQryClassifiedInstrument, int nRequestID) override;
+    ///请求查询分类合约(在 UNSUPPORTED_CTP_API_FUNC 中)
 
-    // 以下是本系统不支持的CTP API接口
+    // 以下是本系统不支持的和特殊的CTP API接口
     UNSUPPORTED_CTP_API_FUNC
 };
 

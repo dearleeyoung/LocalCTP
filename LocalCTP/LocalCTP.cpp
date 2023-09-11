@@ -1318,6 +1318,8 @@ void CLocalTraderApi::CSettlementHandler::doWorkInitialSettlement(
 void CLocalTraderApi::CSettlementHandler::doWorkAfterSettlement(
     const std::string& oldTradingDay, const std::string& newTradingDay)
 {
+    CSqliteTransactionHandler transactionHandle(m_sqlHandler);
+
     //结算后更新所有账户的持仓明细
     //1. 删除持仓数量为0的持仓明细(包含合约到期的合约的持仓明细)
     //2. "交易日"改为新的交易日
