@@ -265,7 +265,7 @@ void CLocalTraderApi::onSnapshot(const CThostFtdcDepthMarketDataField& mdData)
     const double priceForCal = isPriceValid(mdData.SettlementPrice) ?
         mdData.SettlementPrice : mdData.LastPrice;//优先使用结算价进行计算
     double diffPositionProfit(0.0);
-    sqlHandler.BeginTransaction();
+    CSqliteTransactionHandler transactionHandle(sqlHandler);
     for (auto dir : { THOST_FTDC_D_Buy, THOST_FTDC_D_Sell })
     {
         for (auto dateType : { THOST_FTDC_PSD_Today, THOST_FTDC_PSD_History })
@@ -336,7 +336,6 @@ void CLocalTraderApi::onSnapshot(const CThostFtdcDepthMarketDataField& mdData)
     }
     m_tradingAccount.PositionProfit += diffPositionProfit;
     updatePNL();
-    sqlHandler.Commit();
 }
 
 
@@ -1016,13 +1015,12 @@ void CLocalTraderApi::initInstrMap()
     // 将从csv文件获取的合约数据,重新写入数据库中
     if (readRet)
     {
-        sqlHandler.BeginTransaction();
+        CSqliteTransactionHandler transactionHandle(sqlHandler);
         for (const auto& instr : readFromCsvFile)
         {
             sqlHandler.Insert(
                 CThostFtdcInstrumentFieldWrapper(instr.second).generateInsertSql());
         }
-        sqlHandler.Commit();
     }
 
     auto initProductsAndExchanges = [&]() {
@@ -2377,7 +2375,8 @@ int CLocalTraderApi::ReqQuoteInsert(CThostFtdcInputQuoteField* pInputQuote, int 
     }
     catch (...)
     {
-        // some price field is not filled correctly
+        std::cerr << "some price field is not filled correctly in ReqQuoteInsert" << std::endl;
+        return 0;
     }
 
     onSnapshot(newMd);

@@ -11,6 +11,8 @@
       std::istringstream iss(temp); \
       iss >> instr.m; }
 
+#define ADD_TO_TODAY_VALUE(fieldName) todayPos.fieldName += pos.fieldName;
+
 namespace localCTP
 {
 
@@ -1125,14 +1127,16 @@ void CLocalTraderApi::CSettlementHandler::doSettlement()
 void CLocalTraderApi::CSettlementHandler::doWorkInitialSettlement(
     const std::string& oldTradingDay)
 {
+    CSqliteTransactionHandler transactionHandle(m_sqlHandler);
+
     //更新所有持仓明细, 对每一笔持仓明细, 以用于结算的价格作为其结算价, 计算保证金和盈亏等, 更新持仓明细表,
     //并且修改合约到期的合约的持仓明细, 将其持仓数量修改为0等.
-    const std::string positiondetailBeforeAfterSettlementSql1
+    const std::string positiondetailInitialSettlementSql1
         = std::string("UPDATE CThostFtdcInvestorPositionDetailField SET Volume = 0 \
  WHERE CThostFtdcInvestorPositionDetailField.InstrumentID in \
    (SELECT CThostFtdcInstrumentField.InstrumentID from CThostFtdcInstrumentField \
  WHERE CThostFtdcInstrumentField.ExpireDate <= '") + oldTradingDay + "');";
-    const std::string positiondetailBeforeAfterSettlementSql2
+    const std::string positiondetailInitialSettlementSql2
         = std::string("UPDATE CThostFtdcInvestorPositionDetailField \
  SET Margin = SettlementPrice*Volume*( SELECT VolumeMultiple from CThostFtdcInstrumentField WHERE \
  CThostFtdcInstrumentField.InstrumentID=CThostFtdcInvestorPositionDetailField.InstrumentID ) \
@@ -1146,37 +1150,166 @@ void CLocalTraderApi::CSettlementHandler::doWorkInitialSettlement(
 ( SELECT VolumeMultiple from CThostFtdcInstrumentField WHERE \
  CThostFtdcInstrumentField.InstrumentID=CThostFtdcInvestorPositionDetailField.InstrumentID ) ;";
 
-    m_sqlHandler.Update(positiondetailBeforeAfterSettlementSql1);
-    m_sqlHandler.Update(positiondetailBeforeAfterSettlementSql2);
+    m_sqlHandler.Update(positiondetailInitialSettlementSql1);
+    m_sqlHandler.Update(positiondetailInitialSettlementSql2);
 
     //查询所有账户的持仓, 对每一笔持仓, 以用于结算的价格作为其结算价, 计算保证金和盈亏等, 更新持仓表
-    //并且修改合约到期的合约的持仓明细, 将其持仓数量修改为0等.
+    //并且修改合约到期的合约的持仓, 将其持仓数量修改为0等.
+    //将持仓日期(PositionDate)为昨仓的持仓合并到今仓的持仓中,然后删除昨仓的持仓记录.
+    //
     //Sqlite的Update中, 使用列时用的是旧值而不是修改后的新值,例如(X表,初始时p为5) update X set p=p+1, q=p; 则执行后p=6,q=5
     //所以使用多个Update语句来分步执行更新
-    const std::string positionBeforeBeforeSettlementSql1
+    //20230911更新(为支持将昨仓和今仓记录合并): 算了,完全用SQL语句来更新太麻烦了
+    //, 最终选择: 从数据库持仓表读取到内存中的持仓变量,然后修改变量,再写回到数据库中
+    const std::string positionInitialSettlementSql1
         = std::string("UPDATE CThostFtdcInvestorPositionField SET Position = 0 \
  WHERE CThostFtdcInvestorPositionField.InstrumentID in \
    (SELECT CThostFtdcInstrumentField.InstrumentID from CThostFtdcInstrumentField \
  WHERE CThostFtdcInstrumentField.ExpireDate <= '") + oldTradingDay + "');";
-    const std::string positionBeforeBeforeSettlementSql2
+    /*
+    const std::string positionInitialSettlementSql2
         = std::string("UPDATE CThostFtdcInvestorPositionField SET \
  PositionProfit = (CASE WHEN PosiDirection = '") + THOST_FTDC_PD_Long + "' THEN 1 ELSE - 1 END) * \
     (SettlementPrice * Position * \
         (SELECT VolumeMultiple from CThostFtdcInstrumentField WHERE \
          CThostFtdcInstrumentField.InstrumentID = CThostFtdcInvestorPositionField.InstrumentID) \
     - PositionCost );";
-    const std::string positionBeforeBeforeSettlementSql3
+    const std::string positionInitialSettlementSql3
         = "UPDATE CThostFtdcInvestorPositionField SET \
  PositionCost = SettlementPrice * Position * \
     (SELECT VolumeMultiple from CThostFtdcInstrumentField WHERE \
      CThostFtdcInstrumentField.InstrumentID = CThostFtdcInvestorPositionField.InstrumentID);";
-    const std::string positionBeforeBeforeSettlementSql4
+    const std::string positionInitialSettlementSql4
         = std::string("UPDATE CThostFtdcInvestorPositionField SET \
  UseMargin = PositionCost * MarginRateByMoney + Position * MarginRateByVolume;");
-    m_sqlHandler.Update(positionBeforeBeforeSettlementSql1);
-    m_sqlHandler.Update(positionBeforeBeforeSettlementSql2);
-    m_sqlHandler.Update(positionBeforeBeforeSettlementSql3);
-    m_sqlHandler.Update(positionBeforeBeforeSettlementSql4);
+    */
+    m_sqlHandler.Update(positionInitialSettlementSql1);
+    /*m_sqlHandler.Update(positionInitialSettlementSql2);
+    m_sqlHandler.Update(positionInitialSettlementSql3);
+    m_sqlHandler.Update(positionInitialSettlementSql4);*/
+    CSqliteHandler::SQL_VALUES posSqlValues;
+    m_sqlHandler.SelectData(CThostFtdcInvestorPositionFieldWrapper::SELECT_SQL, posSqlValues);
+    std::vector<CThostFtdcInvestorPositionFieldWrapper> todayPosVec;
+    std::vector<CThostFtdcInvestorPositionFieldWrapper> yeterdayPosVec;
+    for (const auto& rowData : posSqlValues)
+    {
+        CThostFtdcInvestorPositionFieldWrapper posWrapper(rowData);
+        auto& pos = posWrapper.data;
+
+        auto itInstr = CLocalTraderApi::m_instrData.find(pos.InstrumentID);
+        if (itInstr == CLocalTraderApi::m_instrData.end())
+        {
+            continue;
+        }
+        pos.PositionProfit = (pos.PosiDirection == THOST_FTDC_PD_Long ? 1.0 : -1.0) *
+            (pos.SettlementPrice * pos.Position * itInstr->second.VolumeMultiple
+                - pos.PositionCost);//更新持仓盈亏
+        pos.PositionCost = pos.SettlementPrice * pos.Position *
+            itInstr->second.VolumeMultiple;//更新持仓成本
+        pos.UseMargin = pos.PositionCost * pos.MarginRateByMoney +
+            pos.Position * pos.MarginRateByVolume;//更新持仓占用保证金
+
+        if (pos.PositionDate == THOST_FTDC_PSD_Today)
+        {
+            todayPosVec.emplace_back(posWrapper);
+        }
+        else
+        {
+            yeterdayPosVec.emplace_back(posWrapper);
+        }
+    }
+
+    // 将昨仓的记录, 合并到今仓的持仓记录中
+    for (const auto& yesterdayPos : yeterdayPosVec)
+    {
+        const auto& pos = yesterdayPos.data;
+        const auto relatedTodayPosKey = CLocalTraderApi::generatePositionKey(
+                pos.InstrumentID,
+               getDirectionFromPositionDirection(pos.PosiDirection),
+               THOST_FTDC_PSD_Today);
+        auto itTodayPos = std::find_if(todayPosVec.begin(), todayPosVec.end(),
+            [&](const CThostFtdcInvestorPositionFieldWrapper& p) {
+                return strcmp(p.data.BrokerID, pos.BrokerID) == 0 &&
+                    strcmp(p.data.InvestorID, pos.InvestorID) == 0 &&
+                    CLocalTraderApi::generatePositionKey(p.data) == relatedTodayPosKey;
+            });
+        if (itTodayPos == todayPosVec.end())
+        {
+            todayPosVec.emplace_back(yesterdayPos);
+            todayPosVec.back().data.PositionDate = THOST_FTDC_PSD_Today;
+        }
+        else
+        {
+            auto& todayPos = itTodayPos->data;
+            ///上日持仓
+            ADD_TO_TODAY_VALUE(YdPosition);
+            ///持仓量
+            ADD_TO_TODAY_VALUE(Position);
+            ///多头冻结
+            ADD_TO_TODAY_VALUE(LongFrozen);
+            ///空头冻结
+            ADD_TO_TODAY_VALUE(ShortFrozen);
+            ///开仓冻结金额
+            ADD_TO_TODAY_VALUE(LongFrozenAmount);
+            ///开仓冻结金额
+            ADD_TO_TODAY_VALUE(ShortFrozenAmount);
+            ///开仓量
+            ADD_TO_TODAY_VALUE(OpenVolume);
+            ///平仓量
+            ADD_TO_TODAY_VALUE(CloseVolume);
+            ///开仓金额
+            ADD_TO_TODAY_VALUE(OpenAmount);
+            ///平仓金额
+            ADD_TO_TODAY_VALUE(CloseAmount);
+            ///持仓成本
+            ADD_TO_TODAY_VALUE(PositionCost);
+            ///上次占用的保证金
+            ADD_TO_TODAY_VALUE(PreMargin);
+            ///占用的保证金
+            ADD_TO_TODAY_VALUE(UseMargin);
+            ///冻结的保证金
+            ADD_TO_TODAY_VALUE(FrozenMargin);
+            ///冻结的资金
+            ADD_TO_TODAY_VALUE(FrozenCash);
+            ///冻结的手续费
+            ADD_TO_TODAY_VALUE(FrozenCommission);
+            ///资金差额
+            ADD_TO_TODAY_VALUE(CashIn);
+            ///手续费
+            ADD_TO_TODAY_VALUE(Commission);
+            ///平仓盈亏
+            ADD_TO_TODAY_VALUE(CloseProfit);
+            ///持仓盈亏
+            ADD_TO_TODAY_VALUE(PositionProfit);
+            ///开仓成本
+            ADD_TO_TODAY_VALUE(OpenCost);
+            ///交易所保证金
+            ADD_TO_TODAY_VALUE(ExchangeMargin);
+            ///组合成交形成的持仓
+            ADD_TO_TODAY_VALUE(CombPosition);
+            ///组合多头冻结
+            ADD_TO_TODAY_VALUE(CombLongFrozen);
+            ///组合空头冻结
+            ADD_TO_TODAY_VALUE(CombShortFrozen);
+            ///逐日盯市平仓盈亏
+            ADD_TO_TODAY_VALUE(CloseProfitByDate);
+            ///逐笔对冲平仓盈亏
+            ADD_TO_TODAY_VALUE(CloseProfitByTrade);
+            ///今日持仓
+            ADD_TO_TODAY_VALUE(TodayPosition);
+        }
+    }
+
+    // 删除数据库中的昨仓记录
+    const std::string deleteYeterdayPositionSql =
+        std::string("DELETE FROM CThostFtdcInvestorPositionField WHERE PositionDate='")
+        + THOST_FTDC_PSD_History + "';";
+    m_sqlHandler.Delete(deleteYeterdayPositionSql);
+    // 将更新后的今仓的持仓记录, 全部写入到数据库中
+    for (const auto& todayPos : todayPosVec)
+    {
+        m_sqlHandler.Insert(todayPos.generateInsertSql());
+    }
 
     //更新所有账户的资金(根据持仓汇总)
     accumulateTradingAccountFromPosition();
@@ -1209,7 +1342,7 @@ CloseVolume = 0, CloseAmount = 0;";
     //4. "逐日平仓盈亏"与"逐笔平仓盈亏"与"持仓盈亏"和 CashIn(资金差额)改为0
     //5. 冻结持仓与冻结持仓金额与组合冻结持仓改为0
     //6. 冻结资金,冻结保证金,冻结手续费改为0
-    //7. "上日持仓"改为与持仓数量相等
+    //7. "上日持仓"改为与持仓数量相等,"上次占用的保证金"(PreMargin)改为与占用的保证金相等
     //8. "开仓量"与"平仓量"与相应的金额改为0
     //9. "手续费"改为0
     //10. TodayPosition(今日持仓) 改为0
@@ -1218,7 +1351,7 @@ CloseVolume = 0, CloseAmount = 0;";
 
     const std::string positionUpdateSqlAfterSettlementSql2 =
         "UPDATE CThostFtdcInvestorPositionField SET TradingDay = '" + newTradingDay
-        + "', PreSettlementPrice = SettlementPrice, \
+        + "', PreSettlementPrice = SettlementPrice, PreMargin = UseMargin, \
 CloseProfit = 0, PositionProfit = 0, CloseProfitByDate = 0, CloseProfitByTrade = 0, \
 LongFrozen = 0, ShortFrozen = 0, LongFrozenAmount = 0, ShortFrozenAmount = 0, \
 FrozenMargin = 0, FrozenCash = 0, FrozenCommission = 0, YdPosition = Position, \
@@ -1547,7 +1680,10 @@ void CLocalTraderApi::CSettlementHandler::doGenerateUserSettlement(
     auto buildSettlementPositionDetail = [&]() {
         CSqliteHandler::SQL_VALUES posDetailSqlValues;
         const std::string selectPosDetailSql =
-            CThostFtdcInvestorPositionDetailFieldWrapper::generateSelectSqlByUserID(brokerID, userID);
+            "SELECT * FROM 'CThostFtdcInvestorPositionDetailField' where BrokerID='"
+            + brokerID + "' and InvestorID='"
+            + userID + "' and Volume != 0;";
+            // = CThostFtdcInvestorPositionDetailFieldWrapper::generateSelectSqlByUserID(brokerID, userID);
         sqlHandler.SelectData(selectPosDetailSql, posDetailSqlValues);
         if (posDetailSqlValues.empty())//若没有找到该账户持仓明细记录
         {
@@ -1628,7 +1764,10 @@ void CLocalTraderApi::CSettlementHandler::doGenerateUserSettlement(
     auto buildSettlementPosition = [&]() {
         CSqliteHandler::SQL_VALUES posSqlValues;
         const std::string selectPosSql =
-            CThostFtdcInvestorPositionFieldWrapper::generateSelectSqlByUserID(brokerID, userID);
+            "SELECT * FROM 'CThostFtdcInvestorPositionField' where BrokerID='"
+            + brokerID + "' and InvestorID='"
+            + userID + "' and Position != 0;";
+            // = CThostFtdcInvestorPositionFieldWrapper::generateSelectSqlByUserID(brokerID, userID);
         sqlHandler.SelectData(selectPosSql, posSqlValues);
         if (posSqlValues.empty())//若没有找到该账户持仓记录
         {

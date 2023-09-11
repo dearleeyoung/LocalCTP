@@ -167,6 +167,7 @@
     <ClCompile Include="LeeDateTime.cpp" />
     <ClCompile Include="LocalCTP.cpp" />
     <ClCompile Include="LocalTraderApi.cpp" />
+    <ClCompile Include="Properties.cpp" />
     <ClCompile Include="sqlite\shell.c" />
     <ClCompile Include="sqlite\sqlite3.c" />
     <ClCompile Include="stdafx.cpp">
