@@ -1224,7 +1224,7 @@ void CLocalTraderApi::CSettlementHandler::doWorkInitialSettlement(
     {
         const auto& pos = yesterdayPos.data;
         const auto relatedTodayPosKey = CLocalTraderApi::generatePositionKey(
-                pos.InstrumentID,
+               pos.InstrumentID,
                getDirectionFromPositionDirection(pos.PosiDirection),
                THOST_FTDC_PSD_Today);
         auto itTodayPos = std::find_if(todayPosVec.begin(), todayPosVec.end(),
@@ -1236,7 +1236,6 @@ void CLocalTraderApi::CSettlementHandler::doWorkInitialSettlement(
         if (itTodayPos == todayPosVec.end())
         {
             todayPosVec.emplace_back(yesterdayPos);
-            todayPosVec.back().data.PositionDate = THOST_FTDC_PSD_Today;
         }
         else
         {
@@ -1306,8 +1305,11 @@ void CLocalTraderApi::CSettlementHandler::doWorkInitialSettlement(
         + THOST_FTDC_PSD_History + "';";
     m_sqlHandler.Delete(deleteYeterdayPositionSql);
     // 将更新后的今仓的持仓记录, 全部写入到数据库中
-    for (const auto& todayPos : todayPosVec)
+    for (auto& todayPos : todayPosVec)
     {
+        todayPos.data.PositionDate =
+            (isSpecialExchange(todayPos.data.ExchangeID) ?
+            THOST_FTDC_PSD_History : THOST_FTDC_PSD_Today);
         m_sqlHandler.Insert(todayPos.generateInsertSql());
     }
 
