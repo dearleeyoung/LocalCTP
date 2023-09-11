@@ -1155,7 +1155,7 @@ void CLocalTraderApi::CSettlementHandler::doWorkInitialSettlement(
 
     //查询所有账户的持仓, 对每一笔持仓, 以用于结算的价格作为其结算价, 计算保证金和盈亏等, 更新持仓表
     //并且修改合约到期的合约的持仓, 将其持仓数量修改为0等.
-    //将持仓日期(PositionDate)为昨仓的持仓合并到今仓的持仓中,然后删除昨仓的持仓记录.
+    //将持仓日期(PositionDate)为昨仓的持仓合并到今仓的持仓中,然后删除多余的持仓记录.
     //
     //Sqlite的Update中, 使用列时用的是旧值而不是修改后的新值,例如(X表,初始时p为5) update X set p=p+1, q=p; 则执行后p=6,q=5
     //所以使用多个Update语句来分步执行更新
@@ -1299,11 +1299,9 @@ void CLocalTraderApi::CSettlementHandler::doWorkInitialSettlement(
         }
     }
 
-    // 删除数据库中的昨仓记录
-    const std::string deleteYeterdayPositionSql =
-        std::string("DELETE FROM CThostFtdcInvestorPositionField WHERE PositionDate='")
-        + THOST_FTDC_PSD_History + "';";
-    m_sqlHandler.Delete(deleteYeterdayPositionSql);
+    // 删除数据库中的持仓记录
+    const std::string deletePositionSql = "DELETE FROM CThostFtdcInvestorPositionField;";
+    m_sqlHandler.Delete(deletePositionSql);
     // 将更新后的今仓的持仓记录, 全部写入到数据库中
     for (auto& todayPos : todayPosVec)
     {

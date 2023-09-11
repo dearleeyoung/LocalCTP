@@ -622,6 +622,7 @@ void CLocalTraderApi::updateByTrade(const CThostFtdcTradeFieldWrapper& t)
             int closeYesterdayVolume(0);// 此次成交中的平昨数量
             int closeTodayVolume(0);// 此次成交中的平今数量
             double closeProfitOfTrade(0);// 此次成交的平仓盈亏
+            double closeProfitByTradeOfTrade(0);// 此次成交的逐笔对冲平仓盈亏
 
             auto& pos = itPos->second.pos;
 
@@ -686,7 +687,15 @@ void CLocalTraderApi::updateByTrade(const CThostFtdcTradeFieldWrapper& t)
                         tradeVolumeInThisPosDetail * itPos->second.volumeMultiple;   
                     _closeFlag = THOST_FTDC_OF_CloseToday;
                 }
+                double closeProfitByTradeOfThisPosDetailInThisTrade =
+                    (pos.PosiDirection == THOST_FTDC_PD_Long ? 1 : -1) *
+                    (pTrade->Price - p.OpenPrice) *
+                    tradeVolumeInThisPosDetail * itPos->second.volumeMultiple;
+                p.CloseProfitByDate += closeProfitOfThisPosDetailInThisTrade;
+                p.CloseProfitByTrade += closeProfitByTradeOfThisPosDetailInThisTrade;
                 closeProfitOfTrade += closeProfitOfThisPosDetailInThisTrade;
+                closeProfitByTradeOfTrade += closeProfitByTradeOfThisPosDetailInThisTrade;
+
                 savePositionDetialToDb(p);
                 if (tradeVolumeInThisPosDetail > 0)//此处实际不会为0,判断是为了保险
                 {
@@ -744,6 +753,8 @@ void CLocalTraderApi::updateByTrade(const CThostFtdcTradeFieldWrapper& t)
                 * (pTrade->Price * itPos->second.volumeMultiple * pos.Position
                     - pos.PositionCost);// 持仓盈亏
             pos.CloseProfit += closeProfitOfTrade;// 平仓盈亏
+            pos.CloseProfitByDate += closeProfitOfTrade;// 逐日盯市平仓盈亏
+            pos.CloseProfitByTrade += closeProfitByTradeOfTrade;// 逐笔对冲平仓盈亏
             pos.Commission += feeOfTrade;// 更新持仓的手续费
             pos.UseMargin =
                 pos.PositionCost *
