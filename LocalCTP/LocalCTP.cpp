@@ -565,7 +565,7 @@ ACCUMULATE_WITH_SAME_NAME(FrozenCash) ";"
         " Available = Balance-CurrMargin-FrozenMargin-FrozenCommission-FrozenCash;"
     )
     , m_sleepSecond(1)
-    , m_settlementStartHour(16)
+    , m_settlementStartHour(17)
     , m_count(0)
     , m_timerThread([this]() {
         CLocalTraderApi::initInstrMap();
