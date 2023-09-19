@@ -5,6 +5,9 @@
 #include <cstring>
 #include <string>
 #include <fstream> // std::ofstream
+#include <thread>
+#include <chrono>
+#include <iomanip>
 #include "ThostFtdcTraderApi.h"//CTP交易的头文件
 
 CThostFtdcInputOrderField generateNewOrderMsg(const char* OrderRef, const char* InstrumentID = "MA401")
@@ -61,7 +64,7 @@ class MySpi : public CThostFtdcTraderSpi
             << " errorID:"<< pRspInfo->ErrorID<<" errorMsg:"<< pRspInfo->ErrorMsg << std::endl;
     }
     void OnRspUserLogin(CThostFtdcRspUserLoginField* pRspUserLogin, CThostFtdcRspInfoField* pRspInfo, int nRequestID, bool bIsLast) {
-        std::cout << "收到登录响应! " << " UserID:" << pRspUserLogin->UserID
+        std::cout << "收到登录响应! " << " UserID:" << pRspUserLogin->UserID << " FrontID:" << pRspUserLogin->FrontID << " SessionID:" << pRspUserLogin->SessionID
             << " errorID:" << pRspInfo->ErrorID << " errorMsg:" << pRspInfo->ErrorMsg << std::endl;
         g_frontID = pRspUserLogin->FrontID;
         g_sessionID = pRspUserLogin->SessionID;
@@ -155,12 +158,17 @@ class MySpi : public CThostFtdcTraderSpi
         std::cout << "\n收到报单通知! " << " UserID:" << pOrder->UserID
             << " InstrumentID:" << pOrder->InstrumentID
             << " OrderSysID:" << pOrder->OrderSysID
-            << " OrderStatus:" << pOrder->OrderStatus << " StatusMsg:" << pOrder->StatusMsg << std::endl;
+            << " OrderRef:" << pOrder->OrderRef
+            << " FrontID:" << pOrder->FrontID
+            << " OrderStatus:" << pOrder->OrderStatus
+            << " OrderStatus:" << (pOrder->OrderStatus == THOST_FTDC_OST_AllTraded ? "全部成交" : pOrder->OrderStatus == THOST_FTDC_OST_PartTradedQueueing ? "部分成交还在队列中" : pOrder->OrderStatus == THOST_FTDC_OST_PartTradedNotQueueing ? "部分成交不在队列中" : pOrder->OrderStatus == THOST_FTDC_OST_NoTradeQueueing ? "未成交还在队列中" : pOrder->OrderStatus == THOST_FTDC_OST_NoTradeNotQueueing ? "未成交不在队列中" : pOrder->OrderStatus == THOST_FTDC_OST_Canceled ? "撤单" : pOrder->OrderStatus == THOST_FTDC_OST_Unknown ? "未知" : "不写了")
+            << " StatusMsg:" << pOrder->StatusMsg << std::endl;
     }
     void OnRtnTrade(CThostFtdcTradeField* pTrade) {
         std::cout << "\n收到成交通知! " << " UserID:" << pTrade->UserID
             << " InstrumentID:" << pTrade->InstrumentID
             << " Direction:" << (pTrade->Direction == THOST_FTDC_D_Buy ? "买入":"卖出")
+            << " Offset: " << (pTrade->OffsetFlag == THOST_FTDC_OF_Open ? "开仓" : pTrade->OffsetFlag == THOST_FTDC_OF_Close ? "平仓" : pTrade->OffsetFlag == THOST_FTDC_OF_ForceClose ? "强平" : pTrade->OffsetFlag == THOST_FTDC_OF_CloseToday ? "平今" : pTrade->OffsetFlag == THOST_FTDC_OF_CloseYesterday ? "平昨" : "未知")
             << " Volume:" << pTrade->Volume << " Price:" << pTrade->Price << std::endl;
     }
     void OnRspOrderAction(CThostFtdcInputOrderActionField* pInputOrderAction, CThostFtdcRspInfoField* pRspInfo, int nRequestID, bool bIsLast) {
@@ -169,6 +177,13 @@ class MySpi : public CThostFtdcTraderSpi
             << " errorID:" << pRspInfo->ErrorID << " errorMsg:" << pRspInfo->ErrorMsg << std::endl;
     }
 
+    ///请求查询资金账户响应
+    void OnRspQryTradingAccount(CThostFtdcTradingAccountField* pTradingAccount, CThostFtdcRspInfoField* pRspInfo, int nRequestID, bool bIsLast) {
+        std::cout << "\n收到资金账户响应! " << " AccountID:" << pTradingAccount->AccountID
+            << " Balance:" << std::setw(30) << std::setprecision(20) << pTradingAccount->Balance
+            << " errorID:" << pRspInfo->ErrorID << " errorMsg:" << pRspInfo->ErrorMsg << std::endl;
+
+    }
 };
 
 int main()
@@ -179,7 +194,21 @@ int main()
     std::cout << pApi->GetTradingDay() << std::endl;
     MySpi spi;
     pApi->RegisterSpi(&spi);
-    pApi->Init();
+
+
+    // 切换服务器的时候需要切换对应的thostmduserapi_se.dll
+    // 真实CTP的行情源
+    //char gMdFrontAddr[] = "tcp://180.169.101.177:43213";
+    //openctp 的行情源
+    char gMdFrontAddr[] = "tcp://121.37.80.177:20004";
+    // 魔改了RegisterFront 作为行情服务器的输入
+    pApi->RegisterFront(gMdFrontAddr);
+
+
+    pApi->Init();//读取 instrument.csv 合约文件, 以及数据库中的合约表和费率表
+    
+    // 休眠10秒 ，稍微停顿一下等待行情的tick到来，否则可能会导致因为没有行情的下单失败
+    std::this_thread::sleep_for(std::chrono::seconds(10));
 
     std::cout << "请输入任意数字以登录..." << std::endl;
     int i;
@@ -206,9 +235,21 @@ int main()
     QryProduct.ProductClass = THOST_FTDC_PC_Futures;
     pApi->ReqQryProduct(&QryProduct, 108);
 
-    auto InputOrder = generateNewOrderMsg("1000", "MA309");
+    auto InputOrder = generateNewOrderMsg("300", "rb2401");
+    InputOrder.VolumeTotalOriginal = 10;
+    InputOrder.LimitPrice = 3500;
+    //InputOrder.Direction = THOST_FTDC_D_Sell;
+    InputOrder.Direction = THOST_FTDC_D_Buy;
+    //InputOrder.CombOffsetFlag[0] = THOST_FTDC_OF_CloseToday;
+    InputOrder.CombOffsetFlag[0] = THOST_FTDC_OF_Open;    
+    strcpy(InputOrder.ExchangeID, "SHFE");
     int ret = pApi->ReqOrderInsert(&InputOrder,109);//没有行情数据时,下一单(预期被拒单)
 
+    auto InputOrderAction = generateCancelOrderMsg("300", "rb2401", g_frontID, g_sessionID);
+    strcpy(InputOrderAction.ExchangeID, "SHFE");
+    ret = pApi->ReqOrderAction(&InputOrderAction, 110);//把这个单子撤掉
+
+#if 0 
     CThostFtdcDepthMarketDataField md = { 0 };
     //报入组合合约的委托, 并不需要有组合合约的行情, 而只需要有两个单腿合约的行情
     //strcpy(md.InstrumentID, "SPD MA309&MA401");
@@ -259,20 +300,20 @@ int main()
     strcpy(marketData.BusinessUnit, "8888888");// OpenInterest
     int Volume = 88888;
     pApi->ReqQuoteInsert(&marketData, Volume);//使用ReqQuoteInsert接口, 喂一个行情快照给API(以触发条件单), 
-
+#endif
     CThostFtdcQryOrderField QryOrder = { "9876","TestUserID" };
-    strcpy(QryOrder.ExchangeID, "CZCE");// 有数条CZCE的委托记录,查询返回
+    //strcpy(QryOrder.ExchangeID, "CZCE");// 有数条CZCE的委托记录,查询返回
     ret = pApi->ReqQryOrder(&QryOrder, 100);
 
     CThostFtdcQryTradeField QryTrade = { "9876","TestUserID" };
-    strcpy(QryTrade.ExchangeID, "DCE");// 没有DCE的成交记录,查询返回空
+    //strcpy(QryTrade.ExchangeID, "DCE");// 没有DCE的成交记录,查询返回空
     ret = pApi->ReqQryTrade(&QryTrade, 100);
 
     CThostFtdcQryTradingAccountField QryTradingAccount = { "9876","TestUserID" };
     ret = pApi->ReqQryTradingAccount(&QryTradingAccount, 100);
 
     CThostFtdcQryInvestorPositionField QryInvestorPosition = { "9876","TestUserID" };
-    strcpy(QryTrade.ExchangeID, "CZCE");
+    //strcpy(QryTrade.ExchangeID, "CZCE");
     ret = pApi->ReqQryInvestorPosition(&QryInvestorPosition, 100);
 
     std::cout << ret << std::endl;

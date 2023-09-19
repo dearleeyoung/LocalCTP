@@ -2,6 +2,8 @@
 
 #include "stdafx.h"
 #include "ThostFtdcTraderApi.h"//CTP交易的头文件
+#include "ThostFtdcMdApi.h"//CTP行情的头文件
+#include "LocalMDApi.h"
 #include "CTPApiHugeMacro.h"
 #include "ctpStatus.h"
 #include "CSqliteHandler.h"
@@ -360,6 +362,10 @@ private:
     std::vector<OrderData*> m_contionalOrders;// 条件报单数据
 	CThostFtdcTraderSpi* m_pSpi;// 回调接口类的指针
 
+    //添加行情API的接入
+    CThostFtdcMdApi* m_pMDApi; //行情API
+    std::unique_ptr<CLocalMdSpi> m_pMdSpi; //行情回调接口的指针
+    
     CThostFtdcRspInfoField m_successRspInfo;// 成功的响应信息
     CThostFtdcRspInfoField m_errorRspInfo;// 错误的响应信息
     CThostFtdcRspInfoField* setErrorMsgAndGetRspInfo(const char* errorMsg = "error");// 设置并返回错误的响应信息
@@ -384,6 +390,9 @@ private:
     }
     int ReqOrderInsertImpl(CThostFtdcInputOrderField* pInputOrder, int nRequestID,
         std::string relativeOrderSysID = std::string());// 处理新委托的实现的接口
+
+    void SubscribeMarketData();//订阅所有的合约
+
 
 public:
 

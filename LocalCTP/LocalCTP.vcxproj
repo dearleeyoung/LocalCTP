@@ -117,6 +117,7 @@
     <Link>
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalDependencies>../bin/win/x64/Debug/thostmduserapi_se.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -154,6 +155,7 @@
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalDependencies>../bin/win/x64/Release/thostmduserapi_se.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
@@ -166,6 +168,7 @@
     <ClCompile Include="dllmain.cpp" />
     <ClCompile Include="LeeDateTime.cpp" />
     <ClCompile Include="LocalCTP.cpp" />
+    <ClCompile Include="LocalMDApi.cpp" />
     <ClCompile Include="LocalTraderApi.cpp" />
     <ClCompile Include="Properties.cpp" />
     <ClCompile Include="sqlite\shell.c" />
