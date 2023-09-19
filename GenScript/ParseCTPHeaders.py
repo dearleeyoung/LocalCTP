@@ -22,7 +22,7 @@ needConvertMemberNames = ['StatusMsg','ErrorMsg','InstrumentName','ProductName',
 # 如果没有手动设置主键,则默认用BrokerID+UserID/AccountID/InvestorID(如果存在)作为主键
 predefinedTableKey = {
     'CThostFtdcInvestorPositionField':['BrokerID','InvestorID','HedgeFlag','PositionDate','InstrumentID','PosiDirection'],
-    'CThostFtdcInvestorPositionDetailField':['BrokerID','InvestorID','HedgeFlag','OpenDate','TradeID','InstrumentID','Direction'],
+    'CThostFtdcInvestorPositionDetailField':['BrokerID','InvestorID','HedgeFlag','OpenDate','TradeID','InstrumentID','Direction','TradeType'],
     'CThostFtdcOrderField':['BrokerID','InvestorID','TradingDay','FrontID','SessionID','OrderRef'],
     'CThostFtdcTradeField':['BrokerID','InvestorID','TradingDay','ExchangeID','TradeID','TradeType'],
     'CThostFtdcTradingAccountField':['BrokerID','AccountID'],
@@ -465,7 +465,6 @@ virtual int ReqQryClassifiedInstrument(CThostFtdcQryClassifiedInstrumentField* p
 with open(output_api_path, 'w', encoding='utf-8-sig') as f:
     f.write("#pragma once\n")
     f.write(noticeStr + "\n")
-    f.write("#include \"../stdafx.h\"\n")
     #f.write("#pragma warning(disable: 4010)\n")
     f.write("\n")
     f.write("#ifndef UNSUPPORTED_CTP_API_FUNC\n")

@@ -2356,7 +2356,15 @@ int CLocalTraderApi::ReqQuoteInsert(CThostFtdcInputQuoteField* pInputQuote, int 
     try
     {
         newMd.LastPrice = std::stod(pInputQuote->UserID);
+        if (newMd.LastPrice > 1.79e308)//可能有的语言传进来的表示无效的价格数据, 并不太精确
+        {
+            newMd.LastPrice = DBL_MAX;
+        }
         newMd.SettlementPrice = std::stod(pInputQuote->ForQuoteSysID);
+        if (newMd.SettlementPrice > 1.79e308)//可能有的语言传进来的表示无效的价格数据, 并不太精确
+        {
+            newMd.SettlementPrice = DBL_MAX;
+        }
         newMd.UpperLimitPrice = std::stod(pInputQuote->BidOrderRef);
         newMd.LowerLimitPrice = std::stod(pInputQuote->AskOrderRef);
         newMd.PreSettlementPrice = std::stod(pInputQuote->QuoteRef);
