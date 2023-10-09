@@ -2245,6 +2245,7 @@ struct CThostFtdcTradeFieldWrapper
     CThostFtdcTradeField data;
     TThostFtdcMoneyType Commission;
     TThostFtdcMoneyType CloseProfit;
+    TThostFtdcMoneyType CashIn;
 
     CThostFtdcTradeFieldWrapper(const CThostFtdcTradeField& _data = { 0 }) :data(_data) { ::memset((char*)(this) + sizeof(data), 0, sizeof(*this) - sizeof(data)); }
     CThostFtdcTradeFieldWrapper(const std::map<std::string, std::string>& rowValue) :data{ 0 } { parseFromSqlValue(rowValue); }
@@ -2285,10 +2286,11 @@ struct CThostFtdcTradeFieldWrapper
         strncpy(data.ExchangeInstID, rowValue.at("ExchangeInstID").c_str(), sizeof(TThostFtdcExchangeInstIDType));
         Commission = std::stod(rowValue.at("Commission"));
         CloseProfit = std::stod(rowValue.at("CloseProfit"));
+        CashIn = std::stod(rowValue.at("CashIn"));
     }
     std::string generateInsertSql() const {
         const auto insertSqlBody = std::string() + "'" +
-            data.BrokerID + "','" + data.InvestorID + "','" + data.reserve1 + "','" + data.OrderRef + "','" + data.UserID + "','" + data.ExchangeID + "','" + data.TradeID + "','" + (data.Direction == 0 ? '0' : data.Direction) + "','" + data.OrderSysID + "','" + data.ParticipantID + "','" + data.ClientID + "','" + (data.TradingRole == 0 ? '0' : data.TradingRole) + "','" + data.reserve2 + "','" + (data.OffsetFlag == 0 ? '0' : data.OffsetFlag) + "','" + (data.HedgeFlag == 0 ? '0' : data.HedgeFlag) + "','" + std::to_string(data.Price) + "','" + std::to_string(data.Volume) + "','" + data.TradeDate + "','" + data.TradeTime + "','" + (data.TradeType == 0 ? '0' : data.TradeType) + "','" + (data.PriceSource == 0 ? '0' : data.PriceSource) + "','" + data.TraderID + "','" + data.OrderLocalID + "','" + data.ClearingPartID + "','" + data.BusinessUnit + "','" + std::to_string(data.SequenceNo) + "','" + data.TradingDay + "','" + std::to_string(data.SettlementID) + "','" + std::to_string(data.BrokerOrderSeq) + "','" + (data.TradeSource == 0 ? '0' : data.TradeSource) + "','" + data.InvestUnitID + "','" + data.InstrumentID + "','" + data.ExchangeInstID + "','" + std::to_string(Commission) + "','" + std::to_string(CloseProfit)
+            data.BrokerID + "','" + data.InvestorID + "','" + data.reserve1 + "','" + data.OrderRef + "','" + data.UserID + "','" + data.ExchangeID + "','" + data.TradeID + "','" + (data.Direction == 0 ? '0' : data.Direction) + "','" + data.OrderSysID + "','" + data.ParticipantID + "','" + data.ClientID + "','" + (data.TradingRole == 0 ? '0' : data.TradingRole) + "','" + data.reserve2 + "','" + (data.OffsetFlag == 0 ? '0' : data.OffsetFlag) + "','" + (data.HedgeFlag == 0 ? '0' : data.HedgeFlag) + "','" + std::to_string(data.Price) + "','" + std::to_string(data.Volume) + "','" + data.TradeDate + "','" + data.TradeTime + "','" + (data.TradeType == 0 ? '0' : data.TradeType) + "','" + (data.PriceSource == 0 ? '0' : data.PriceSource) + "','" + data.TraderID + "','" + data.OrderLocalID + "','" + data.ClearingPartID + "','" + data.BusinessUnit + "','" + std::to_string(data.SequenceNo) + "','" + data.TradingDay + "','" + std::to_string(data.SettlementID) + "','" + std::to_string(data.BrokerOrderSeq) + "','" + (data.TradeSource == 0 ? '0' : data.TradeSource) + "','" + data.InvestUnitID + "','" + data.InstrumentID + "','" + data.ExchangeInstID + "','" + std::to_string(Commission) + "','" + std::to_string(CloseProfit) + "','" + std::to_string(CashIn)
             + "'";
         return INSERT_SQL_PREFIX + insertSqlBody + ");";
     }
@@ -13007,10 +13009,11 @@ struct CloseDetailWrapper
         data.PreSettlementPrice = std::stod(rowValue.at("PreSettlementPrice"));
         data.CloseProfit = std::stod(rowValue.at("CloseProfit"));
         data.CloseFlag = rowValue.at("CloseFlag").empty() ? '0' : rowValue.at("CloseFlag")[0];
+        data.CashIn = std::stod(rowValue.at("CashIn"));
     }
     std::string generateInsertSql() const {
         const auto insertSqlBody = std::string() + "'" +
-            data.BrokerID + "','" + data.InvestorID + "','" + data.ExchangeID + "','" + data.InstrumentID + "','" + data.OpenDate + "','" + std::to_string(data.OpenPrice) + "','" + data.OpenTradeID + "','" + data.CloseDate + "','" + data.CloseTime + "','" + std::to_string(data.ClosePrice) + "','" + data.CloseTradeID + "','" + std::to_string(data.CloseVolume) + "','" + (data.Direction == 0 ? '0' : data.Direction) + "','" + std::to_string(data.PreSettlementPrice) + "','" + std::to_string(data.CloseProfit) + "','" + (data.CloseFlag == 0 ? '0' : data.CloseFlag)
+            data.BrokerID + "','" + data.InvestorID + "','" + data.ExchangeID + "','" + data.InstrumentID + "','" + data.OpenDate + "','" + std::to_string(data.OpenPrice) + "','" + data.OpenTradeID + "','" + data.CloseDate + "','" + data.CloseTime + "','" + std::to_string(data.ClosePrice) + "','" + data.CloseTradeID + "','" + std::to_string(data.CloseVolume) + "','" + (data.Direction == 0 ? '0' : data.Direction) + "','" + std::to_string(data.PreSettlementPrice) + "','" + std::to_string(data.CloseProfit) + "','" + (data.CloseFlag == 0 ? '0' : data.CloseFlag) + "','" + std::to_string(data.CashIn)
             + "'";
         return INSERT_SQL_PREFIX + insertSqlBody + ");";
     }

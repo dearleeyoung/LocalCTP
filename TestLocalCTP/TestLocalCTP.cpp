@@ -62,7 +62,8 @@ class MySpi : public CThostFtdcTraderSpi
     }
     void OnRspUserLogin(CThostFtdcRspUserLoginField* pRspUserLogin, CThostFtdcRspInfoField* pRspInfo, int nRequestID, bool bIsLast) {
         std::cout << "收到登录响应! " << " UserID:" << pRspUserLogin->UserID
-            << " errorID:" << pRspInfo->ErrorID << " errorMsg:" << pRspInfo->ErrorMsg << std::endl;
+            << " errorID:" << pRspInfo->ErrorID << " errorMsg:" << pRspInfo->ErrorMsg
+            << " TradingDay:" << pRspUserLogin->TradingDay << std::endl;
         g_frontID = pRspUserLogin->FrontID;
         g_sessionID = pRspUserLogin->SessionID;
     }
@@ -206,6 +207,7 @@ int main()
     QryProduct.ProductClass = THOST_FTDC_PC_Futures;
     pApi->ReqQryProduct(&QryProduct, 108);
 
+    // 查询完毕, 开始下单
     auto InputOrder = generateNewOrderMsg("1000", "MA309");
     int ret = pApi->ReqOrderInsert(&InputOrder,109);//没有行情数据时,下一单(预期被拒单)
 
@@ -259,6 +261,23 @@ int main()
     strcpy(marketData.BusinessUnit, "8888888");// OpenInterest
     int Volume = 88888;
     pApi->ReqQuoteInsert(&marketData, Volume);//使用ReqQuoteInsert接口, 喂一个行情快照给API(以触发条件单), 
+
+    strcpy(md.InstrumentID, "IO2406-C-3300");
+    md.BidPrice1 = 10.0;
+    md.AskPrice1 = 10.4;
+    md.SettlementPrice = md.PreSettlementPrice = 9.0;
+    pApi->RegisterFensUserInfo((CThostFtdcFensUserInfoField*)&md);//喂一个(期权)行情快照给API
+    InputOrder = generateNewOrderMsg("1004", "IO2406-C-3300");
+    strcpy(InputOrder.ExchangeID, "CFFEX");
+    InputOrder.LimitPrice = 10.4;
+    InputOrder.VolumeTotalOriginal = 2;
+    ret = pApi->ReqOrderInsert(&InputOrder, 110);//有行情数据后,再下一单(买入开仓2手)
+    strcpy(InputOrder.OrderRef, "1005");
+    InputOrder.Direction = THOST_FTDC_D_Sell;
+    InputOrder.CombOffsetFlag[0] = THOST_FTDC_OF_Close;
+    InputOrder.LimitPrice = 10.0;
+    InputOrder.VolumeTotalOriginal = 1;
+    ret = pApi->ReqOrderInsert(&InputOrder, 111);//有行情数据后,再下一单(卖出平仓1手)
 
     CThostFtdcQryOrderField QryOrder = { "9876","TestUserID" };
     strcpy(QryOrder.ExchangeID, "CZCE");// 有数条CZCE的委托记录,查询返回

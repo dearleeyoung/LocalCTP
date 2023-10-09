@@ -144,6 +144,10 @@ CThostFtdcRspInfoField* CLocalTraderApi::setErrorMsgAndGetRspInfo(const char* er
 // 接收到行情快照时，需要更新行情的合约对应的持仓的持仓盈亏，然后更新账户的动态权益等资金数据。
 // 多头持仓的持仓盈亏 = （最新结算价计算得到的成本 - 持仓成本） * 合约数量乘数 * 持仓数量
 // 空头持仓的持仓盈亏 = （持仓成本 - 最新结算价计算得到的成本） * 合约数量乘数 * 持仓数量
+//
+// 注: 收到行情快照时, 会更新持仓和资金并写入到数据库中, 如果收取的行情快照很多很频繁, 则可能导致写入频繁而卡顿,
+// 本系统目前是收到每次快照时实时写入, 是为了使持仓和资金等维护准确, 即确保内存和数据库中的数据的一致性.
+// 用户可根据需要修改写入数据库的逻辑来避免卡顿的情况, 例如改为定时写入等.
 void CLocalTraderApi::onSnapshot(const CThostFtdcDepthMarketDataField& mdData)
 {
     const std::string instrumentID = mdData.InstrumentID;
@@ -203,7 +207,7 @@ void CLocalTraderApi::onSnapshot(const CThostFtdcDepthMarketDataField& mdData)
         ReqOrderInsertImpl(&InputOrder, 0, contionalOrder.rtnOrder.OrderSysID);
     }
 
-    // 不根据组合合约的行情快照来更新PNL和报单,因此这里直接返回
+    // 不根据组合合约行情快照来更新PNL和报单,因此这里直接返回
     if (it->second.ProductClass == THOST_FTDC_PC_Combination)
     {
         return;
@@ -255,14 +259,13 @@ void CLocalTraderApi::onSnapshot(const CThostFtdcDepthMarketDataField& mdData)
             }
         }
     }
-
     if (!isPriceValid(mdData.LastPrice) && !isPriceValid(mdData.SettlementPrice))
     {
         return;
     }
     const double priceForCal = isPriceValid(mdData.SettlementPrice) ?
         mdData.SettlementPrice : mdData.LastPrice;//优先使用结算价进行计算
-    double diffPositionProfit(0.0);
+    double diffPositionProfit(0);
     CSqliteTransactionHandler transactionHandle(sqlHandler);
     for (auto dir : { THOST_FTDC_D_Buy, THOST_FTDC_D_Sell })
     {
@@ -277,19 +280,26 @@ void CLocalTraderApi::onSnapshot(const CThostFtdcDepthMarketDataField& mdData)
             {
                 for (auto& posDetail : itPos->second.posDetailData)
                 {
-                    const double positionCostOfThiPosDetail =
-                        (strcmp(posDetail.OpenDate, posDetail.TradingDay) == 0 ?
-                            posDetail.OpenPrice : posDetail.LastSettlementPrice)
-                        * posDetail.Volume * it->second.VolumeMultiple;
-                    const double openCostOfThiPosDetail =
-                        posDetail.OpenPrice * posDetail.Volume * it->second.VolumeMultiple;
-                    posDetail.PositionProfitByTrade = (dir == THOST_FTDC_D_Buy ? 1 : -1) *
-                        (priceForCal * it->second.VolumeMultiple * posDetail.Volume
-                            - openCostOfThiPosDetail);
-                    posDetail.PositionProfitByDate = (dir == THOST_FTDC_D_Buy ? 1 : -1) *
-                        (priceForCal * it->second.VolumeMultiple * posDetail.Volume
-                            - positionCostOfThiPosDetail);
                     posDetail.SettlementPrice = priceForCal;
+                    if (isOptions(it->second.ProductClass))
+                    {
+                        //期权不计算持仓盈亏
+                    }
+                    else
+                    {
+                        const double positionCostOfThiPosDetail =
+                            (strcmp(posDetail.OpenDate, posDetail.TradingDay) == 0 ?
+                                posDetail.OpenPrice : posDetail.LastSettlementPrice)
+                            * posDetail.Volume * it->second.VolumeMultiple;
+                        const double openCostOfThiPosDetail =
+                            posDetail.OpenPrice * posDetail.Volume * it->second.VolumeMultiple;
+                        posDetail.PositionProfitByTrade = (dir == THOST_FTDC_D_Buy ? 1 : -1) *
+                            (priceForCal * it->second.VolumeMultiple * posDetail.Volume
+                                - openCostOfThiPosDetail);
+                        posDetail.PositionProfitByDate = (dir == THOST_FTDC_D_Buy ? 1 : -1) *
+                            (priceForCal * it->second.VolumeMultiple * posDetail.Volume
+                                - positionCostOfThiPosDetail);
+                    }
 
                     // only update some fields in position detail table
                     const std::string updatePositionDetailProfitSql =
@@ -310,17 +320,24 @@ void CLocalTraderApi::onSnapshot(const CThostFtdcDepthMarketDataField& mdData)
                 }
 
                 itPos->second.pos.SettlementPrice = priceForCal;
-                auto& PositionProfit = itPos->second.pos.PositionProfit;
-                double oldPositionProfit = PositionProfit;
-                PositionProfit = (dir == THOST_FTDC_D_Buy ? 1 : -1) *
-                    (priceForCal * it->second.VolumeMultiple * itPos->second.pos.Position
-                        - itPos->second.pos.PositionCost);
-                diffPositionProfit += PositionProfit - oldPositionProfit;
+                if (isOptions(it->second.ProductClass))
+                {
+                    //期权不计算持仓盈亏
+                }
+                else
+                {
+                    auto& PositionProfit = itPos->second.pos.PositionProfit;
+                    double oldPositionProfit = PositionProfit;
+                    PositionProfit = (dir == THOST_FTDC_D_Buy ? 1 : -1) *
+                        (priceForCal * it->second.VolumeMultiple * itPos->second.pos.Position
+                            - itPos->second.pos.PositionCost);
+                    diffPositionProfit += PositionProfit - oldPositionProfit;
+                }
 
                 // only update some fields in position table
                 const std::string updatePositionProfitSql =
                     std::string("UPDATE 'CThostFtdcInvestorPositionField' SET PositionProfit=")
-                    + std::to_string(PositionProfit)
+                    + std::to_string(itPos->second.pos.PositionProfit)
                     + ", SettlementPrice=" + std::to_string(itPos->second.pos.SettlementPrice)
                     + " WHERE BrokerID='" + itPos->second.pos.BrokerID
                     + "' AND InvestorID='" + itPos->second.pos.InvestorID
@@ -347,6 +364,8 @@ void CLocalTraderApi::updatePNL(bool needTotalCalc /*= false*/)
         m_tradingAccount.Commission = 0;
         m_tradingAccount.CurrMargin = 0;
         m_tradingAccount.FrozenMargin = 0;
+        m_tradingAccount.FrozenCash = 0;
+        m_tradingAccount.CashIn = 0;
         for (const auto& P : m_positionData)
         {
             m_tradingAccount.PositionProfit += P.second.pos.PositionProfit;
@@ -354,6 +373,8 @@ void CLocalTraderApi::updatePNL(bool needTotalCalc /*= false*/)
             m_tradingAccount.Commission += P.second.pos.Commission;
             m_tradingAccount.CurrMargin += P.second.pos.UseMargin;
             m_tradingAccount.FrozenMargin += P.second.pos.FrozenMargin;
+            m_tradingAccount.FrozenCash += P.second.pos.FrozenCash;
+            m_tradingAccount.CashIn += P.second.pos.CashIn;
         }
     }
     m_tradingAccount.Balance = m_tradingAccount.PreBalance
@@ -386,14 +407,6 @@ void CLocalTraderApi::updateByCancel(const CThostFtdcOrderField& o)
 
         auto handleOpen = [&]()
         {
-            auto posKey = generatePositionKey(instr,
-                directionT,
-                THOST_FTDC_PSD_Today);
-            auto itMarginRate = m_instrumentMarginRateData.find(instr);
-            if (itMarginRate == m_instrumentMarginRateData.end())
-            {
-                return;
-            }
             MarketDataMap::iterator itDepthMarketData;
             {
                 std::lock_guard<std::mutex> mdGuard(m_mdMtx);
@@ -403,15 +416,9 @@ void CLocalTraderApi::updateByCancel(const CThostFtdcOrderField& o)
                     return;
                 }
             }
-            double frozenMargin = itDepthMarketData->second.PreSettlementPrice *
-                it->second.VolumeMultiple * o.VolumeTotal *
-                (directionT == THOST_FTDC_D_Buy ?
-                    itMarginRate->second.LongMarginRatioByMoney :
-                    itMarginRate->second.ShortMarginRatioByMoney)
-                + o.VolumeTotal *
-                (directionT == THOST_FTDC_D_Buy ?
-                    itMarginRate->second.LongMarginRatioByVolume :
-                    itMarginRate->second.ShortMarginRatioByVolume);
+            auto posKey = generatePositionKey(instr,
+                directionT,
+                THOST_FTDC_PSD_Today);
             PositionDataMap::iterator itPos;
             {
                 std::lock_guard<std::mutex> posGuard(m_positionMtx);
@@ -419,17 +426,35 @@ void CLocalTraderApi::updateByCancel(const CThostFtdcOrderField& o)
                 if (itPos == m_positionData.end())
                 {
                     return;
-                }
-                else
+                }                
+            }
+            double frozenMargin(0);
+            double frozenCash(0);
+            if (isOptions(it->second.ProductClass))
+            {
+                if (directionT == THOST_FTDC_D_Buy)//期权买入的委托, 需解冻一部分权利金
                 {
-                    itPos->second.pos.FrozenMargin = (std::max)(
-                        itPos->second.pos.FrozenMargin - frozenMargin, 0.0);
-
+                    frozenCash = itDepthMarketData->second.PreSettlementPrice *
+                        it->second.VolumeMultiple * o.VolumeTotal;
+                }
+                else//期权卖出的(开仓)委托, 需解冻一部分保证金(期权保证金计算太复杂啦,本系统以期货保证金计算规则来算期权保证金)
+                {
                 }
             }
+            frozenMargin = itDepthMarketData->second.PreSettlementPrice *
+                    it->second.VolumeMultiple * o.VolumeTotal *
+                    itPos->second.pos.MarginRateByMoney
+                    + o.VolumeTotal * itPos->second.pos.MarginRateByVolume;
+            itPos->second.pos.FrozenMargin = (std::max)(
+                itPos->second.pos.FrozenMargin - frozenMargin, 0.0);
+            itPos->second.pos.FrozenCash = (std::max)(
+                itPos->second.pos.FrozenCash - frozenCash, 0.0);
+
             savePositionToDb(itPos->second.pos);
             m_tradingAccount.FrozenMargin = (std::max)(
                 m_tradingAccount.FrozenMargin - frozenMargin, 0.0);
+            m_tradingAccount.FrozenCash = (std::max)(
+                m_tradingAccount.FrozenCash - frozenCash, 0.0);
             updatePNL();
         };
 
@@ -460,6 +485,15 @@ void CLocalTraderApi::updateByCancel(const CThostFtdcOrderField& o)
 
         auto handleClose = [&]()
         {
+            MarketDataMap::iterator itDepthMarketData;
+            {
+                std::lock_guard<std::mutex> mdGuard(m_mdMtx);
+                itDepthMarketData = m_mdData.find(instr);
+                if (itDepthMarketData == m_mdData.end())
+                {
+                    return;
+                }
+            }
             auto posKey = generatePositionKey(instr,
                 directionT,
                 getDateTypeFromOffset(
@@ -473,16 +507,26 @@ void CLocalTraderApi::updateByCancel(const CThostFtdcOrderField& o)
                     // 如果没找到持仓,则返回,并不插入持仓(因为持仓在开仓报单时已插入).此流程可改进
                     return;
                 }
-                else
+            }
+            int& frozenPositionNum = (itPos->second.pos.PosiDirection == THOST_FTDC_PD_Long ?
+                itPos->second.pos.ShortFrozen : itPos->second.pos.LongFrozen);
+            frozenPositionNum = (std::max)(
+                frozenPositionNum - o.VolumeTotal, 0);
+            double frozenCash(0);
+            if (isOptions(it->second.ProductClass))
+            {
+                if (getOppositeDirection(directionT) == THOST_FTDC_D_Buy)//期权买入的委托, 需解冻一部分权利金
                 {
-                    int& frozenPositionNum = (itPos->second.pos.PosiDirection == THOST_FTDC_PD_Long ?
-                        itPos->second.pos.ShortFrozen : itPos->second.pos.LongFrozen);
-                    frozenPositionNum = (std::max)(
-                        frozenPositionNum - o.VolumeTotal, 0);
-
+                    frozenCash = itDepthMarketData->second.PreSettlementPrice *
+                        it->second.VolumeMultiple * o.VolumeTotal;
                 }
             }
+            itPos->second.pos.FrozenCash = (std::max)(
+                itPos->second.pos.FrozenCash - frozenCash, 0.0);
             savePositionToDb(itPos->second.pos);
+            m_tradingAccount.FrozenCash = (std::max)(
+                m_tradingAccount.FrozenCash - frozenCash, 0.0);
+            updatePNL();
         };
 
         if (it->second.ProductClass == THOST_FTDC_PC_Combination)
@@ -505,7 +549,6 @@ void CLocalTraderApi::updateByCancel(const CThostFtdcOrderField& o)
             handleClose();
         }
     }
-
 }
 
 void CLocalTraderApi::updateByTrade(const CThostFtdcTradeFieldWrapper& t)
@@ -522,11 +565,6 @@ void CLocalTraderApi::updateByTrade(const CThostFtdcTradeFieldWrapper& t)
     {
         return;
     }
-    auto itMarginRate = m_instrumentMarginRateData.find(pTrade->InstrumentID);
-    if (itMarginRate == m_instrumentMarginRateData.end())
-    {
-        return;
-    }
 
     MarketDataMap::iterator itDepthMarketData;
     {
@@ -537,68 +575,81 @@ void CLocalTraderApi::updateByTrade(const CThostFtdcTradeFieldWrapper& t)
             return;
         }
     }
+    double cashIn(0);//权利金收支
+    double frozenCash(0);//冻结的权利金
+    if (isOptions(it->second.ProductClass))
+    {
+        if (pTrade->Direction == THOST_FTDC_D_Buy)//期权买入的委托, 需解冻一部分权利金
+        {
+            frozenCash = itDepthMarketData->second.PreSettlementPrice *
+                it->second.VolumeMultiple * pTrade->Volume;
+            cashIn = -1 * pTrade->Price * pTrade->Volume * it->second.VolumeMultiple;
+        }
+        else
+        {
+            cashIn = 1 * pTrade->Price * pTrade->Volume * it->second.VolumeMultiple;
+        }
+    }
     // 开仓成交时,增加一笔新的持仓明细,减少冻结保证金,更新持仓和资金
     if (isOpen(pTrade->OffsetFlag))
     {
-        const double MarginRatioByMoney = (pTrade->Direction == THOST_FTDC_D_Buy ?
-            itMarginRate->second.LongMarginRatioByMoney :
-            itMarginRate->second.ShortMarginRatioByMoney);
-        const double MarginRatioByVolume = (pTrade->Direction == THOST_FTDC_D_Buy ?
-            itMarginRate->second.LongMarginRatioByVolume :
-            itMarginRate->second.ShortMarginRatioByVolume);
-        const double frozenMargin = itDepthMarketData->second.PreSettlementPrice *
-            it->second.VolumeMultiple * pTrade->Volume * MarginRatioByMoney
-            + pTrade->Volume * MarginRatioByVolume;
-        const double marginOfTrade = pTrade->Price * it->second.VolumeMultiple *
-            pTrade->Volume * MarginRatioByMoney
-            + pTrade->Volume * MarginRatioByVolume;
         const double feeOfTrade = pTrade->Price * it->second.VolumeMultiple *
             pTrade->Volume * itCommissionRate->second.OpenRatioByMoney +
             pTrade->Volume * itCommissionRate->second.OpenRatioByVolume;
-        const_cast<CThostFtdcTradeFieldWrapper&>(t).Commission = feeOfTrade;
+        auto& tNonConst = const_cast<CThostFtdcTradeFieldWrapper&>(t);
+        tNonConst.Commission = feeOfTrade;
+        tNonConst.CashIn = cashIn;
 
         auto posKey = generatePositionKey(pTrade->InstrumentID,
             pTrade->Direction,
             THOST_FTDC_PSD_Today);
+        PositionDataMap::iterator itPos;
         {
             std::lock_guard<std::mutex> posGuard(m_positionMtx);
-            auto itPos = m_positionData.find(posKey);
+            itPos = m_positionData.find(posKey);
             if (itPos == m_positionData.end())
             {
                 // 如果没找到持仓,则返回,并不插入持仓(因为持仓在开仓报单时已插入).
                 return;
             }
-            else
-            {
-                auto posDetail = PositionData::getPositionDetailFromOpenTrade(*pTrade);
-                posDetail.MarginRateByMoney = MarginRatioByMoney;
-                posDetail.MarginRateByVolume = MarginRatioByVolume;
-                posDetail.LastSettlementPrice = itDepthMarketData->second.PreSettlementPrice;
-                posDetail.SettlementPrice = itDepthMarketData->second.SettlementPrice;
-                posDetail.Margin = marginOfTrade;
-                itPos->second.addPositionDetail(posDetail);// 添加持仓明细到持仓中
-                savePositionDetialToDb(posDetail);
-
-                auto& pos = itPos->second.pos;
-                pos.Position += pTrade->Volume;
-                pos.Commission += feeOfTrade;
-                pos.UseMargin += marginOfTrade;
-                pos.FrozenMargin = (std::max)(
-                    pos.FrozenMargin - frozenMargin, 0.0);
-                pos.PositionCost +=
-                    pTrade->Price * pTrade->Volume * itPos->second.volumeMultiple;//更新持仓的持仓成本
-                pos.OpenVolume += pTrade->Volume;
-                pos.OpenAmount +=
-                    pTrade->Volume * pTrade->Price * itPos->second.volumeMultiple;
-                pos.OpenCost +=
-                    pTrade->Volume * pTrade->Price * itPos->second.volumeMultiple;
-                pos.TodayPosition += pTrade->Volume;
-                savePositionToDb(pos);
-            }
         }
-        m_tradingAccount.Commission += feeOfTrade;
-        m_tradingAccount.CurrMargin += marginOfTrade;
-        m_tradingAccount.FrozenMargin = (std::max)(m_tradingAccount.FrozenMargin - frozenMargin, 0.0);
+
+        const double frozenMargin = itDepthMarketData->second.PreSettlementPrice *
+            it->second.VolumeMultiple * pTrade->Volume * itPos->second.pos.MarginRateByMoney
+            + pTrade->Volume * itPos->second.pos.MarginRateByVolume;
+        const double marginOfTrade = pTrade->Price * it->second.VolumeMultiple *
+            pTrade->Volume * itPos->second.pos.MarginRateByMoney
+            + pTrade->Volume * itPos->second.pos.MarginRateByVolume;
+        {
+            auto posDetail = PositionData::getPositionDetailFromOpenTrade(*pTrade);
+            posDetail.MarginRateByMoney = itPos->second.pos.MarginRateByMoney;
+            posDetail.MarginRateByVolume = itPos->second.pos.MarginRateByVolume;
+            posDetail.LastSettlementPrice = itDepthMarketData->second.PreSettlementPrice;
+            posDetail.SettlementPrice = itDepthMarketData->second.SettlementPrice;
+            posDetail.Margin = marginOfTrade;
+            itPos->second.addPositionDetail(posDetail);// 添加持仓明细到持仓中
+            savePositionDetialToDb(posDetail);
+
+            auto& pos = itPos->second.pos;
+            pos.Position += pTrade->Volume;
+            pos.Commission += feeOfTrade;
+            pos.UseMargin += marginOfTrade;
+            pos.FrozenMargin = (std::max)(
+                pos.FrozenMargin - frozenMargin, 0.0);
+            pos.FrozenCash = (std::max)(
+                pos.FrozenCash - frozenCash, 0.0);//更新持仓的冻结权利金
+            pos.CashIn += cashIn;//更新持仓的权利金收支
+            pos.PositionCost +=
+                pTrade->Price * pTrade->Volume * itPos->second.volumeMultiple;//更新持仓的持仓成本
+            pos.OpenVolume += pTrade->Volume;
+            pos.OpenAmount +=
+                pTrade->Volume * pTrade->Price * itPos->second.volumeMultiple;
+            pos.OpenCost +=
+                pTrade->Volume * pTrade->Price * itPos->second.volumeMultiple;
+            pos.TodayPosition += pTrade->Volume;
+            savePositionToDb(pos);
+        }
+        // 汇总计算资金
         updatePNL(true);
     }
     // 平仓成交时,按"先开先平"的原则更新持仓明细,减少持仓中的冻结持仓,更新持仓和资金.
@@ -648,51 +699,57 @@ void CLocalTraderApi::updateByTrade(const CThostFtdcTradeFieldWrapper& t)
                     (strcmp(p.OpenDate, p.TradingDay) == 0 ?
                         p.OpenPrice : p.LastSettlementPrice)
                     * p.Volume * it->second.VolumeMultiple;
-                const double openCostOfThiPosDetail =
-                    p.OpenPrice * p.Volume * it->second.VolumeMultiple;
-                p.PositionProfitByTrade = (p.Direction == THOST_FTDC_D_Buy ? 1 : -1) *
-                    (pTrade->Price * it->second.VolumeMultiple * p.Volume
-                        - openCostOfThiPosDetail);//更新持仓明细的逐笔对冲持仓盈亏
-                p.PositionProfitByDate = (p.Direction == THOST_FTDC_D_Buy ? 1 : -1) *
-                    (pTrade->Price * it->second.VolumeMultiple * p.Volume
-                        - positionCostOfThiPosDetail);//更新持仓明细的逐日盯市持仓盈亏
-                p.Margin = positionCostOfThiPosDetail *
-                    (pos.PosiDirection == THOST_FTDC_PD_Long ?
-                        itMarginRate->second.LongMarginRatioByMoney :
-                        itMarginRate->second.ShortMarginRatioByMoney)
-                    + p.Volume *
-                    (pos.PosiDirection == THOST_FTDC_PD_Long ?
-                        itMarginRate->second.LongMarginRatioByVolume :
-                        itMarginRate->second.ShortMarginRatioByVolume);// 更新持仓的保证金
+                if (!isOptions(it->second.ProductClass))//期权无持仓盈亏
+                {
+                    const double openCostOfThiPosDetail =
+                        p.OpenPrice * p.Volume * it->second.VolumeMultiple;
+                    p.PositionProfitByTrade = (p.Direction == THOST_FTDC_D_Buy ? 1 : -1) *
+                        (pTrade->Price * it->second.VolumeMultiple * p.Volume
+                            - openCostOfThiPosDetail);//更新持仓明细的逐笔对冲持仓盈亏
+                    p.PositionProfitByDate = (p.Direction == THOST_FTDC_D_Buy ? 1 : -1) *
+                        (pTrade->Price * it->second.VolumeMultiple * p.Volume
+                            - positionCostOfThiPosDetail);//更新持仓明细的逐日盯市持仓盈亏
+                }
+                p.Margin = positionCostOfThiPosDetail * pos.MarginRateByMoney
+                    + p.Volume * pos.MarginRateByVolume;// 更新持仓明细的保证金
                 // 持仓明细的平仓盈亏汇总计算中,昨仓用昨结算价,今仓用开仓价
                 double closeProfitOfThisPosDetailInThisTrade = 0;
                 TThostFtdcOffsetFlagType _closeFlag = THOST_FTDC_OF_Close;
                 if (strcmp(p.OpenDate, p.TradingDay) != 0)//昨仓
                 {
                     closeYesterdayVolume += tradeVolumeInThisPosDetail;
-                    closeProfitOfThisPosDetailInThisTrade =
-                        (pos.PosiDirection == THOST_FTDC_PD_Long ? 1 : -1) *
-                        (pTrade->Price - pos.PreSettlementPrice) *
-                        tradeVolumeInThisPosDetail * itPos->second.volumeMultiple;  
+                    if (!isOptions(it->second.ProductClass))//期权无平仓盈亏
+                    {
+                        closeProfitOfThisPosDetailInThisTrade =
+                            (pos.PosiDirection == THOST_FTDC_PD_Long ? 1 : -1) *
+                            (pTrade->Price - pos.PreSettlementPrice) *
+                            tradeVolumeInThisPosDetail * itPos->second.volumeMultiple;
+                    }
                     _closeFlag = THOST_FTDC_OF_Close;
                 }
                 else//今仓
                 {
                     closeTodayVolume += tradeVolumeInThisPosDetail;
-                    closeProfitOfThisPosDetailInThisTrade =
-                        (pos.PosiDirection == THOST_FTDC_PD_Long ? 1 : -1) *
-                        (pTrade->Price - p.OpenPrice) *
-                        tradeVolumeInThisPosDetail * itPos->second.volumeMultiple;   
+                    if (!isOptions(it->second.ProductClass))//期权无平仓盈亏
+                    {
+                        closeProfitOfThisPosDetailInThisTrade =
+                            (pos.PosiDirection == THOST_FTDC_PD_Long ? 1 : -1) *
+                            (pTrade->Price - p.OpenPrice) *
+                            tradeVolumeInThisPosDetail * itPos->second.volumeMultiple;
+                    }
                     _closeFlag = THOST_FTDC_OF_CloseToday;
                 }
-                double closeProfitByTradeOfThisPosDetailInThisTrade =
-                    (pos.PosiDirection == THOST_FTDC_PD_Long ? 1 : -1) *
-                    (pTrade->Price - p.OpenPrice) *
-                    tradeVolumeInThisPosDetail * itPos->second.volumeMultiple;
-                p.CloseProfitByDate += closeProfitOfThisPosDetailInThisTrade;
-                p.CloseProfitByTrade += closeProfitByTradeOfThisPosDetailInThisTrade;
-                closeProfitOfTrade += closeProfitOfThisPosDetailInThisTrade;
-                closeProfitByTradeOfTrade += closeProfitByTradeOfThisPosDetailInThisTrade;
+                if (!isOptions(it->second.ProductClass))//期权无平仓盈亏
+                {
+                    double closeProfitByTradeOfThisPosDetailInThisTrade =
+                        (pos.PosiDirection == THOST_FTDC_PD_Long ? 1 : -1) *
+                        (pTrade->Price - p.OpenPrice) *
+                        tradeVolumeInThisPosDetail * itPos->second.volumeMultiple;
+                    p.CloseProfitByDate += closeProfitOfThisPosDetailInThisTrade;
+                    p.CloseProfitByTrade += closeProfitByTradeOfThisPosDetailInThisTrade;
+                    closeProfitOfTrade += closeProfitOfThisPosDetailInThisTrade;
+                    closeProfitByTradeOfTrade += closeProfitByTradeOfThisPosDetailInThisTrade;
+                }
 
                 savePositionDetialToDb(p);
                 if (tradeVolumeInThisPosDetail > 0)//此处实际不会为0,判断是为了保险
@@ -714,6 +771,11 @@ void CLocalTraderApi::updateByTrade(const CThostFtdcTradeFieldWrapper& t)
                     cd.PreSettlementPrice = itDepthMarketData->second.PreSettlementPrice;
                     cd.CloseProfit = closeProfitOfThisPosDetailInThisTrade;
                     cd.CloseFlag = _closeFlag;
+                    if (isOptions(it->second.ProductClass))
+                    {
+                        cd.CashIn = (pTrade->Direction == THOST_FTDC_D_Buy ? -1 : 1)
+                            * pTrade->Price * it->second.VolumeMultiple * tradeVolumeInThisPosDetail;
+                    }
                     saveDataToDb(CloseDetailWrapper(cd));
                 }
                 if (restVolume <= 0)
@@ -733,6 +795,7 @@ void CLocalTraderApi::updateByTrade(const CThostFtdcTradeFieldWrapper& t)
             auto& tNonConst = const_cast<CThostFtdcTradeFieldWrapper&>(t);
             tNonConst.Commission = feeOfTrade;
             tNonConst.CloseProfit = closeProfitOfTrade;
+            tNonConst.CashIn = cashIn;
 
             //重新统计持仓中的一些数据
             pos.Position = 0;// 持仓数量
@@ -746,27 +809,27 @@ void CLocalTraderApi::updateByTrade(const CThostFtdcTradeFieldWrapper& t)
                     * itPos->second.volumeMultiple;// 持仓明细的持仓成本汇总计算中,昨仓用昨结算价,今仓用开仓价
                 pos.OpenCost += p.Volume * p.OpenPrice * itPos->second.volumeMultiple;
             }
-            pos.PositionProfit =
-                (pos.PosiDirection == THOST_FTDC_PD_Long ? 1 : -1)
-                * (pTrade->Price * itPos->second.volumeMultiple * pos.Position
-                    - pos.PositionCost);// 持仓盈亏
+            if (!isOptions(it->second.ProductClass))//期权无持仓盈亏
+            {
+                pos.PositionProfit =
+                    (pos.PosiDirection == THOST_FTDC_PD_Long ? 1 : -1)
+                    * (pTrade->Price * itPos->second.volumeMultiple * pos.Position
+                        - pos.PositionCost);// 持仓盈亏
+            }
             pos.CloseProfit += closeProfitOfTrade;// 平仓盈亏
             pos.CloseProfitByDate += closeProfitOfTrade;// 逐日盯市平仓盈亏
             pos.CloseProfitByTrade += closeProfitByTradeOfTrade;// 逐笔对冲平仓盈亏
             pos.Commission += feeOfTrade;// 更新持仓的手续费
             pos.UseMargin =
-                pos.PositionCost *
-                (pos.PosiDirection == THOST_FTDC_PD_Long ?
-                    itMarginRate->second.LongMarginRatioByMoney :
-                    itMarginRate->second.ShortMarginRatioByMoney)
-                + pos.Position *
-                (pos.PosiDirection == THOST_FTDC_PD_Long ?
-                    itMarginRate->second.LongMarginRatioByVolume :
-                    itMarginRate->second.ShortMarginRatioByVolume);// 更新持仓的保证金
+                pos.PositionCost * pos.MarginRateByMoney
+                + pos.Position * pos.MarginRateByVolume;// 更新持仓的保证金
             int& frozenPositionNum = (pos.PosiDirection == THOST_FTDC_PD_Long ?
                 pos.ShortFrozen : pos.LongFrozen);
             frozenPositionNum = (std::max)(
                 frozenPositionNum - pTrade->Volume, 0);//更新持仓的冻结持仓
+            pos.FrozenCash = (std::max)(
+                pos.FrozenCash - frozenCash, 0.0);//更新持仓的冻结权利金
+            pos.CashIn += cashIn;//更新持仓的权利金收支
             pos.CloseVolume += pTrade->Volume;//更新持仓的平仓量
             pos.CloseAmount +=
                 pTrade->Volume * pTrade->Price * itPos->second.volumeMultiple;//更新持仓的平仓金额
@@ -1467,6 +1530,7 @@ int CLocalTraderApi::ReqOrderInsertImpl(CThostFtdcInputOrderField * pInputOrder,
     auto directionT = pInputOrder->Direction;
     const int orderNum = pInputOrder->VolumeTotalOriginal;
     double totalFrozenMargin = 0;
+    double totalFrozenCash = 0;
     MarketDataVec mdVec;
 
     auto handleOpen = [&](bool preCheck) -> std::pair<bool, std::string>
@@ -1502,16 +1566,32 @@ int CLocalTraderApi::ReqOrderInsertImpl(CThostFtdcInputOrderField * pInputOrder,
         // (请求查询函数ReqQryBrokerTradingParams, 响应函数OnRspQryBrokerTradingParams)
         // 本系统以昨结算价作为计算冻结保证金的基准价格,
         // 而以昨结算价(对昨仓)和开仓成交价格(对今仓)作为计算持仓保证金时的基准价格
-        const double MarginRatioByMoney = (directionT == THOST_FTDC_D_Buy ?
+        double MarginRatioByMoney = (directionT == THOST_FTDC_D_Buy ?
             itMarginRate->second.LongMarginRatioByMoney
             : itMarginRate->second.ShortMarginRatioByMoney);
-        const double MarginRatioByVolume = (directionT == THOST_FTDC_D_Buy ?
+        double MarginRatioByVolume = (directionT == THOST_FTDC_D_Buy ?
             itMarginRate->second.LongMarginRatioByVolume
             : itMarginRate->second.ShortMarginRatioByVolume);
+        double frozenCash(0);
+        if (isOptions(itInstr->second.ProductClass))
+        {
+            if (directionT == THOST_FTDC_D_Buy)//期权买入的委托, 需冻结一部分权利金, 而无需支付保证金, 因此将其保证金率设为0
+            {
+                frozenCash = itDepthMarketData->second.PreSettlementPrice *
+                    itInstr->second.VolumeMultiple * orderNum;
+                MarginRatioByMoney = 0;
+                MarginRatioByVolume = 0;
+            }
+            else//期权卖出的委托, 需冻结一部分保证金(期权保证金计算太复杂啦,本系统以期货保证金计算规则来算期权保证金)
+            {
+            }
+        }
         const double frozenMargin = itDepthMarketData->second.PreSettlementPrice *
             itInstr->second.VolumeMultiple * orderNum * MarginRatioByMoney
             + orderNum * MarginRatioByVolume;
+
         totalFrozenMargin += frozenMargin;
+        totalFrozenCash += frozenCash;
 
         PositionDataMap::iterator itPos;
         {
@@ -1532,6 +1612,7 @@ int CLocalTraderApi::ReqOrderInsertImpl(CThostFtdcInputOrderField * pInputOrder,
                 if (!preCheck)
                 {
                     tempPos.pos.FrozenMargin = frozenMargin;// (因为开仓未成交而)冻结的保证金
+                    tempPos.pos.FrozenCash = frozenCash;// (因为开仓未成交而)冻结的权利金
                 }
                 tempPos.pos.PosiDirection = getPositionDirectionFromDirection(directionT);// 持仓方向
                 tempPos.pos.PositionDate = THOST_FTDC_PSD_Today;// 持仓日期类型(今仓)
@@ -1544,13 +1625,17 @@ int CLocalTraderApi::ReqOrderInsertImpl(CThostFtdcInputOrderField * pInputOrder,
                 if (!preCheck)
                 {
                     itPos->second.pos.FrozenMargin += frozenMargin;
+                    itPos->second.pos.FrozenCash += frozenCash;
                 }
             }
         }
         if (preCheck)
         {
-            double newAvailable = m_tradingAccount.Balance - m_tradingAccount.CurrMargin - m_tradingAccount.FrozenMargin
-                - totalFrozenMargin;
+            double newAvailable = m_tradingAccount.Balance - m_tradingAccount.CurrMargin
+                - m_tradingAccount.FrozenMargin
+                - m_tradingAccount.FrozenCash
+                - totalFrozenMargin
+                - totalFrozenCash;
             if (LTZ(newAvailable))
             {
                 return std::make_pair(false, ERRMSG_AVAILABLE_NOT_ENOUGH);;
@@ -1560,6 +1645,7 @@ int CLocalTraderApi::ReqOrderInsertImpl(CThostFtdcInputOrderField * pInputOrder,
         {
             savePositionToDb(itPos->second.pos);
             m_tradingAccount.FrozenMargin += frozenMargin;
+            m_tradingAccount.FrozenCash += frozenCash;
             updatePNL();
         }
         return std::make_pair(true, std::string());
@@ -1586,6 +1672,20 @@ int CLocalTraderApi::ReqOrderInsertImpl(CThostFtdcInputOrderField * pInputOrder,
             mdVec.emplace_back(itDepthMarketData->second);
         }
 
+        double frozenCash(0);
+        if (isOptions(itInstr->second.ProductClass))
+        {
+            if (getOppositeDirection(directionT) == THOST_FTDC_D_Buy)//期权买入的委托, 需冻结一部分权利金
+            {
+                frozenCash = itDepthMarketData->second.PreSettlementPrice *
+                    itInstr->second.VolumeMultiple * orderNum;
+            }
+            else//期权卖出的委托
+            {
+            }
+        }
+        totalFrozenCash += frozenCash;
+
         PositionDataMap::iterator itPos;
         {
             std::lock_guard<std::mutex> posGuard(m_positionMtx);
@@ -1595,27 +1695,24 @@ int CLocalTraderApi::ReqOrderInsertImpl(CThostFtdcInputOrderField * pInputOrder,
                 return std::make_pair(false, ERRMSG_AVAILABLE_POSITION_NOT_ENOUGH + std::string("0")
                     + " on " + instr);
             }
-            else
-            {
-                int& frozenPositionNum = (itPos->second.pos.PosiDirection == THOST_FTDC_PD_Long ?
-                    itPos->second.pos.ShortFrozen : itPos->second.pos.LongFrozen);
-                const auto closable = itPos->second.pos.Position - frozenPositionNum;
-                if (closable < orderNum)
-                {
-                    return std::make_pair(false,
-                        ((isSpecialExchange(itInstr->second.ExchangeID) && pInputOrder->CombOffsetFlag[0] == THOST_FTDC_OF_CloseToday) ?
-                            ERRMSG_AVAILABLE_TODAY_POSITION_NOT_ENOUGH : ERRMSG_AVAILABLE_POSITION_NOT_ENOUGH)
-                        + std::to_string(closable) + " on " + instr);
-                }
-                if (!preCheck)
-                {
-                    frozenPositionNum += orderNum;
-                }
-            }
+        }
+        int& frozenPositionNum = (itPos->second.pos.PosiDirection == THOST_FTDC_PD_Long ?
+            itPos->second.pos.ShortFrozen : itPos->second.pos.LongFrozen);
+        const auto closable = itPos->second.pos.Position - frozenPositionNum;
+        if (closable < orderNum)
+        {
+            return std::make_pair(false,
+                ((isSpecialExchange(itInstr->second.ExchangeID) && pInputOrder->CombOffsetFlag[0] == THOST_FTDC_OF_CloseToday) ?
+                    ERRMSG_AVAILABLE_TODAY_POSITION_NOT_ENOUGH : ERRMSG_AVAILABLE_POSITION_NOT_ENOUGH)
+                + std::to_string(closable) + " on " + instr);
         }
         if (!preCheck)
         {
+            frozenPositionNum += orderNum;
+            itPos->second.pos.FrozenCash += frozenCash;
             savePositionToDb(itPos->second.pos);
+            m_tradingAccount.FrozenCash += frozenCash;
+            updatePNL();
         }
         return std::make_pair(true, std::string());
     };
@@ -2355,13 +2452,14 @@ int CLocalTraderApi::ReqQuoteInsert(CThostFtdcInputQuoteField* pInputQuote, int 
     newMd.AskVolume1 = pInputQuote->AskVolume;
     try
     {
+        static constexpr double SOME_BIG_NUMBER = 1e12;
         newMd.LastPrice = std::stod(pInputQuote->UserID);
-        if (newMd.LastPrice > 1.79e308)//可能有的语言传进来的表示无效的价格数据, 并不太精确
+        if (newMd.LastPrice > SOME_BIG_NUMBER)//可能有的语言传进来的表示无效的价格数据, 并不太精确
         {
             newMd.LastPrice = DBL_MAX;
         }
         newMd.SettlementPrice = std::stod(pInputQuote->ForQuoteSysID);
-        if (newMd.SettlementPrice > 1.79e308)//可能有的语言传进来的表示无效的价格数据, 并不太精确
+        if (newMd.SettlementPrice > SOME_BIG_NUMBER)//可能有的语言传进来的表示无效的价格数据, 并不太精确
         {
             newMd.SettlementPrice = DBL_MAX;
         }

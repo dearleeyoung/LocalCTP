@@ -113,7 +113,8 @@ fieldMap = {}
 ctpClasses = {}
 # extra field in XXWrapper class
 extraFieldMap = { "CThostFtdcTradeField" : [(CTPField('TThostFtdcMoneyType','double',0), "Commission"), 
-    (CTPField('TThostFtdcMoneyType','double',0), "CloseProfit") ] }
+    (CTPField('TThostFtdcMoneyType','double',0), "CloseProfit"),
+    (CTPField('TThostFtdcMoneyType','double',0), "CashIn") ] }
 
 '''
 读取到的内容:

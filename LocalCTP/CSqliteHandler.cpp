@@ -135,7 +135,14 @@ bool CSqliteHandler::SelectData(const std::string& sql, SQL_VALUES& values)
         SQL_ROW_VALUE temp;
         for (int j = 0; j < nCols; ++j)
         {
-            temp[azResult[j]] = azResult[index];
+            if (azResult[index] == nullptr)// maybe the result is null
+            {
+                temp[azResult[j]] = "";
+            }
+            else
+            {
+                temp[azResult[j]] = azResult[index];
+            }
             index++;
         }
         values.push_back(temp);

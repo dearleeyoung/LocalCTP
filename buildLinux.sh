@@ -16,6 +16,13 @@ buildFunc(){
     mv ${INSTALL_PATH}/libthosttraderapi_se.so ${INSTALL_PATH}/libthosttraderapi_se_v$1.so
 }
 
+buildDemoFunc(){
+    echo "---------------"
+    echo "Start building DEMO ..."
+    cd ${WORK_DIR}/LocalCTP/TestLocalCTP
+    make clean && make
+}
+
 # v6.3.19
 buildFunc 6.3.19
 
@@ -29,3 +36,6 @@ buildFunc 6.7.0
 buildFunc 6.5.1
 
 mv ${INSTALL_PATH}/libthosttraderapi_se_v6.5.1.so ${INSTALL_PATH}/libthosttraderapi_se.so
+
+buildDemoFunc
+

@@ -565,7 +565,7 @@ ACCUMULATE_WITH_SAME_NAME(FrozenCash) ";"
         " Available = Balance-CurrMargin-FrozenMargin-FrozenCommission-FrozenCash;"
     )
     , m_sleepSecond(1)
-    , m_settlementStartHour(16)
+    , m_settlementStartHour(17)
     , m_count(0)
     , m_timerThread([this]() {
         CLocalTraderApi::initInstrMap();
@@ -1166,27 +1166,9 @@ void CLocalTraderApi::CSettlementHandler::doWorkInitialSettlement(
  WHERE CThostFtdcInvestorPositionField.InstrumentID in \
    (SELECT CThostFtdcInstrumentField.InstrumentID from CThostFtdcInstrumentField \
  WHERE CThostFtdcInstrumentField.ExpireDate <= '") + oldTradingDay + "');";
-    /*
-    const std::string positionInitialSettlementSql2
-        = std::string("UPDATE CThostFtdcInvestorPositionField SET \
- PositionProfit = (CASE WHEN PosiDirection = '") + THOST_FTDC_PD_Long + "' THEN 1 ELSE - 1 END) * \
-    (SettlementPrice * Position * \
-        (SELECT VolumeMultiple from CThostFtdcInstrumentField WHERE \
-         CThostFtdcInstrumentField.InstrumentID = CThostFtdcInvestorPositionField.InstrumentID) \
-    - PositionCost );";
-    const std::string positionInitialSettlementSql3
-        = "UPDATE CThostFtdcInvestorPositionField SET \
- PositionCost = SettlementPrice * Position * \
-    (SELECT VolumeMultiple from CThostFtdcInstrumentField WHERE \
-     CThostFtdcInstrumentField.InstrumentID = CThostFtdcInvestorPositionField.InstrumentID);";
-    const std::string positionInitialSettlementSql4
-        = std::string("UPDATE CThostFtdcInvestorPositionField SET \
- UseMargin = PositionCost * MarginRateByMoney + Position * MarginRateByVolume;");
-    */
+
     m_sqlHandler.Update(positionInitialSettlementSql1);
-    /*m_sqlHandler.Update(positionInitialSettlementSql2);
-    m_sqlHandler.Update(positionInitialSettlementSql3);
-    m_sqlHandler.Update(positionInitialSettlementSql4);*/
+
     CSqliteHandler::SQL_VALUES posSqlValues;
     m_sqlHandler.SelectData(CThostFtdcInvestorPositionFieldWrapper::SELECT_SQL, posSqlValues);
     std::vector<CThostFtdcInvestorPositionFieldWrapper> todayPosVec;
@@ -1197,13 +1179,16 @@ void CLocalTraderApi::CSettlementHandler::doWorkInitialSettlement(
         auto& pos = posWrapper.data;
 
         auto itInstr = CLocalTraderApi::m_instrData.find(pos.InstrumentID);
-        if (itInstr == CLocalTraderApi::m_instrData.end())
+        if (itInstr == CLocalTraderApi::m_instrData.end() || itInstr->second.ProductClass == THOST_FTDC_PC_Combination)
         {
             continue;
         }
-        pos.PositionProfit = (pos.PosiDirection == THOST_FTDC_PD_Long ? 1.0 : -1.0) *
-            (pos.SettlementPrice * pos.Position * itInstr->second.VolumeMultiple
-                - pos.PositionCost);//更新持仓盈亏
+        if (!isOptions(itInstr->second.ProductClass))
+        {
+            pos.PositionProfit = (pos.PosiDirection == THOST_FTDC_PD_Long ? 1.0 : -1.0) *
+                (pos.SettlementPrice * pos.Position * itInstr->second.VolumeMultiple
+                    - pos.PositionCost);//更新持仓盈亏
+        }
         pos.PositionCost = pos.SettlementPrice * pos.Position *
             itInstr->second.VolumeMultiple;//更新持仓成本
         pos.UseMargin = pos.PositionCost * pos.MarginRateByMoney +
@@ -1462,6 +1447,28 @@ void CLocalTraderApi::CSettlementHandler::doGenerateUserSettlement(
         ostrstr << ch_single_line << "\r\n";
     };
     auto buildSettlementTradingAccount = [&]() {
+        double positiveCashIn(0);
+        CSqliteHandler::SQL_VALUES tradeSqlValues;
+        const std::string selectTradeSql =
+            "SELECT SUM(CashIn) AS positiveCashIn FROM 'CThostFtdcTradeField' where BrokerID='"
+            + brokerID + "' and InvestorID='" + userID
+            + "' and TradingDay = '" + TradingDay
+            + "' and CashIn>0;";
+        sqlHandler.SelectData(selectTradeSql, tradeSqlValues);
+        for (const auto& rowValue : tradeSqlValues)
+        {
+            try
+            {
+                //可能没有找到该符合条件的账户成交记录,则positiveCashIn值为空
+                positiveCashIn = std::stod(rowValue.at("positiveCashIn"));
+            }
+            catch (...)
+            {
+                positiveCashIn = 0;
+            }
+            break;
+        }
+        double negativeCashIn = data.CashIn - positiveCashIn;
         // 资金状况
         sprintf(ch_single_line, format_settlement_account_summary1.c_str());
         ostrstr << ch_single_line << "\r\n";
@@ -1489,9 +1496,9 @@ void CLocalTraderApi::CSettlementHandler::doGenerateUserSettlement(
         ostrstr << ch_single_line << "\r\n";
         sprintf(ch_single_line, format_settlement_account_summary13.c_str(), 0.0, data.Available);
         ostrstr << ch_single_line << "\r\n";
-        sprintf(ch_single_line, format_settlement_account_summary14.c_str(), 0.0, 100 * (LEZ(data.Balance) ? 1.0 : data.CurrMargin) / data.Balance);
+        sprintf(ch_single_line, format_settlement_account_summary14.c_str(), positiveCashIn, 100 * (LEZ(data.Balance) ? 1.0 : data.CurrMargin) / data.Balance);
         ostrstr << ch_single_line << "\r\n";
-        sprintf(ch_single_line, format_settlement_account_summary15.c_str(), 0.0, (LTZ(data.Available) ? (0 - data.Available) : 0));
+        sprintf(ch_single_line, format_settlement_account_summary15.c_str(), negativeCashIn, (LTZ(data.Available) ? (0 - data.Available) : 0));
         ostrstr << ch_single_line << "\r\n";
         sprintf(ch_single_line, format_settlement_account_summary16.c_str());
         ostrstr << ch_single_line << "\r\n";
@@ -1550,6 +1557,7 @@ void CLocalTraderApi::CSettlementHandler::doGenerateUserSettlement(
         double total_Turnover = 0.0;//总成交额
         double total_Fee = 0.0;//总手续费
         double total_CloseProfit = 0.0;//总平仓盈亏
+        double total_CashIn = 0.0;//总权利金收支
         for (const auto& tradeValue : tradeSqlValues)
         {
             CThostFtdcTradeFieldWrapper tradeWrapper(tradeValue);
@@ -1572,6 +1580,7 @@ void CLocalTraderApi::CSettlementHandler::doGenerateUserSettlement(
             total_Turnover += thisTurnover;
             total_CloseProfit += tradeWrapper.CloseProfit;//平仓盈亏
             total_Fee += tradeWrapper.Commission;//手续费
+            total_CashIn += tradeWrapper.CashIn;//权利金收支
             sprintf(ch_single_line, format_settlement_trade_single_record1.c_str(),
                 TradingDay.c_str(),
                 get_exchange_name(ContractInfo.ExchangeID).c_str(),
@@ -1584,13 +1593,14 @@ void CLocalTraderApi::CSettlementHandler::doGenerateUserSettlement(
                 get_open_close_name(trade.OffsetFlag).c_str(),
                 tradeWrapper.Commission,
                 tradeWrapper.CloseProfit,
+                tradeWrapper.CashIn,
                 trade.TradeID);
             ostrstr << ch_single_line << "\r\n";
         }
 
         sprintf(ch_single_line, format_settlement_trade_end1.c_str());
         ostrstr << ch_single_line << "\r\n";
-        sprintf(ch_single_line, format_settlement_trade_end2.c_str(), (int)tradeSqlValues.size(), total_Lots, total_Turnover, total_Fee, total_CloseProfit);
+        sprintf(ch_single_line, format_settlement_trade_end2.c_str(), (int)tradeSqlValues.size(), total_Lots, total_Turnover, total_Fee, total_CloseProfit, total_CashIn);
         ostrstr << ch_single_line << "\r\n";
         sprintf(ch_single_line, format_settlement_trade_end3.c_str());
         ostrstr << ch_single_line << "\r\n";
@@ -1631,6 +1641,7 @@ void CLocalTraderApi::CSettlementHandler::doGenerateUserSettlement(
 
         int total_position_closed_lots = 0;//总手数
         double total_position_closed_close_profit = 0.0;//总平仓盈亏
+        double total_position_closed_cashIn = 0.0;//总权利金收支
         for (const auto& closeDetailValue : closeDetailSqlValues)
         {
             CloseDetailWrapper closeDetailWrapper(closeDetailValue);
@@ -1649,6 +1660,7 @@ void CLocalTraderApi::CSettlementHandler::doGenerateUserSettlement(
 
             total_position_closed_lots += closeDetail.CloseVolume;
             total_position_closed_close_profit += closeDetail.CloseProfit;
+            total_position_closed_cashIn += closeDetail.CashIn;
 
             sprintf(ch_single_line, format_settlement_position_closed_single_record1.c_str(),
                 closeDetail.CloseDate,
@@ -1661,13 +1673,14 @@ void CLocalTraderApi::CSettlementHandler::doGenerateUserSettlement(
                 closeDetail.OpenPrice,
                 closeDetail.PreSettlementPrice,
                 closeDetail.ClosePrice,
-                closeDetail.CloseProfit);
+                closeDetail.CloseProfit,
+                closeDetail.CashIn);
             ostrstr << ch_single_line << "\r\n";
         }
 
         sprintf(ch_single_line, format_settlement_position_closed_end1.c_str());
         ostrstr << ch_single_line << "\r\n";
-        sprintf(ch_single_line, format_settlement_position_closed_end2.c_str(), (int)closeDetailSqlValues.size(), total_position_closed_lots, total_position_closed_close_profit);
+        sprintf(ch_single_line, format_settlement_position_closed_end2.c_str(), (int)closeDetailSqlValues.size(), total_position_closed_lots, total_position_closed_close_profit, total_position_closed_cashIn);
         ostrstr << ch_single_line << "\r\n";
         sprintf(ch_single_line, format_settlement_position_closed_end3.c_str());
         ostrstr << ch_single_line << "\r\n";
@@ -1681,6 +1694,7 @@ void CLocalTraderApi::CSettlementHandler::doGenerateUserSettlement(
 
     auto buildSettlementPositionDetail = [&]() {
         CSqliteHandler::SQL_VALUES posDetailSqlValues;
+        //从数据库查找持仓数量大于0的持仓明细记录
         const std::string selectPosDetailSql =
             "SELECT * FROM 'CThostFtdcInvestorPositionDetailField' where BrokerID='"
             + brokerID + "' and InvestorID='"
@@ -1765,6 +1779,7 @@ void CLocalTraderApi::CSettlementHandler::doGenerateUserSettlement(
 
     auto buildSettlementPosition = [&]() {
         CSqliteHandler::SQL_VALUES posSqlValues;
+        //从数据库查找持仓数量大于0的持仓记录
         const std::string selectPosSql =
             "SELECT * FROM 'CThostFtdcInvestorPositionField' where BrokerID='"
             + brokerID + "' and InvestorID='"

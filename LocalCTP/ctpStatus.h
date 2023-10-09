@@ -153,6 +153,12 @@ inline std::string get_open_close_name(TThostFtdcOffsetFlagType open_or_close)
 {
     return get_open_close_name(std::string(1, open_or_close));
 }
+//判断是否是期权品种
+inline bool isOptions(TThostFtdcProductClassType ProductClass)
+{
+    return ProductClass == THOST_FTDC_PC_Options ||
+        ProductClass == THOST_FTDC_PC_SpotOption;
+}
 
 ///平仓明细
 struct CloseDetail
@@ -189,6 +195,8 @@ struct CloseDetail
     TThostFtdcMoneyType CloseProfit;
     ///实际平仓类型(平今or平昨)
     TThostFtdcOffsetFlagType CloseFlag;
+    ///权利金收支
+    TThostFtdcMoneyType CashIn;
 };
 
 ///结算单
@@ -251,9 +259,9 @@ settlement_trade_head2=_--------------------------------------------------------
 settlement_trade_head3=_|成交日期| 交易所 |       品种       |      合约      |买/卖|   投/保    |  成交价  | 手数 |   成交额   |       开平       |  手续费  |  平仓盈亏  |     权利金收支      |  成交序号  |
 settlement_trade_head4=_|  Date  |Exchange|     Product      |   Instrument   | B/S |    S/H     |   Price  | Lots |  Turnover  |       O/C        |   Fee    |Realized P/L|Premium Received/Paid|  Trans.No. |
 settlement_trade_head5=_---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-settlement_trade_single_record1=_|%-8s|%-8s|%-18s|     %-11s|%-5s|投          |%10.3f|%6d|%12.2f|%-18s|%10.2f|%12.2f|                 0.00|%-12s|
+settlement_trade_single_record1=_|%-8s|%-8s|%-18s|%-16s|%-5s|投          |%10.3f|%6d|%12.2f|%-18s|%10.2f|%12.2f|%21.2f|%-12s|
 settlement_trade_end1=_---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-settlement_trade_end2=_|共%4d条|        |                  |                      |            |          |%6d|%12.2f|                  |%10.2f|%12.2f|                 0.00|            |
+settlement_trade_end2=_|共%4d条|        |                  |                      |            |          |%6d|%12.2f|                  |%10.2f|%12.2f|%21.2f|            |
 settlement_trade_end3=_---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 settlement_trade_end4=_能源中心---INE  上期所---SHFE   中金所---CFFEX  大商所---DCE   郑商所---CZCE   广期所---GFEX
 settlement_trade_end5=_买---Buy   卖---Sell
@@ -265,9 +273,9 @@ settlement_position_closed_head2=_----------------------------------------------
 settlement_position_closed_head3=_| 平仓日期 | 交易所 |       品种       |      合约      |开仓日期 |买/卖|   手数   |     开仓价    |     昨结算     |   成交价   |  平仓盈亏  |     权利金收支      |
 settlement_position_closed_head4=_|Close Date|Exchange|      Product     |   Instrument   |Open Date| B/S |   Lots   |Pos. Open Price|   Prev. Sttl   |Trans. Price|Realized P/L|Premium Received/Paid|
 settlement_position_closed_head5=_----------------------------------------------------------------------------------------------------------------------------------------------------------------------
-settlement_position_closed_single_record1=_|%-10s|%-8s|%-18s|%-16s|%-9s|%-5s|%10d|%15.3f|%16.3f|%12.3f|%12.2f|                 0.000|
+settlement_position_closed_single_record1=_|%-10s|%-8s|%-18s|%-16s|%-9s|%-5s|%10d|%15.3f|%16.3f|%12.3f|%12.2f|%21.2f|
 settlement_position_closed_end1=_----------------------------------------------------------------------------------------------------------------------------------------------------------------------
-settlement_position_closed_end2=_|共%6d条|        |                  |                |         |     |%10d|               |                |            |%12.2f|                  0.00|
+settlement_position_closed_end2=_|共%6d条|        |                  |                |         |     |%10d|               |                |            |%12.2f|%21.2f|
 settlement_position_closed_end3=_----------------------------------------------------------------------------------------------------------------------------------------------------------------------
 settlement_position_closed_end4=_能源中心---INE  上期所---SHFE   中金所---CFFEX  大商所---DCE   郑商所---CZCE   广期所---GFEX
 settlement_position_closed_end5=_买---Buy   卖---Sell 
@@ -277,7 +285,7 @@ settlement_position_detail_head2=_----------------------------------------------
 settlement_position_detail_head3=_| 交易所 |       品种       |      合约      |开仓日期 |   投/保    |买/卖|持仓量 |    开仓价     |     昨结算     |     结算价     |  浮动盈亏  |  盯市盈亏 |  保证金   |       期权市值       |
 settlement_position_detail_head4=_|Exchange|     Product      |   Instrument   |Open Date|    S/H     | B/S |Positon|Pos. Open Price|   Prev. Sttl   |Settlement Price| Accum. P/L |  MTM P/L  |  Margin   | Market Value(Options)|
 settlement_position_detail_head5=_-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-settlement_position_detail_single_record1=_|%-8s|%-18s|     %-11s|%9s|投          |%-5s|%7d|%15.3f|%16.3f|%16.3f|%12.2f|%11.2f|%11.2f|                  0.00|
+settlement_position_detail_single_record1=_|%-8s|%-18s|%-16s|%9s|投          |%-5s|%7d|%15.3f|%16.3f|%16.3f|%12.2f|%11.2f|%11.2f|                  0.00|
 settlement_position_detail_end1=_-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 settlement_position_detail_end2=_|共%4d条|                  |                |         |            |     |%7d|               |                |                |%12.2f|%11.2f|%11.2f|                  0.00|
 settlement_position_detail_end3=_-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
