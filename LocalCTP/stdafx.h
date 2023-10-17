@@ -32,6 +32,12 @@
 #include <codecvt>
 #include "LeeDateTime.h"
 
+#ifdef _DEBUG
+#define SHOW_TIME(S) std::cout << __func__ <<" "<< #S <<" Time now:" << CLeeDateTime::now().FormatWithMillisecond() << std::endl;
+#else
+#define SHOW_TIME(S)
+#endif
+
 // 导出CTP的class需要的宏
 #define ISLIB
 #define LIB_TRADER_API_EXPORT

@@ -124,7 +124,7 @@ Linux中, 还可以将`current`设置为指向实际CTP头文件目录软链接,
 1. `ReqQryInstrumentCommissionRate`
 
 ### 部分接口说明:
-1. `Init`: 内部并不会连接网络，会从当前目录(或环境变量中的目录)的 `instrument.csv`和数据库合约表 中读取合约信息。格式参见附带的同名文件。
+1. `Init`: 内部并不会连接网络。系统启动时会从当前目录(或环境变量中的目录)的 `instrument.csv`和数据库合约表 中读取合约信息。格式参见附带的同名文件。
 1. `Join`: 会直接返回。
 1. `GetTradingDay`: 会尽可能正确地返回交易日，无需登录。能处理夜盘(包括周五夜盘)的情况，但无法识别判断长假假期。
 1. `RegisterFront`: 会直接返回，并不会连接到参数中的地址也不会校验地址合法性。
@@ -148,6 +148,8 @@ Linux中, 还可以将`current`设置为指向实际CTP头文件目录软链接,
 持仓和资金，会根据订单、成交和行情数据等来动态更新。
 
 账户数据会自动持久化保存到本地的sqlite3数据库(LocalCTP.db,会自动创建数据库及表,无需手动创建)中. 分为资金,持仓,持仓明细,订单,成交等表.
+
+系统使用sqlite内存数据库以提高性能，数据会定时从内存数据库中持久化写入到硬盘中。
 
 1. 持仓表 - `CThostFtdcInvestorPositionField`
 1. 持仓明细表 - `CThostFtdcInvestorPositionDetailField`

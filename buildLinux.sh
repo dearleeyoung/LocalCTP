@@ -19,7 +19,7 @@ buildFunc(){
 buildDemoFunc(){
     echo "---------------"
     echo "Start building DEMO ..."
-    cd ${WORK_DIR}/LocalCTP/TestLocalCTP
+    cd ${WORK_DIR}/TestLocalCTP
     make clean && make
 }
 

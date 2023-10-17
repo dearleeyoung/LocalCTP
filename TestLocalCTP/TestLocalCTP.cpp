@@ -172,12 +172,12 @@ class MySpi : public CThostFtdcTraderSpi
 
 };
 
+
 int main()
 {
-    std::cout << "Hello World!" << std::endl;
     pApi = CThostFtdcTraderApi::CreateFtdcTraderApi();
     std::cout << pApi->GetApiVersion() << std::endl;
-    std::cout << pApi->GetTradingDay() << std::endl;
+    //std::cout << pApi->GetTradingDay() << std::endl;
     MySpi spi;
     pApi->RegisterSpi(&spi);
     pApi->Init();
@@ -295,7 +295,7 @@ int main()
     ret = pApi->ReqQryInvestorPosition(&QryInvestorPosition, 100);
 
     std::cout << ret << std::endl;
-
+    pApi->Release();
     std::cin >> i;
     return 0;
 }
