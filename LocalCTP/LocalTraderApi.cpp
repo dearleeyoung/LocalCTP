@@ -1480,7 +1480,7 @@ int CLocalTraderApi::ReqOrderInsert(CThostFtdcInputOrderField* pInputOrder, int 
 }
 int CLocalTraderApi::ReqOrderInsertImpl(CThostFtdcInputOrderField * pInputOrder, int nRequestID,
     std::string relativeOrderSysID /*= std::string()*/) {
-    CHECK_LOGIN_USER(pInputOrder);
+    CHECK_LOGIN_INVESTOR(pInputOrder);
     SHOW_TIME(StartOrder)
     const auto sendRejectOrder = [&](const char* errMsg) {
         m_pSpi->OnRspOrderInsert(pInputOrder, setErrorMsgAndGetRspInfo(errMsg), nRequestID, true);
@@ -1919,7 +1919,7 @@ int CLocalTraderApi::ReqOrderInsertImpl(CThostFtdcInputOrderField * pInputOrder,
 
 ///预埋单录入请求
 int CLocalTraderApi::ReqParkedOrderInsert(CThostFtdcParkedOrderField *pParkedOrder, int nRequestID) {
-    CHECK_LOGIN_USER(pParkedOrder);
+    CHECK_LOGIN_INVESTOR(pParkedOrder);
     if (m_pSpi == nullptr) return 0;
     m_pSpi->OnRspParkedOrderInsert(nullptr,
         setErrorMsgAndGetRspInfo("Parked order is not supported in this system."),
@@ -1929,7 +1929,7 @@ int CLocalTraderApi::ReqParkedOrderInsert(CThostFtdcParkedOrderField *pParkedOrd
 
 ///预埋撤单录入请求
 int CLocalTraderApi::ReqParkedOrderAction(CThostFtdcParkedOrderActionField *pParkedOrderAction, int nRequestID) {
-    CHECK_LOGIN_USER(pParkedOrderAction);
+    CHECK_LOGIN_INVESTOR(pParkedOrderAction);
     if (m_pSpi == nullptr) return 0;
     m_pSpi->OnRspParkedOrderAction(nullptr,
         setErrorMsgAndGetRspInfo("Parked order is not supported in this system."),
@@ -1939,7 +1939,7 @@ int CLocalTraderApi::ReqParkedOrderAction(CThostFtdcParkedOrderActionField *pPar
 
 ///报单操作请求
 int CLocalTraderApi::ReqOrderAction(CThostFtdcInputOrderActionField *pInputOrderAction, int nRequestID) {
-    CHECK_LOGIN_USER(pInputOrderAction);
+    CHECK_LOGIN_INVESTOR(pInputOrderAction);
 
     if (pInputOrderAction->ActionFlag != THOST_FTDC_AF_Delete)
     {

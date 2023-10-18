@@ -1,6 +1,6 @@
 # 欢迎使用  LocalCTP
 
-[B站专栏文章](https://www.bilibili.com/read/cv25645274) [公众号文章](https://mp.weixin.qq.com/s/-XndrmQ9UGNLz-E1cHZHSA)
+[csdn文章](https://blog.csdn.net/baidu_37097818/article/details/132944895) [公众号文章](https://mp.weixin.qq.com/s/-XndrmQ9UGNLz-E1cHZHSA)
 
 `LocalCTP`是一个部署于本地的仿CTP项目。本项目不联网，完全开源，接口完全同CTP，实现了大部分CTP柜台的功能。
 

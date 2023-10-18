@@ -36,9 +36,11 @@ CSqliteHandler::~CSqliteHandler()
     {
         m_syncThread.join();
     }
-    //sync once more before exit, because some code in the thread func is not run actually, so put it here
+#ifdef _WIN32
+    //sync once more before exit, because some code in the thread func is not run actually in Windows, so put it here
+    std::cout << "Quit the CSqliteHandler in Windows, let's sync for the last time...!" << std::endl;
     SyncMemoryAndFileDatabase();
-
+#endif
     Destory();
 }
 
@@ -173,7 +175,7 @@ bool CSqliteHandler::CreateTable(const std::string& sql, const std::string& tabl
     char* errMsg = nullptr;
     int ret = 0;
 
-    // the second step: create table in the file database.
+    // the first step: create table in the file database.
     // because if the table does not exist in file database,
     // it can not sync from file database to memory database.
     // of course, if the table does exist already, we do not need this step.
@@ -251,9 +253,11 @@ bool CSqliteHandler::CreateTable(const std::string& sql, const std::string& tabl
     return ret == SQLITE_OK;
 }
 
-//开启事务
+// begin the transaction
 bool CSqliteHandler::BeginTransaction()
 {
+    if (nullptr == m_pMemoryDB) { return false; }
+    m_mtx.lock();
     char* errMsg = nullptr;
     int ret = sqlite3_exec(m_pMemoryDB, "begin", nullptr, nullptr, &errMsg);
     if (errMsg)
@@ -265,7 +269,7 @@ bool CSqliteHandler::BeginTransaction()
     return ret == SQLITE_OK;
 }
 
-//提交事务
+// commit the transaction
 bool CSqliteHandler::Commit()
 {
     char* errMsg = nullptr;
@@ -276,6 +280,7 @@ bool CSqliteHandler::Commit()
             << " errMsg:" << errMsg << std::endl;
         sqlite3_free(errMsg);
     }
+    m_mtx.unlock();
     return ret == SQLITE_OK;
 }
 
@@ -302,12 +307,6 @@ bool CSqliteHandler::Delete(const std::string& sql)
     int nRows = 0;
     char** azResult = nullptr;
     char* errMsg = nullptr;
-    // the delete operation needs done in both memory and file database,
-    // because we do not sync the delete operation in the timer
-    if (!AttachMemoryAndFileDatabase())
-    {
-        return false;
-    }
     int result = sqlite3_get_table(m_pMemoryDB, sql.c_str(), &azResult, &nRows, &nCols, &errMsg);
     if (azResult)
     {
@@ -318,10 +317,6 @@ bool CSqliteHandler::Delete(const std::string& sql)
         std::cerr << "Delete in " << "memory database failed! sql:" << sql
             << " errMsg:" << errMsg << std::endl;
         sqlite3_free(errMsg);
-    }
-    if (!DetachMemoryAndFileDatabase())
-    {
-        return false;
     }
     if (result != SQLITE_OK)
     {
