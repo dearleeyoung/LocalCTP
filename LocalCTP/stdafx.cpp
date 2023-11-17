@@ -2,34 +2,53 @@
 
 namespace localCTP
 {
+    using CovtByNm = CodecvtByname<wchar_t, char, mbstate_t>;
+
+    CovtByNm* getCovtByNm()
+    {
+        CovtByNm* wcPtr(nullptr);
+#ifdef _WIN32
+        const char* GBK_LOCALE_NAME = ".936";// GBK locale name in windows
+        wcPtr = new CovtByNm(GBK_LOCALE_NAME);
+#else
+        const char* GBK_LOCALE_NAME1 = "zh_CN.gbk";// GBK locale name in linux
+        const char* GBK_LOCALE_NAME2 = "zh_CN.gb18030";// GB18030 locale name in linux
+        const char* GBK_LOCALE_NAME3 = "zh_CN.gb2312";// GB2312 locale name in linux
+        try
+        {
+            wcPtr = new CovtByNm(GBK_LOCALE_NAME1);
+        }
+        catch (...)
+        {
+            try
+            {
+                wcPtr = new CovtByNm(GBK_LOCALE_NAME2);
+            }
+            catch (...)
+            {
+                wcPtr = new CovtByNm(GBK_LOCALE_NAME3);
+            }
+        }
+#endif
+        return wcPtr;
+    }
+
 
 std::string gbk_to_utf8(const std::string& str)
 {
-#ifdef _WIN32
-    const char* GBK_LOCALE_NAME = ".936";// GBK locale name in windows
-#else
-    const char* GBK_LOCALE_NAME = "zh_CN.gb18030";// GBK locale name in linux
-#endif
-    static std::wstring_convert<CodecvtByname<wchar_t, char, mbstate_t>> convert(
-        new CodecvtByname<wchar_t, char, mbstate_t>(GBK_LOCALE_NAME));
+    static std::wstring_convert<CovtByNm> convert(getCovtByNm());
     std::wstring tmp_wstr = convert.from_bytes(str);
-
     static std::wstring_convert<std::codecvt_utf8<wchar_t>> cv2;
+
     return cv2.to_bytes(tmp_wstr);
 }
 
 std::string utf8_to_gbk(const std::string& str)
 {
-#ifdef _WIN32
-    const char* GBK_LOCALE_NAME = ".936";// GBK locale name in windows
-#else
-    const char* GBK_LOCALE_NAME = "zh_CN.gb18030";// GBK locale name in linux
-#endif
     static std::wstring_convert<std::codecvt_utf8<wchar_t> > conv;
     std::wstring tmp_wstr = conv.from_bytes(str);
+    static std::wstring_convert<CovtByNm> convert(getCovtByNm());
 
-    static std::wstring_convert<CodecvtByname<wchar_t, char, mbstate_t>> convert(
-        new CodecvtByname<wchar_t, char, mbstate_t>(GBK_LOCALE_NAME));
     return convert.to_bytes(tmp_wstr);
 }
 
