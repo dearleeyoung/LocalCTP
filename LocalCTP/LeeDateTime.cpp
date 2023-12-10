@@ -69,7 +69,7 @@ CLeeDateTime::CLeeDateTime(int year, int month, int day,
 	static_cast<WORD>(millisecond) })
 #endif
 {
-#ifdef __linux__
+#if defined(__APPLE__) || defined(__linux__)
 	struct tm _tm = { 0 };
 	_tm.tm_year = year - 1900;
 	_tm.tm_mon = month - 1;
@@ -94,8 +94,8 @@ CLeeDateTime::CLeeDateTime(const ::SYSTEMTIME& st)
 	m_dt = ll / (10.0 * 1000.0 * 1000.0 * 60.0 * 60.0 * 24.0) - 109205.0;//从1601/01/01到1899/12/30有109205天
 }
 #endif
-#ifdef __linux__
-CLeeDateTime::CLeeDateTime(const timeval& st) 
+#if defined(__APPLE__) || defined(__linux__)
+CLeeDateTime::CLeeDateTime(const timeval& st)
 {
 	*this = CLeeDateTime(st.tv_sec) + CLeeDateTimeSpan(0, 0, 0, 0, static_cast<int>(st.tv_usec) / 1000);
 }
@@ -145,7 +145,7 @@ string CLeeDateTime::FormatWithMillisecond(const string& format /*= "%Y-%m-%d %H
 
 	return string(tmpbuf) + millisecond_buf;
 #endif
-#ifdef __linux__
+#if defined(__APPLE__) || defined(__linux__)
 	timeval tv = Get_timeval();
 	time_t t = tv.tv_sec + CLeeDateTime::GetTimeZone() * (60LL * 60LL);
 	struct tm _tm = { 0 };
@@ -204,7 +204,7 @@ int CLeeDateTime::GetYear() const
 #ifdef _WIN32
 	return Get_SYSTEMTIME().wYear;
 #endif
-#ifdef __linux__
+#if defined(__APPLE__) || defined(__linux__)
 	double raw_time_t = (m_dt - 25569) * (24.0 * 60.0 * 60.0);
 	time_t t = static_cast<time_t>(floor(raw_time_t));
 	struct tm _tm = { 0 };
@@ -218,7 +218,7 @@ int CLeeDateTime::GetMonth() const
 #ifdef _WIN32
 	return Get_SYSTEMTIME().wMonth;
 #endif
-#ifdef __linux__
+#if defined(__APPLE__) || defined(__linux__)
 	double raw_time_t = (m_dt - 25569) * (24.0 * 60.0 * 60.0);
 	time_t t = static_cast<time_t>(floor(raw_time_t));
 	struct tm _tm = { 0 };
@@ -232,7 +232,7 @@ int CLeeDateTime::GetDay() const
 #ifdef _WIN32
 	return Get_SYSTEMTIME().wDay;
 #endif
-#ifdef __linux__
+#if defined(__APPLE__) || defined(__linux__)
 	double raw_time_t = (m_dt - 25569) * (24.0 * 60.0 * 60.0);
 	time_t t = static_cast<time_t>(floor(raw_time_t));
 	struct tm _tm = { 0 };
@@ -246,7 +246,7 @@ int CLeeDateTime::GetHour() const
 #ifdef _WIN32
 	return Get_SYSTEMTIME().wHour;
 #endif
-#ifdef __linux__
+#if defined(__APPLE__) || defined(__linux__)
 	double raw_time_t = (m_dt - 25569) * (24.0 * 60.0 * 60.0);
 	time_t t = static_cast<time_t>(floor(raw_time_t));
 	struct tm _tm = { 0 };
@@ -260,7 +260,7 @@ int CLeeDateTime::GetMinute() const
 #ifdef _WIN32
 	return Get_SYSTEMTIME().wMinute;
 #endif
-#ifdef __linux__
+#if defined(__APPLE__) || defined(__linux__)
 	double raw_time_t = (m_dt - 25569) * (24.0 * 60.0 * 60.0);
 	time_t t = static_cast<time_t>(floor(raw_time_t));
 	struct tm _tm = { 0 };
@@ -274,7 +274,7 @@ int CLeeDateTime::GetSecond() const
 #ifdef _WIN32
 	return Get_SYSTEMTIME().wSecond;
 #endif
-#ifdef __linux__
+#if defined(__APPLE__) || defined(__linux__)
 	double raw_time_t = (m_dt - 25569) * (24.0 * 60.0 * 60.0);
 	time_t t = static_cast<time_t>(floor(raw_time_t));
 	struct tm _tm = { 0 };
@@ -288,7 +288,7 @@ int CLeeDateTime::GetMillisecond() const
 #ifdef _WIN32
 	return Get_SYSTEMTIME().wMilliseconds;
 #endif
-#ifdef __linux__
+#if defined(__APPLE__) || defined(__linux__)
 	return static_cast<int>(Get_timeval().tv_usec) / 1000;
 #endif
 }
@@ -298,7 +298,7 @@ int CLeeDateTime::GetDayOfWeek() const
 #ifdef _WIN32
 	return Get_SYSTEMTIME().wDayOfWeek;
 #endif
-#ifdef __linux__
+#if defined(__APPLE__) || defined(__linux__)
 	double raw_time_t = (m_dt - 25569) * (24.0 * 60.0 * 60.0);
 	time_t t = static_cast<time_t>(floor(raw_time_t));
 	struct tm _tm = { 0 };
@@ -322,13 +322,13 @@ int CLeeDateTime::GetDayOfWeek() const
 	return sysTime1;
 }
 #endif
-#ifdef __linux__
+#if defined(__APPLE__) || defined(__linux__)
 ::timeval CLeeDateTime::Get_timeval() const {
 	::timeval tv = { 0 };
 	double raw_second_num = (m_dt - 25569) * (24.0 * 60.0 * 60.0)
         - CLeeDateTime::GetTimeZone() * (60.0 * 60.0);
 	tv.tv_sec = static_cast<time_t>(floor(raw_second_num));
-	tv.tv_usec = static_cast<__suseconds_t>((raw_second_num - static_cast<double>(tv.tv_sec)) * 1000000);
+	tv.tv_usec = static_cast<suseconds_t>((raw_second_num - static_cast<double>(tv.tv_sec)) * 1000000);
 	return tv;
 }
 #endif
@@ -350,7 +350,7 @@ struct tm CLeeDateTime::Get_tm() const
 
 	return newtime;
 #endif
-#ifdef __linux__
+#if defined(__APPLE__) || defined(__linux__)
     time_t t = Get_time_t() + CLeeDateTime::GetTimeZone() * (60LL * 60LL);
 	struct tm _tm = { 0 };
     ::gmtime_r(&t, &_tm);//日期时间小于1970-01-01时, localtime()返回值不准确, 故用gmtime()
@@ -379,7 +379,7 @@ struct tm CLeeDateTime::Get_GMT_tm() const
 
 	return newtime;
 #endif
-#ifdef __linux__
+#if defined(__APPLE__) || defined(__linux__)
 	time_t t = Get_time_t();
 	struct tm _tm = { 0 };
 	::gmtime_r(&t, &_tm);//日期时间小于1970-01-01时, localtime()返回值不准确, 故用gmtime()
@@ -429,7 +429,7 @@ CLeeDateTime CLeeDateTime::GetCurrentTime(){
 	::GetLocalTime(&sysTime1);
 	return CLeeDateTime(sysTime1);
 #endif
-#ifdef __linux__
+#if defined(__APPLE__) || defined(__linux__)
 	::timeval tv;
 	::gettimeofday(&tv, nullptr);
 	return CLeeDateTime(tv);
