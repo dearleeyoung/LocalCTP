@@ -1175,7 +1175,7 @@ void CLocalTraderApi::initInstrMap(const std::string &instrument_csv_path)
                 CThostFtdcInstrumentFieldWrapper(instr.second).generateInsertSql());
         }
     } else {
-        throw std::runtime_error("readInstrumentFromCsvFile fail");
+        std::cerr << "readInstrumentFromCsvFile fail, file path:" << instrument_csv_path << std::endl;
     }
 
     auto initProductsAndExchanges = [&]() {
