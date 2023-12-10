@@ -542,7 +542,7 @@ void CLocalTraderApi::PositionData::addPositionDetail(
 
 #define ACCUMULATE_WITH_SAME_NAME(FIELD) ACCUMULATE_WITH_DIFFERENT_NAME(FIELD, FIELD)
 
-CLocalTraderApi::CSettlementHandler::CSettlementHandler(CSqliteHandler& _sqlHandler)
+CLocalTraderApi::CSettlementHandler::CSettlementHandler(const std::string &instrument_csv_path, CSqliteHandler& _sqlHandler)
     : m_sqlHandler(_sqlHandler)
     , m_running(true)
     , m_tradingAccountUpdateFromPositionSql1(
@@ -567,8 +567,8 @@ ACCUMULATE_WITH_SAME_NAME(FrozenCash) ";"
     , m_sleepSecond(1)
     , m_settlementStartHour(17)
     , m_count(0)
-    , m_timerThread([this]() {
-        CLocalTraderApi::initInstrMap();
+    , m_timerThread([this, instrument_csv_path]() {
+        CLocalTraderApi::initInstrMap(instrument_csv_path);
         if (!checkSettlement())//启动后先判断结算一次
         {
             doSettlement();
@@ -592,6 +592,7 @@ ACCUMULATE_WITH_SAME_NAME(FrozenCash) ";"
         }
     })
 {
+    CLocalTraderApi::initInstrMap(instrument_csv_path);
 }
 
 CLocalTraderApi::CSettlementHandler::~CSettlementHandler()
@@ -1454,7 +1455,7 @@ void CLocalTraderApi::CSettlementHandler::doGenerateUserSettlement(
             + brokerID + "' and InvestorID='" + userID
             + "' and TradingDay = '" + TradingDay
             + "' and CashIn>0;";
-        sqlHandler.SelectData(selectTradeSql, tradeSqlValues);
+        sqlHandler->SelectData(selectTradeSql, tradeSqlValues);
         for (const auto& rowValue : tradeSqlValues)
         {
             try
@@ -1537,7 +1538,7 @@ void CLocalTraderApi::CSettlementHandler::doGenerateUserSettlement(
             + brokerID + "' and InvestorID='" + userID
             + "' and TradingDay = '" + TradingDay
             +"' ORDER BY TradeID ASC ;";
-        sqlHandler.SelectData(selectTradeSql, tradeSqlValues);
+        sqlHandler->SelectData(selectTradeSql, tradeSqlValues);
         if (tradeSqlValues.empty())//若没有找到该账户成交记录
         {
             return;
@@ -1623,7 +1624,7 @@ void CLocalTraderApi::CSettlementHandler::doGenerateUserSettlement(
             + brokerID + "' and InvestorID='" + userID
             + "' and CloseDate = '" + TradingDay
             + "';";
-        sqlHandler.SelectData(selectCloseDetailSql, closeDetailSqlValues);
+        sqlHandler->SelectData(selectCloseDetailSql, closeDetailSqlValues);
         if (closeDetailSqlValues.empty())//若没有找到该账户平仓明细记录
         {
             return;
@@ -1700,7 +1701,7 @@ void CLocalTraderApi::CSettlementHandler::doGenerateUserSettlement(
             + brokerID + "' and InvestorID='"
             + userID + "' and Volume != 0;";
             // = CThostFtdcInvestorPositionDetailFieldWrapper::generateSelectSqlByUserID(brokerID, userID);
-        sqlHandler.SelectData(selectPosDetailSql, posDetailSqlValues);
+        sqlHandler->SelectData(selectPosDetailSql, posDetailSqlValues);
         if (posDetailSqlValues.empty())//若没有找到该账户持仓明细记录
         {
             return;
@@ -1785,7 +1786,7 @@ void CLocalTraderApi::CSettlementHandler::doGenerateUserSettlement(
             + brokerID + "' and InvestorID='"
             + userID + "' and Position != 0;";
             // = CThostFtdcInvestorPositionFieldWrapper::generateSelectSqlByUserID(brokerID, userID);
-        sqlHandler.SelectData(selectPosSql, posSqlValues);
+        sqlHandler->SelectData(selectPosSql, posSqlValues);
         if (posSqlValues.empty())//若没有找到该账户持仓记录
         {
             return;

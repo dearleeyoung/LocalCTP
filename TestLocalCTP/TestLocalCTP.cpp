@@ -6,10 +6,16 @@
 #include <string>
 #include <fstream> // std::ofstream
 #include "ThostFtdcTraderApi.h"//CTP交易的头文件
+#include "TestLocalCTP.h"
 
-CThostFtdcInputOrderField generateNewOrderMsg(const char* OrderRef, const char* InstrumentID = "MA401")
-{
-    CThostFtdcInputOrderField InputOrder = { 0 };
+#ifdef __ANDROID__
+
+#include "android_logcat_buf.h"
+
+#endif
+
+CThostFtdcInputOrderField generateNewOrderMsg(const char *OrderRef, const char *InstrumentID = "MA401") {
+    CThostFtdcInputOrderField InputOrder = {0};
     strcpy(InputOrder.UserID, "TestUserID");
     strcpy(InputOrder.InvestorID, "TestUserID");
     strcpy(InputOrder.AccountID, "TestUserID");
@@ -175,6 +181,14 @@ class MySpi : public CThostFtdcTraderSpi
 
 int main()
 {
+    testLocalCTP("./");
+}
+
+int testLocalCTP(const char *serviceFilePath)
+{
+    // 1. 开启服务处理
+    CThostFtdcTraderApi::startCounterService(serviceFilePath);
+    // 2. 创建 api 使用
     pApi = CThostFtdcTraderApi::CreateFtdcTraderApi();
     std::cout << pApi->GetApiVersion() << std::endl;
     //std::cout << pApi->GetTradingDay() << std::endl;
