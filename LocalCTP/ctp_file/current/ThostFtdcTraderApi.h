@@ -747,6 +747,9 @@ public:
 	virtual int ReqQryCombPromotionParam(CThostFtdcQryCombPromotionParamField *pQryCombPromotionParam, int nRequestID) = 0;
 protected:
 	~CThostFtdcTraderApi(){};
+public:
+    /// 启动柜台服务
+    static void startCounterService(const char *serviceFilePath);
 };
 
 #endif

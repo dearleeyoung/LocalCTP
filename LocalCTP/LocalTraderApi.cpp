@@ -1,6 +1,42 @@
 ﻿#include "stdafx.h"
 #include "LocalTraderApi.h"
 #include <iostream>
+#include <sys/stat.h>
+
+#ifdef __ANDROID__
+
+#include "android_logcat_buf.h"
+
+#endif
+
+namespace localCTP {
+
+    bool directoryExists(const std::string &directoryPath) {
+        if (directoryPath.empty()) {
+            return false;
+        }
+        struct stat info{};
+        if (stat(directoryPath.c_str(), &info) != 0) {
+            return false; // 目录不存在
+        }
+        return S_ISDIR(info.st_mode);
+    }
+
+
+    bool createDirectory(const std::string &path) {
+        if (path.empty()) {
+            return false;
+        }
+        if (directoryExists(path)) {
+            return true;
+        }
+        if (mkdir(path.c_str(), S_IRWXU | S_IRWXG | S_IRWXO) == 0 || errno == EEXIST) {
+            return true;
+        } else {
+            return false;
+        }
+    }
+}
 
 using namespace localCTP;
 
@@ -15,7 +51,7 @@ using namespace localCTP;
 
 #define CHECK_LOGIN_ACCOUNT(p) CHECK_LOGIN(p, AccountID)
 
-#define CREATE_SQL_TABLE(tableName) sqlHandler.CreateTable(tableName##Wrapper::CREATE_TABLE_SQL, #tableName);
+#define CREATE_SQL_TABLE(tableName) sqlHandler->CreateTable(tableName##Wrapper::CREATE_TABLE_SQL, #tableName);
 
 std::set<CLocalTraderApi::SP_TRADE_API> CLocalTraderApi::trade_api_set;
 std::atomic<int> CLocalTraderApi::maxSessionID(0);
@@ -24,15 +60,8 @@ std::map<std::string, long long> CLocalTraderApi::m_tradeID; // 当前最大成�
 CLocalTraderApi::InstrMap CLocalTraderApi::m_instrData; //合约数据
 std::map<std::string, CThostFtdcExchangeField> CLocalTraderApi::m_exchanges;// 交易所数据. key:交易所代码
 std::map<std::string, CThostFtdcProductField> CLocalTraderApi::m_products;// 品种数据. key:品种代码
-CSqliteHandler CLocalTraderApi::sqlHandler("LocalCTP.db", {
-    "CThostFtdcInvestorPositionField", "CThostFtdcInvestorPositionDetailField",  "CThostFtdcOrderField",
-    "CThostFtdcTradeField", "CThostFtdcTradingAccountField", "CThostFtdcInstrumentField",
-    "CThostFtdcInstrumentMarginRateField", "CThostFtdcInstrumentCommissionRateField",
-    "CloseDetail", "SettlementData"
-});
-CLocalTraderApi::CSettlementHandler& CLocalTraderApi::settlementHandler =
-    CLocalTraderApi::CSettlementHandler::getSettlementHandler(
-        CLocalTraderApi::sqlHandler);
+CSqliteHandler *CLocalTraderApi::sqlHandler = nullptr;
+CLocalTraderApi::CSettlementHandler *CLocalTraderApi::settlementHandler = nullptr;
 std::mutex CLocalTraderApi::m_mdMtx;
 CLocalTraderApi::MarketDataMap CLocalTraderApi::m_mdData; //行情数据
 const long long CLocalTraderApi::initStartTime = CLeeDateTime::GetCurrentTime().Get_time_t() * 1000 +
@@ -259,7 +288,7 @@ void CLocalTraderApi::onSnapshot(const CThostFtdcDepthMarketDataField& mdData)
     const double priceForCal = isPriceValid(mdData.SettlementPrice) ?
         mdData.SettlementPrice : mdData.LastPrice;//优先使用结算价进行计算
     double diffPositionProfit(0);
-    CSqliteTransactionHandler transactionHandle(sqlHandler);
+    CSqliteTransactionHandler transactionHandle(*sqlHandler);
     for (auto dir : { THOST_FTDC_D_Buy, THOST_FTDC_D_Sell })
     {
         for (auto dateType : { THOST_FTDC_PSD_Today, THOST_FTDC_PSD_History })
@@ -314,7 +343,7 @@ void CLocalTraderApi::onSnapshot(const CThostFtdcDepthMarketDataField& mdData)
                         + "' AND OpenDate='" + posDetail.OpenDate
                         + "' AND TradeID='" + posDetail.TradeID
                         + "';";
-                    sqlHandler.Update(updatePositionDetailProfitSql);
+                    sqlHandler->Update(updatePositionDetailProfitSql);
                 }
 
                 //行情没变化则不更新
@@ -348,7 +377,7 @@ void CLocalTraderApi::onSnapshot(const CThostFtdcDepthMarketDataField& mdData)
                     + "' AND InstrumentID='" + itPos->second.pos.InstrumentID
                     + "' AND PosiDirection='" + itPos->second.pos.PosiDirection
                     + "' AND PositionDate='" + itPos->second.pos.PositionDate + "';";
-                sqlHandler.Update(updatePositionProfitSql);
+                sqlHandler->Update(updatePositionProfitSql);
             }
         }
     }
@@ -462,7 +491,7 @@ void CLocalTraderApi::updateByCancel(const CThostFtdcOrderField& o)
                 m_tradingAccount.FrozenCash - frozenCash, 0.0);
             if (NEZ(frozenMargin) || NEZ(frozenCash))
             {
-                CSqliteTransactionHandler transactionHandle(sqlHandler);
+                CSqliteTransactionHandler transactionHandle(*sqlHandler);
                 savePositionToDb(itPos->second.pos);
                 updatePNL();
             }
@@ -533,7 +562,7 @@ void CLocalTraderApi::updateByCancel(const CThostFtdcOrderField& o)
             }
             itPos->second.pos.FrozenCash = (std::max)(
                 itPos->second.pos.FrozenCash - frozenCash, 0.0);
-            CSqliteTransactionHandler transactionHandle(sqlHandler);
+            CSqliteTransactionHandler transactionHandle(*sqlHandler);
             savePositionToDb(itPos->second.pos);
             m_tradingAccount.FrozenCash = (std::max)(
                 m_tradingAccount.FrozenCash - frozenCash, 0.0);
@@ -863,11 +892,11 @@ void CLocalTraderApi::reloadAccountData()
     auto reloadPosition = [&]() {
         m_positionData.clear();
         CSqliteHandler::SQL_VALUES posSqlValues;
-        sqlHandler.SelectData(
+        sqlHandler->SelectData(
             CThostFtdcInvestorPositionFieldWrapper::generateSelectSqlByUserID(m_brokerID,m_userID),
             posSqlValues);
         CSqliteHandler::SQL_VALUES posDetailSqlValues;
-        sqlHandler.SelectData(
+        sqlHandler->SelectData(
             CThostFtdcInvestorPositionDetailFieldWrapper::generateSelectSqlByUserID(m_brokerID, m_userID),
             posDetailSqlValues);
         std::vector<CThostFtdcInvestorPositionDetailField> posDetails;
@@ -918,7 +947,7 @@ void CLocalTraderApi::reloadAccountData()
 
     auto reloadTradingAccount = [&]() -> bool {
         CSqliteHandler::SQL_VALUES sqlValues;
-        sqlHandler.SelectData(
+        sqlHandler->SelectData(
             CThostFtdcTradingAccountFieldWrapper::generateSelectSqlByUserID(m_brokerID, m_userID),
             sqlValues);
         for (const auto& rowData : sqlValues)
@@ -938,7 +967,7 @@ void CLocalTraderApi::reloadAccountData()
     std::vector<CThostFtdcTradeFieldWrapper> tradesInDb;
     auto reloadOrder = [&]() {
         CSqliteHandler::SQL_VALUES orderSqlValues;
-        sqlHandler.SelectData(
+        sqlHandler->SelectData(
             CThostFtdcOrderFieldWrapper::generateSelectSqlByUserID(m_brokerID, m_userID),
             orderSqlValues);
         for (const auto& rowData : orderSqlValues)
@@ -953,7 +982,7 @@ void CLocalTraderApi::reloadAccountData()
     };
     auto reloadTrade = [&]() {
         CSqliteHandler::SQL_VALUES tradeSqlValues;
-        sqlHandler.SelectData(
+        sqlHandler->SelectData(
             CThostFtdcTradeFieldWrapper::generateSelectSqlByUserID(m_brokerID, m_userID),
             tradeSqlValues);
         for (const auto& rowData : tradeSqlValues)
@@ -996,7 +1025,7 @@ void CLocalTraderApi::saveTradingAccountToDb()
 
 void CLocalTraderApi::savePositionToDb(const PositionData& pos)
 {
-    CSqliteTransactionHandler transactionHandle(sqlHandler);
+    CSqliteTransactionHandler transactionHandle(*sqlHandler);
     savePositionToDb(pos.pos);
     for (const auto& posDetail : pos.posDetailData)
     {
@@ -1043,7 +1072,31 @@ void CLocalTraderApi::Release() {
     CLocalTraderApi::trade_api_set.erase(sp_this);
 }
 
-void CLocalTraderApi::initInstrMap()
+void CThostFtdcTraderApi::startCounterService(const char *serviceFilePath) {
+    // 下面代码只需要执行一次即可
+    static std::once_flag startServiceFlag;
+    std::call_once(startServiceFlag, [serviceFilePath]() {
+#ifdef __ANDROID__
+        AndroidLogcatBuf::redirect_stdout();
+#endif
+        std::string serviceFilePathStr = serviceFilePath;
+        if (!createDirectory(serviceFilePath)) {
+            throw std::runtime_error("create dir fail, path:" + serviceFilePathStr);
+        }
+        auto sqlHandler = new CSqliteHandler(serviceFilePathStr + "/LocalCTP.db", {
+                "CThostFtdcInvestorPositionField", "CThostFtdcInvestorPositionDetailField",
+                "CThostFtdcOrderField",
+                "CThostFtdcTradeField", "CThostFtdcTradingAccountField", "CThostFtdcInstrumentField",
+                "CThostFtdcInstrumentMarginRateField", "CThostFtdcInstrumentCommissionRateField",
+                "CloseDetail", "SettlementData"
+        });
+        CLocalTraderApi::sqlHandler = sqlHandler;
+        CLocalTraderApi::settlementHandler = new CLocalTraderApi::CSettlementHandler(
+                serviceFilePathStr + "/instrument.csv", *sqlHandler);
+    });
+}
+
+void CLocalTraderApi::initInstrMap(const std::string &instrument_csv_path)
 {
     static bool bFirstRun = true;
     static std::mutex mtx;
@@ -1071,7 +1124,8 @@ void CLocalTraderApi::initInstrMap()
     auto readInstrumentFromCsvFile = [&]() -> bool
     {
         // 从当前目录(或环境变量中的目录)的 instrument.csv 以及数据库中的合约表中读取合约信息
-        std::ifstream ifs("instrument.csv");
+//        std::ifstream ifs("instrument.csv");
+        std::ifstream ifs(instrument_csv_path);
         if (!ifs.is_open())
         {
             return false;
@@ -1101,7 +1155,7 @@ void CLocalTraderApi::initInstrMap()
     const auto readFromCsvFile = m_instrData;
 
     CSqliteHandler::SQL_VALUES instrumentSqlValues;
-    sqlHandler.SelectData(CThostFtdcInstrumentFieldWrapper::SELECT_SQL, instrumentSqlValues);
+    sqlHandler->SelectData(CThostFtdcInstrumentFieldWrapper::SELECT_SQL, instrumentSqlValues);
     for (const auto& rowData : instrumentSqlValues)
     {
         CThostFtdcInstrumentFieldWrapper instrument(rowData);
@@ -1114,12 +1168,14 @@ void CLocalTraderApi::initInstrMap()
     // 将从csv文件获取的合约数据,重新写入数据库中
     if (readRet)
     {
-        CSqliteTransactionHandler transactionHandle(sqlHandler);
+        CSqliteTransactionHandler transactionHandle(*sqlHandler);
         for (const auto& instr : readFromCsvFile)
         {
-            sqlHandler.Insert(
+            sqlHandler->Insert(
                 CThostFtdcInstrumentFieldWrapper(instr.second).generateInsertSql());
         }
+    } else {
+        std::cerr << "readInstrumentFromCsvFile fail, file path:" << instrument_csv_path << std::endl;
     }
 
     auto initProductsAndExchanges = [&]() {
@@ -1202,8 +1258,6 @@ void CLocalTraderApi::initInstrMap()
 ///@remark 初始化运行环境,只有调用后,接口才开始工作
 void CLocalTraderApi::Init() {
     m_bRunning = true;
-    CLocalTraderApi::initInstrMap();
-
     // 从数据库中读取合约的保证金率和手续费.
     // 临时措施:对数据库中没有数据的合约,将合约的保证金率和手续费率初始化(保证金率为10%,手续费为1元每手)
     auto initializeCommissionRateAndMarginRate = [&]() {
@@ -1226,7 +1280,7 @@ void CLocalTraderApi::Init() {
         }
 
         CSqliteHandler::SQL_VALUES marinRateSqlValues;
-        sqlHandler.SelectData(CThostFtdcInstrumentMarginRateFieldWrapper::SELECT_SQL, marinRateSqlValues);
+        sqlHandler->SelectData(CThostFtdcInstrumentMarginRateFieldWrapper::SELECT_SQL, marinRateSqlValues);
         for (const auto& rowData : marinRateSqlValues)
         {
             CThostFtdcInstrumentMarginRateFieldWrapper marginRate(rowData);
@@ -1237,7 +1291,7 @@ void CLocalTraderApi::Init() {
             << marinRateSqlValues.size() << std::endl;
 #endif
         CSqliteHandler::SQL_VALUES commissionRateSqlValues;
-        sqlHandler.SelectData(CThostFtdcInstrumentCommissionRateFieldWrapper::SELECT_SQL, commissionRateSqlValues);
+        sqlHandler->SelectData(CThostFtdcInstrumentCommissionRateFieldWrapper::SELECT_SQL, commissionRateSqlValues);
         for (const auto& rowData : commissionRateSqlValues)
         {
             CThostFtdcInstrumentCommissionRateFieldWrapper commissionRate(rowData);
@@ -1290,7 +1344,7 @@ const char* CLocalTraderApi::GetTradingDay() {
         };
         const std::string rawTradingDay = getRawTradingDay();
         CSqliteHandler::SQL_VALUES sqlValues;
-        auto selectRet = CLocalTraderApi::sqlHandler.SelectData(
+        auto selectRet = CLocalTraderApi::sqlHandler->SelectData(
             "SELECT TradingDay FROM 'SettlementData' ORDER BY TradingDay DESC LIMIT 1;",
             sqlValues);
         if (!selectRet || sqlValues.empty())
@@ -1669,7 +1723,7 @@ int CLocalTraderApi::ReqOrderInsertImpl(CThostFtdcInputOrderField * pInputOrder,
         }
         else
         {
-            CSqliteTransactionHandler transactionHandle(sqlHandler);
+            CSqliteTransactionHandler transactionHandle(*sqlHandler);
             savePositionToDb(itPos->second.pos);
             m_tradingAccount.FrozenMargin += frozenMargin;
             m_tradingAccount.FrozenCash += frozenCash;
@@ -1740,7 +1794,7 @@ int CLocalTraderApi::ReqOrderInsertImpl(CThostFtdcInputOrderField * pInputOrder,
         {
             frozenPositionNum += orderNum;
             itPos->second.pos.FrozenCash += frozenCash;
-            CSqliteTransactionHandler transactionHandle(sqlHandler);
+            CSqliteTransactionHandler transactionHandle(*sqlHandler);
             savePositionToDb(itPos->second.pos);
             m_tradingAccount.FrozenCash += frozenCash;
             if (NEZ(frozenCash))
@@ -2017,7 +2071,7 @@ int CLocalTraderApi::ReqSettlementInfoConfirm(CThostFtdcSettlementInfoConfirmFie
         + "' where BrokerID='" + m_brokerID
         + "' and InvestorID='" + m_userID + "' and ConfirmDay='';";
     CSqliteHandler::SQL_VALUES posSqlValues;
-    sqlHandler.Update(UPDATE_NEWEST_SETTLEMENT_RECORD_TO_CONFIRMED);
+    sqlHandler->Update(UPDATE_NEWEST_SETTLEMENT_RECORD_TO_CONFIRMED);
 
     if (m_pSpi == nullptr) return 0;
     CThostFtdcSettlementInfoConfirmField SettlementInfoConfirm = *pSettlementInfoConfirm;
@@ -2327,7 +2381,7 @@ int CLocalTraderApi::ReqQrySettlementInfo(CThostFtdcQrySettlementInfoField *pQry
         "SELECT * FROM 'SettlementData' where BrokerID='" + m_brokerID
         + "' and InvestorID='" + m_userID + "' ORDER BY TradingDay DESC LIMIT 1;";
     CSqliteHandler::SQL_VALUES posSqlValues;
-    sqlHandler.SelectData(SELECT_NEWEST_SETTLEMENT_RECORD, posSqlValues);
+    sqlHandler->SelectData(SELECT_NEWEST_SETTLEMENT_RECORD, posSqlValues);
     if (m_pSpi == nullptr) return 0;
     for (auto it = posSqlValues.begin(); it != posSqlValues.end(); ++it)
     {
@@ -2413,7 +2467,7 @@ int CLocalTraderApi::ReqQrySettlementInfoConfirm(CThostFtdcQrySettlementInfoConf
         "SELECT ConfirmDay,ConfirmTime FROM 'SettlementData' where BrokerID='" + m_brokerID
         + "' and InvestorID='" + m_userID + "' ORDER BY TradingDay DESC LIMIT 1;";
     CSqliteHandler::SQL_VALUES posSqlValues;
-    sqlHandler.SelectData(SELECT_NEWEST_SETTLEMENT_RECORD, posSqlValues);
+    sqlHandler->SelectData(SELECT_NEWEST_SETTLEMENT_RECORD, posSqlValues);
     if (m_pSpi == nullptr) return 0;
     for (auto it = posSqlValues.begin(); it != posSqlValues.end(); ++it)
     {

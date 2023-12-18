@@ -4,7 +4,7 @@
 #ifdef _WIN32
 #include <windows.h>
 #endif
-#ifdef __linux__
+#if defined(__APPLE__) || defined(__linux__)
 #include <sys/time.h>
 #endif
 
@@ -85,7 +85,7 @@ public:
 #ifdef _WIN32
 	CLeeDateTime(const ::SYSTEMTIME& st) ;//会将毫秒数也引入
 #endif
-#ifdef __linux__
+#if defined(__APPLE__) || defined(__linux__)
 	CLeeDateTime(const timeval& st) ;//会将微秒数也引入,丢失精度变成毫秒.
 #endif
 	CLeeDateTime(int year, int month, int day, 
@@ -113,7 +113,7 @@ public:
 #ifdef _WIN32
 	::SYSTEMTIME Get_SYSTEMTIME() const;//转为SYSTEMTIME
 #endif
-#ifdef __linux__
+#if defined(__APPLE__) || defined(__linux__)
 	::timeval Get_timeval() const;//转为timeval
 #endif
     struct tm Get_tm() const;//转为struct tm(秒为近似值,四舍五入).
