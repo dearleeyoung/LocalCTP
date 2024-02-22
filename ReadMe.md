@@ -219,9 +219,25 @@ Windows中可使用 [DB Browser for SQLite](https://sqlitebrowser.org/) 等软�
 
                   C++:    strcpy(x.UserID, std::to_string(100.5).c_str());
 
-**制作不容易，请一定要多多支持！欢迎打赏投食鼓励！~**
 
-<div align=center>
-    <img src="https://i0.hdslb.com/bfs/article/87ce53f38c1d5c8272dd59cf2830cb648a46c85f.jpg" alt="Support">
-</div>
+**报错 `locale::facet::_S_create_c_locale name not valid` ?**
+
+这是由于你的linux系统下没有中文字符集。需要安装`GB18030/GB2312/GBK`其中任意一种字符集。 
+
+这里提供三种主流linux发行版本的安装 `GB18030` 字符集的方案:
+
+    // Ubuntu (20.04)
+    sudo apt-get install -y locales
+    sudo locale-gen zh_CN.GB18030
+
+    // Debian (11)
+    sudo apt install locales-all
+    sudo localedef -c -f GB18030 -i zh_CN zh_CN.GB18030
+
+    // CentOS (7)
+    sudo yum install -y kde-l10n-Chinese
+    sudo yum reinstall -y glibc-common
+
+
+**制作不容易，请一定要多多支持！欢迎打赏投食鼓励！~**
 
