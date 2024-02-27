@@ -536,9 +536,9 @@ void CLocalTraderApi::PositionData::addPositionDetail(
 }
 
 #define ACCUMULATE_WITH_DIFFERENT_NAME(FIELD_NAME1, FIELD_NAME2) #FIELD_NAME1 \
-" = ( SELECT SUM(" #FIELD_NAME2 ") FROM CThostFtdcInvestorPositionField " \
+" = IFNULL( ( SELECT SUM(" #FIELD_NAME2 ") FROM CThostFtdcInvestorPositionField " \
 " WHERE CThostFtdcInvestorPositionField.InvestorID = CThostFtdcTradingAccountField.AccountID AND " \
-" CThostFtdcInvestorPositionField.BrokerID = CThostFtdcTradingAccountField.BrokerID) "
+" CThostFtdcInvestorPositionField.BrokerID = CThostFtdcTradingAccountField.BrokerID), 0) "
 
 #define ACCUMULATE_WITH_SAME_NAME(FIELD) ACCUMULATE_WITH_DIFFERENT_NAME(FIELD, FIELD)
 
@@ -605,7 +605,7 @@ bool CLocalTraderApi::CSettlementHandler::checkSettlement()
 {
     // 在什么情况下需要进行结算? 需要满足以下三个条件:
     // 1.当前日期是交易日
-    // 2.当前时间大于结算开始时间(如 16:00 )
+    // 2.当前时间大于结算开始时间(如 17:00 )
     // 3.数据库结算表中没有当天的结算记录
     const auto nowTime = CLeeDateTime::GetCurrentTime();
     if (!isTradingDay(nowTime))

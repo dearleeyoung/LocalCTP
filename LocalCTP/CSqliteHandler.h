@@ -21,10 +21,11 @@ public:
     bool CreateTable(const std::string& sql, const std::string& tableName);
 
     bool Insert(const std::string& sql);
-    bool Delete(const std::string& sql);
+    bool Delete(const std::string& sql);//删除记录
     bool Update(const std::string& sql);
     bool SelectData(const std::string& sql, SQL_VALUES& values);
 private:
+    bool DeleteImpl(const std::string& sql, sqlite3* pDB);
     bool BeginTransaction();
     bool Commit();
     void Destory();

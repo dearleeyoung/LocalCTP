@@ -64,9 +64,9 @@ Linux中, 还可以将`current`设置为指向实际CTP头文件目录软链接,
 
 在切换CTP头文件(`current` 目录中的文件) 后, 请执行python脚本(`GenScript/ParseCTPHeaders.py`)以自动生成对应CTP版本的C++代码.
 
-使用方法( 先`cd`切换到`GenScript`目录中 ):
+使用方法( 先`cd`切换到`GenScript`目录中, 建议使用`python3` ):
 
-`python3 ParseCTPHeaders.py`
+`python ParseCTPHeaders.py`
 
 **完成以上两步之后, 就可以重新编译生成啦！注意做好备份哦.**
 

@@ -76,7 +76,7 @@ def getSqlInsertField(ctpField : CTPField , memberName : str, isExtraField : boo
 def getSqlCreateTableField(ctpField : CTPField , memberName : str) -> str:
     section1 = "'" + memberName + "' "
     if ctpField.isStr():
-        section2 = "VARCHAR(" + str(ctpField.fieldType2) + ")"
+        section2 = "VARCHAR(" + str(2*ctpField.fieldType2) + ")" #表中字符串长度设计为CTP中字符串长度的2倍,因为前者使用UTF8编码而后者使用GBK编码
     elif ctpField.fieldType1 == "char":
         section2 = "VARCHAR(1)"
     elif ctpField.fieldType1 == "int" or ctpField.fieldType1 == "short":
