@@ -6,7 +6,6 @@
 #include <string>
 #include <fstream> // std::ofstream
 #include "ThostFtdcTraderApi.h"//CTP交易的头文件
-
 CThostFtdcInputOrderField generateNewOrderMsg(const char* OrderRef, const char* InstrumentID = "MA401")
 {
     CThostFtdcInputOrderField InputOrder = { 0 };
@@ -208,7 +207,7 @@ int main()
     pApi->ReqQryProduct(&QryProduct, 108);
 
     // 查询完毕, 开始下单
-    auto InputOrder = generateNewOrderMsg("1000", "MA309");
+    auto InputOrder = generateNewOrderMsg("1000", "MA403");
     int ret = pApi->ReqOrderInsert(&InputOrder,109);//没有行情数据时,下一单(预期被拒单)
 
     CThostFtdcDepthMarketDataField md = { 0 };
@@ -218,18 +217,18 @@ int main()
     //md.AskPrice1 = 5000;
     //md.PreSettlementPrice = 6000;
     //pApi->RegisterFensUserInfo((CThostFtdcFensUserInfoField*)&md);//喂一个行情快照给API
-    strcpy(md.InstrumentID, "MA309");
+    strcpy(md.InstrumentID, "MA403");
     md.BidPrice1 = 1000;
     md.AskPrice1 = 1010;
     md.SettlementPrice = md.PreSettlementPrice = 1020;
     pApi->RegisterFensUserInfo((CThostFtdcFensUserInfoField*)&md);//喂一个行情快照给API
-    strcpy(md.InstrumentID, "MA401");
+    strcpy(md.InstrumentID, "MA405");
     md.BidPrice1 = 2000;
     md.AskPrice1 = 2010;
     md.SettlementPrice = md.PreSettlementPrice = 2020;
     pApi->RegisterFensUserInfo((CThostFtdcFensUserInfoField*)&md);//喂一个行情快照给API
 
-    InputOrder = generateNewOrderMsg("1000", "SPD MA309&MA401");
+    InputOrder = generateNewOrderMsg("1000", "SPD MA403&MA405");
     InputOrder.LimitPrice = -985;//实际会以1010-2000 = (-990)元的差价成交
     ret = pApi->ReqOrderInsert(&InputOrder, 109);//有行情数据后,再下一单(买入开仓成交)
 
@@ -239,10 +238,10 @@ int main()
     //    InputOrder.LimitPrice = -1111;//卖出时价格足够低则会成交
     ret = pApi->ReqOrderInsert(&InputOrder, 109);//有行情数据后,再下一单(卖出平仓)
 
-    auto InputOrderAction = generateCancelOrderMsg("1001", "SPD MA309&MA401", g_frontID, g_sessionID);
+    auto InputOrderAction = generateCancelOrderMsg("1001", "SPD MA403&MA405", g_frontID, g_sessionID);
     ret = pApi->ReqOrderAction(&InputOrderAction, 110);//把这个单子撤掉
 
-    InputOrder = generateNewOrderMsg("1002", "MA309");
+    InputOrder = generateNewOrderMsg("1002", "MA403");
     InputOrder.Direction = THOST_FTDC_D_Buy;
     InputOrder.CombOffsetFlag[0] = THOST_FTDC_OF_Open;
     InputOrder.ContingentCondition = THOST_FTDC_CC_LastPriceGreaterThanStopPrice;//下一个条件单
@@ -250,7 +249,7 @@ int main()
     ret = pApi->ReqOrderInsert(&InputOrder, 109);
 
     CThostFtdcInputQuoteField marketData = { 0 };
-    strcpy(marketData.InstrumentID, "MA309");
+    strcpy(marketData.InstrumentID, "MA403");
     marketData.BidPrice = 1000;
     marketData.AskPrice = 1010;
     strcpy(marketData.QuoteRef, "1020.0");// PreSettlementPrice

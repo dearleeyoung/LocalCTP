@@ -305,14 +305,16 @@ bool CSqliteHandler::Insert(const std::string& sql)
 
 bool CSqliteHandler::Delete(const std::string& sql)
 {
-    // 如何处理删除操作?
-    // 第一种方法: 同步操作,在文件数据库和内存数据库内都执行删除.
-    // 第二种方法: 类似于插入操作,先只在内存数据库里删除,然后,
-    //     在定时任务(SyncMemoryAndFileDatabase)里,先把文件数据库的所有表的数据都清空,
-    //     然后将内存数据库中的各个表的内容都插入到文件数据库的表里,
-    //     也可以给表加上标记,表示文件数据库的这个表需要执行清空再插入操作,若无标记则无需先清空.
+    // How to handle deletion operations ?
+    // First method : Synchronous operation, perform deletion in both the file databaseand the memory database.
+    // Second method : Similar to the insertion operation, delete only in the memory database first,
+    // and then in the timed task(SyncMemoryAndFileDatabase), clear all the data from the tables in the file database,
+    // and then insert the content of each table in the memory database into the tables in the file database.
+    // It is also possible to add a marker to the table to indicate that the table in the file database needs
+    // to perform a clearand then insert operation.If there is no marker, it is not necessary to clear it first.
     //
-    // 本系统使用第一种方法.
+    // This system uses the first method.
+
     // delete from table in file database, then delete from table in the memory database.
     sqlite3* pFileDB(nullptr);//file database
     int ret = sqlite3_open(m_dbPath.c_str(), &pFileDB);// open file database, will create if not exist
@@ -336,8 +338,6 @@ bool CSqliteHandler::DeleteImpl(const std::string& sql, sqlite3* pDB)
 {
     CHECK_DB_VALID
     char* errMsg = nullptr;
-    //通过 AttachMemoryAndFileDatabase 也无法将内存数据库上的删除操作同步到文件数据库里,
-    //需(在定时任务里同步两个数据库时)直接对文件数据库操作
     int result = sqlite3_exec(pDB, sql.c_str(), nullptr, nullptr, &errMsg);
     if (errMsg)
     {

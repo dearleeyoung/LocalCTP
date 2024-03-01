@@ -138,7 +138,7 @@ CThostFtdcRspInfoField* CLocalTraderApi::setErrorMsgAndGetRspInfo(const char* er
 // 多头持仓的持仓盈亏 = （最新结算价计算得到的成本 - 持仓成本） * 合约数量乘数 * 持仓数量
 // 空头持仓的持仓盈亏 = （持仓成本 - 最新结算价计算得到的成本） * 合约数量乘数 * 持仓数量
 //
-// 注: 收到行情快照时, 会更新持仓和资金并写入到数据库中, 如果收取的行情快照很多很频繁, 则可能导致写入频繁而卡顿,
+// 注: 收到行情快照时, 会更新持仓和资金并写入到(内存)数据库中, 如果收取的行情快照很多很频繁, 则可能导致写入频繁而卡顿,
 // 本系统目前是收到每次快照时实时写入, 是为了使持仓和资金等维护准确, 即确保内存和数据库中的数据的一致性.
 // 用户可根据需要修改写入数据库的逻辑来避免卡顿的情况, 例如改为定时写入等.
 void CLocalTraderApi::onSnapshot(const CThostFtdcDepthMarketDataField& mdData)
@@ -155,7 +155,7 @@ void CLocalTraderApi::onSnapshot(const CThostFtdcDepthMarketDataField& mdData)
         return;
     }
 
-    auto isPriceValid = [](const double price) ->bool {return LT(price, DBL_MAX); };
+    auto isPriceValid = [](const double price) ->bool {return LT(price, DBL_MAX) && NEZ(price); };
     //处理条件单的触发
     for (auto contionalOrderPtr : m_contionalOrders)
     {
@@ -860,6 +860,34 @@ void CLocalTraderApi::reloadAccountData()
 {
     if (!m_logined) return;
     const std::string& TradingDay = GetTradingDay();
+    auto reloadMarginAndCommissionRate = [&]() {
+        CSqliteHandler::SQL_VALUES marinRateSqlValues;
+        sqlHandler.SelectData(CThostFtdcInstrumentMarginRateFieldWrapper::generateSelectSqlByUserID(m_brokerID, m_userID),
+            marinRateSqlValues);
+        for (const auto& rowData : marinRateSqlValues)
+        {
+            CThostFtdcInstrumentMarginRateFieldWrapper marginRate(rowData);
+            m_instrumentMarginRateData[marginRate.data.InstrumentID] = marginRate.data;
+        }
+#ifdef _DEBUG
+        std::cout << "Total instrument marinRate count from table in database: "
+            << marinRateSqlValues.size() << std::endl;
+#endif
+        CSqliteHandler::SQL_VALUES commissionRateSqlValues;
+        sqlHandler.SelectData(CThostFtdcInstrumentCommissionRateFieldWrapper::generateSelectSqlByUserID(m_brokerID, m_userID),
+            commissionRateSqlValues);
+        for (const auto& rowData : commissionRateSqlValues)
+        {
+            CThostFtdcInstrumentCommissionRateFieldWrapper commissionRate(rowData);
+            m_instrumentCommissionRateData[commissionRate.data.InstrumentID] = commissionRate.data;
+        }
+#ifdef _DEBUG
+        std::cout << "Total instrument CommissionRate count from table in database: "
+            << commissionRateSqlValues.size() << std::endl;
+#endif
+    };
+    reloadMarginAndCommissionRate();
+
     auto reloadPosition = [&]() {
         m_positionData.clear();
         CSqliteHandler::SQL_VALUES posSqlValues;
@@ -1224,29 +1252,6 @@ void CLocalTraderApi::Init() {
             strncpy(CommissionRate.InstrumentID, instr.second.InstrumentID, sizeof(CommissionRate.InstrumentID));
             m_instrumentCommissionRateData[instr.first] = CommissionRate;
         }
-
-        CSqliteHandler::SQL_VALUES marinRateSqlValues;
-        sqlHandler.SelectData(CThostFtdcInstrumentMarginRateFieldWrapper::SELECT_SQL, marinRateSqlValues);
-        for (const auto& rowData : marinRateSqlValues)
-        {
-            CThostFtdcInstrumentMarginRateFieldWrapper marginRate(rowData);
-            m_instrumentMarginRateData[marginRate.data.InstrumentID] = marginRate.data;
-        }
-#ifdef _DEBUG
-        std::cout << "Total instrument marinRate count from table in database: "
-            << marinRateSqlValues.size() << std::endl;
-#endif
-        CSqliteHandler::SQL_VALUES commissionRateSqlValues;
-        sqlHandler.SelectData(CThostFtdcInstrumentCommissionRateFieldWrapper::SELECT_SQL, commissionRateSqlValues);
-        for (const auto& rowData : commissionRateSqlValues)
-        {
-            CThostFtdcInstrumentCommissionRateFieldWrapper commissionRate(rowData);
-            m_instrumentCommissionRateData[commissionRate.data.InstrumentID] = commissionRate.data;
-        }
-#ifdef _DEBUG
-        std::cout << "Total instrument CommissionRate count from table in database: "
-            << commissionRateSqlValues.size() << std::endl;
-#endif
     };
     initializeCommissionRateAndMarginRate();
 
@@ -2011,11 +2016,13 @@ int CLocalTraderApi::ReqOrderAction(CThostFtdcInputOrderActionField *pInputOrder
 int CLocalTraderApi::ReqSettlementInfoConfirm(CThostFtdcSettlementInfoConfirmField *pSettlementInfoConfirm, int nRequestID) {
     CHECK_LOGIN_INVESTOR(pSettlementInfoConfirm);
     const auto nowTime = CLeeDateTime::GetCurrentTime();
+    //更新最新的交易日的结算结果确认信息
     const std::string UPDATE_NEWEST_SETTLEMENT_RECORD_TO_CONFIRMED =
         std::string("UPDATE 'SettlementData' SET ConfirmDay='") + nowTime.Format("%Y%m%d")
         + "', ConfirmTime='" + nowTime.Format("%H:%M:%S")
         + "' where BrokerID='" + m_brokerID
-        + "' and InvestorID='" + m_userID + "' and ConfirmDay='';";
+        + "' and InvestorID='" + m_userID
+        + "' and ConfirmDay='' and TradingDay IN (SELECT MAX(TradingDay) FROM 'SettlementData');";
     CSqliteHandler::SQL_VALUES posSqlValues;
     sqlHandler.Update(UPDATE_NEWEST_SETTLEMENT_RECORD_TO_CONFIRMED);
 
@@ -2323,9 +2330,13 @@ int CLocalTraderApi::ReqQrySettlementInfo(CThostFtdcQrySettlementInfoField *pQry
     CHECK_LOGIN_INVESTOR(pQrySettlementInfo);
     if (m_pSpi == nullptr) return 0;
 
+    const std::string TradingDayForQuery = pQrySettlementInfo->TradingDay;
     const std::string SELECT_NEWEST_SETTLEMENT_RECORD =
         "SELECT * FROM 'SettlementData' where BrokerID='" + m_brokerID
-        + "' and InvestorID='" + m_userID + "' ORDER BY TradingDay DESC LIMIT 1;";
+        + "' and InvestorID='" + m_userID
+        + (!TradingDayForQuery.empty() ?
+            ("' and TradingDay='" + TradingDayForQuery) : "")
+        + "' ORDER BY TradingDay DESC LIMIT 1;";
     CSqliteHandler::SQL_VALUES posSqlValues;
     sqlHandler.SelectData(SELECT_NEWEST_SETTLEMENT_RECORD, posSqlValues);
     if (m_pSpi == nullptr) return 0;

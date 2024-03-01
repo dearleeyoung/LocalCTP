@@ -1136,22 +1136,49 @@ void CLocalTraderApi::CSettlementHandler::doWorkInitialSettlement(
  WHERE CThostFtdcInvestorPositionDetailField.InstrumentID in \
    (SELECT CThostFtdcInstrumentField.InstrumentID from CThostFtdcInstrumentField \
  WHERE CThostFtdcInstrumentField.ExpireDate <= '") + oldTradingDay + "');";
-    const std::string positiondetailInitialSettlementSql2
-        = std::string("UPDATE CThostFtdcInvestorPositionDetailField \
- SET Margin = SettlementPrice*Volume*( SELECT VolumeMultiple from CThostFtdcInstrumentField WHERE \
- CThostFtdcInstrumentField.InstrumentID=CThostFtdcInvestorPositionDetailField.InstrumentID ) \
- * MarginRateByMoney + Volume * MarginRateByVolume, \
- PositionProfitByDate = (CASE WHEN Direction='") + THOST_FTDC_D_Buy + "' THEN 1 ELSE -1 END) * \
- ( SettlementPrice - (CASE WHEN OpenDate=TradingDay THEN OpenPrice ELSE LastSettlementPrice END) ) * Volume * \
-( SELECT VolumeMultiple from CThostFtdcInstrumentField WHERE \
- CThostFtdcInstrumentField.InstrumentID=CThostFtdcInvestorPositionDetailField.InstrumentID ), \
- PositionProfitByTrade=(CASE WHEN Direction='" + THOST_FTDC_D_Buy + "' THEN 1 ELSE -1 END) * \
- ( SettlementPrice - OpenPrice ) * Volume * \
-( SELECT VolumeMultiple from CThostFtdcInstrumentField WHERE \
- CThostFtdcInstrumentField.InstrumentID=CThostFtdcInvestorPositionDetailField.InstrumentID ) ;";
 
     m_sqlHandler.Update(positiondetailInitialSettlementSql1);
-    m_sqlHandler.Update(positiondetailInitialSettlementSql2);
+
+    CSqliteHandler::SQL_VALUES posDetailSqlValues;
+    m_sqlHandler.SelectData(CThostFtdcInvestorPositionDetailFieldWrapper::SELECT_SQL, posDetailSqlValues);
+    std::vector<CThostFtdcInvestorPositionDetailFieldWrapper> posDetailVec;
+    for (const auto& rowData : posDetailSqlValues)
+    {
+        CThostFtdcInvestorPositionDetailFieldWrapper posDetailWrapper(rowData);
+        auto& posDetail = posDetailWrapper.data;
+        auto itInstr = CLocalTraderApi::m_instrData.find(posDetail.InstrumentID);
+        if (itInstr == CLocalTraderApi::m_instrData.end())
+        {
+            continue;
+        }
+        auto itMdData = CLocalTraderApi::m_mdData.find(itInstr->second.InstrumentID);
+        if (itMdData != CLocalTraderApi::m_mdData.end())
+        {
+            //更新持仓明细中的结算价(因为可能用户没有给这个账号的API投喂行情)
+            posDetail.SettlementPrice = itMdData->second.SettlementPrice;
+        }
+        posDetail.Margin = posDetail.SettlementPrice * posDetail.Volume *
+            itInstr->second.VolumeMultiple * posDetail.MarginRateByMoney +
+            posDetail.Volume * posDetail.MarginRateByVolume;//更新保证金
+        if (!isOptions(itInstr->second.ProductClass))
+        {
+            const double positionPrice(posDetail.OpenDate == posDetail.TradingDay ?
+                posDetail.OpenPrice : posDetail.LastSettlementPrice);
+            posDetail.PositionProfitByDate = (posDetail.Direction == THOST_FTDC_D_Buy ? 1.0 : -1.0) *
+                (posDetail.SettlementPrice - positionPrice) *
+                posDetail.Volume * itInstr->second.VolumeMultiple;//更新持仓盈亏
+            posDetail.PositionProfitByDate = (posDetail.Direction == THOST_FTDC_D_Buy ? 1.0 : -1.0) *
+                (posDetail.SettlementPrice - posDetail.OpenPrice) *
+                posDetail.Volume * itInstr->second.VolumeMultiple;//更新浮动盈亏
+        }
+
+        posDetailVec.emplace_back(posDetail);
+    }
+    // 将更新后的持仓明细的持仓记录, 全部写入到数据库中
+    for (auto& posDetail : posDetailVec)
+    {
+        m_sqlHandler.Insert(posDetail.generateInsertSql());
+    }
 
     //查询所有账户的持仓, 对每一笔持仓, 以用于结算的价格作为其结算价, 计算保证金和盈亏等, 更新持仓表
     //并且修改合约到期的合约的持仓, 将其持仓数量修改为0等.
@@ -1182,6 +1209,12 @@ void CLocalTraderApi::CSettlementHandler::doWorkInitialSettlement(
         if (itInstr == CLocalTraderApi::m_instrData.end() || itInstr->second.ProductClass == THOST_FTDC_PC_Combination)
         {
             continue;
+        }
+        auto itMdData = CLocalTraderApi::m_mdData.find(itInstr->second.InstrumentID);
+        if (itMdData != CLocalTraderApi::m_mdData.end())
+        {
+            //更新持仓中的结算价(因为可能用户没有给这个账号的API投喂行情)
+            pos.SettlementPrice = itMdData->second.SettlementPrice;
         }
         if (!isOptions(itInstr->second.ProductClass))
         {
