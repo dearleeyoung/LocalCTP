@@ -919,7 +919,9 @@ void CLocalTraderApi::reloadAccountData()
             {
                 auto posDetailMatchPos = [&]() -> bool {
                     bool isMatch = strcmp(posDetail.InstrumentID, posData.pos.InstrumentID) == 0 &&
-                        strcmp(posDetail.ExchangeID, posData.pos.ExchangeID) == 0;
+                        strcmp(posDetail.ExchangeID, posData.pos.ExchangeID) == 0 &&
+                        ((posDetail.Direction == THOST_FTDC_D_Buy && posData.pos.PosiDirection == THOST_FTDC_PD_Long) ||
+                            (posDetail.Direction == THOST_FTDC_D_Sell && posData.pos.PosiDirection == THOST_FTDC_PD_Short));
                     if (!isMatch) return isMatch;
                     if (isSpecialExchange(posData.pos.ExchangeID))
                     {
@@ -2018,7 +2020,7 @@ int CLocalTraderApi::ReqSettlementInfoConfirm(CThostFtdcSettlementInfoConfirmFie
     const auto nowTime = CLeeDateTime::GetCurrentTime();
     //更新最新的交易日的结算结果确认信息
     const std::string UPDATE_NEWEST_SETTLEMENT_RECORD_TO_CONFIRMED =
-        std::string("UPDATE 'SettlementData' SET ConfirmDay='") + nowTime.Format("%Y%m%d")
+        std::string("UPDATE 'SettlementData' SET ConfirmDay='") + GetTradingDay()
         + "', ConfirmTime='" + nowTime.Format("%H:%M:%S")
         + "' where BrokerID='" + m_brokerID
         + "' and InvestorID='" + m_userID

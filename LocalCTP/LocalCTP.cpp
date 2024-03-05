@@ -1162,12 +1162,12 @@ void CLocalTraderApi::CSettlementHandler::doWorkInitialSettlement(
             posDetail.Volume * posDetail.MarginRateByVolume;//更新保证金
         if (!isOptions(itInstr->second.ProductClass))
         {
-            const double positionPrice(posDetail.OpenDate == posDetail.TradingDay ?
+            const double positionPrice(strcmp(posDetail.OpenDate, posDetail.TradingDay) == 0 ?
                 posDetail.OpenPrice : posDetail.LastSettlementPrice);
             posDetail.PositionProfitByDate = (posDetail.Direction == THOST_FTDC_D_Buy ? 1.0 : -1.0) *
                 (posDetail.SettlementPrice - positionPrice) *
                 posDetail.Volume * itInstr->second.VolumeMultiple;//更新持仓盈亏
-            posDetail.PositionProfitByDate = (posDetail.Direction == THOST_FTDC_D_Buy ? 1.0 : -1.0) *
+            posDetail.PositionProfitByTrade = (posDetail.Direction == THOST_FTDC_D_Buy ? 1.0 : -1.0) *
                 (posDetail.SettlementPrice - posDetail.OpenPrice) *
                 posDetail.Volume * itInstr->second.VolumeMultiple;//更新浮动盈亏
         }
