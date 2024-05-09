@@ -157,25 +157,25 @@ void CLocalTraderApi::onSnapshot(const CThostFtdcDepthMarketDataField& mdData)
 
     auto isPriceValid = [](const double price) ->bool {return LT(price, DBL_MAX) && NEZ(price); };
     //处理条件单的触发
-    for (auto contionalOrderPtr : m_contionalOrders)
+    for (auto conditionalOrderPtr : m_conditionalOrders)
     {
-        auto& contionalOrder = *contionalOrderPtr;
-        if (instrumentID != contionalOrder.rtnOrder.InstrumentID
-            || contionalOrder.rtnOrder.OrderStatus == THOST_FTDC_OST_Touched)
+        auto& conditionalOrder = *conditionalOrderPtr;
+        if (instrumentID != conditionalOrder.rtnOrder.InstrumentID
+            || conditionalOrder.rtnOrder.OrderStatus == THOST_FTDC_OST_Touched)
         {
             continue;
         }
         auto matchContion = [&]() -> bool {
-            switch (contionalOrder.rtnOrder.ContingentCondition)
+            switch (conditionalOrder.rtnOrder.ContingentCondition)
             {
             case THOST_FTDC_CC_LastPriceGreaterThanStopPrice:
-                return isPriceValid(mdData.LastPrice) && GT(mdData.LastPrice, contionalOrder.rtnOrder.StopPrice);
+                return isPriceValid(mdData.LastPrice) && GT(mdData.LastPrice, conditionalOrder.rtnOrder.StopPrice);
             case THOST_FTDC_CC_LastPriceGreaterEqualStopPrice:
-                return isPriceValid(mdData.LastPrice) && GE(mdData.LastPrice, contionalOrder.rtnOrder.StopPrice);
+                return isPriceValid(mdData.LastPrice) && GE(mdData.LastPrice, conditionalOrder.rtnOrder.StopPrice);
             case THOST_FTDC_CC_LastPriceLesserThanStopPrice:
-                return isPriceValid(mdData.LastPrice) && LT(mdData.LastPrice, contionalOrder.rtnOrder.StopPrice);
+                return isPriceValid(mdData.LastPrice) && LT(mdData.LastPrice, conditionalOrder.rtnOrder.StopPrice);
             case THOST_FTDC_CC_LastPriceLesserEqualStopPrice:
-                return isPriceValid(mdData.LastPrice) && LE(mdData.LastPrice, contionalOrder.rtnOrder.StopPrice);
+                return isPriceValid(mdData.LastPrice) && LE(mdData.LastPrice, conditionalOrder.rtnOrder.StopPrice);
             default:
                 return false;
             }
@@ -184,20 +184,20 @@ void CLocalTraderApi::onSnapshot(const CThostFtdcDepthMarketDataField& mdData)
         {
             continue;
         }
-        contionalOrder.rtnOrder.OrderStatus = THOST_FTDC_OST_Touched;
-        strncpy(contionalOrder.rtnOrder.StatusMsg,
-            getStatusMsgByStatus(contionalOrder.rtnOrder.OrderStatus).c_str(),
-            sizeof(contionalOrder.rtnOrder.StatusMsg));
-        contionalOrder.sendRtnOrder();
+        conditionalOrder.rtnOrder.OrderStatus = THOST_FTDC_OST_Touched;
+        strncpy(conditionalOrder.rtnOrder.StatusMsg,
+            getStatusMsgByStatus(conditionalOrder.rtnOrder.OrderStatus).c_str(),
+            sizeof(conditionalOrder.rtnOrder.StatusMsg));
+        conditionalOrder.sendRtnOrder();
 
         // send a new non-conditional order
-        CThostFtdcInputOrderField InputOrder = contionalOrder.inputOrder;
+        CThostFtdcInputOrderField InputOrder = conditionalOrder.inputOrder;
         strncpy(InputOrder.OrderRef, "", sizeof(InputOrder.OrderRef));
-        InputOrder.LimitPrice = contionalOrder.inputOrder.StopPrice;
+        InputOrder.LimitPrice = conditionalOrder.inputOrder.StopPrice;
         InputOrder.StopPrice = 0;
         InputOrder.ContingentCondition = THOST_FTDC_CC_Immediately;
 
-        ReqOrderInsertImpl(&InputOrder, 0, contionalOrder.rtnOrder.OrderSysID);
+        ReqOrderInsertImpl(&InputOrder, 0, conditionalOrder.rtnOrder.OrderSysID);
     }
 
     // 不根据组合合约行情快照来更新PNL和报单,因此这里直接返回
@@ -1885,7 +1885,7 @@ int CLocalTraderApi::ReqOrderInsertImpl(CThostFtdcInputOrderField * pInputOrder,
 
         if (isConditionalType(pInputOrder->ContingentCondition))
         {
-            m_contionalOrders.emplace_back(&(itOrder->second));
+            m_conditionalOrders.emplace_back(&(itOrder->second));
             return 0;
         }
     }
