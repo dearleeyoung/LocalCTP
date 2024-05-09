@@ -226,18 +226,40 @@ Windows中可使用 [DB Browser for SQLite](https://sqlitebrowser.org/) 等软�
 
 这里提供三种主流linux发行版本的安装 `GB18030` 字符集的方案:
 
-    // Ubuntu (20.04)
-    sudo apt-get install -y locales
-    sudo locale-gen zh_CN.GB18030
+```sh
+# Ubuntu (20.04)
+sudo apt-get install -y locales
+sudo locale-gen zh_CN.GB18030
 
-    // Debian (11)
-    sudo apt install locales-all
-    sudo localedef -c -f GB18030 -i zh_CN zh_CN.GB18030
+# Debian (11)
+sudo apt install locales-all
+sudo localedef -c -f GB18030 -i zh_CN zh_CN.GB18030
 
-    // CentOS (7)
-    sudo yum install -y kde-l10n-Chinese
-    sudo yum reinstall -y glibc-common
+# CentOS (7)
+sudo yum install -y kde-l10n-Chinese
+sudo yum reinstall -y glibc-common
+```
 
+如果安装无效，可以用另一种方法
+
+```sh
+sudo nano /etc/locale.gen
+# 或用 VSCode 打开，如果你在使用 VSCode SSH 上去编辑
+# code /etc/locale.gen
+```
+
+找到带有 `# zh_CN.GB18030 GB18030` 的一行，去掉前面的 `# `，保存关闭，然后运行
+
+```sh
+sudo locale-gen
+```
+
+如果还不行，加几个环境变量
+
+```sh
+export LC_ALL=zh_CN.GB18030
+export LANG=zh_CN.GB18030
+```
 
 **制作不容易，请一定要多多支持！欢迎打赏投食鼓励！~**
 
