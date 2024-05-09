@@ -262,4 +262,6 @@ export LANG=zh_CN.GB18030
 ```
 
 **制作不容易，请一定要多多支持！欢迎打赏投食鼓励！~**
+#### 报错 `what():  wstring_convert::from_bytes` ？
+注意 instrument.csv 的编码必须和你环境变量里设定的相似，例如环境变量里是 `zh_CN.GB18030`，那么 csv 的编码可以是 `GB2312`，但不能是 `UTF-8`。
 
