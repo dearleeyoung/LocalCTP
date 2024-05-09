@@ -357,7 +357,7 @@ private:
     std::map<std::string, CThostFtdcInstrumentMarginRateField> m_instrumentMarginRateData;// 合约保证金数据. key:合约代码.
     std::map<std::string, CThostFtdcInstrumentCommissionRateField> m_instrumentCommissionRateData;// 合约手续费数据. key:合约代码.
     CThostFtdcTradingAccountField m_tradingAccount;// 资金数据
-    std::vector<OrderData*> m_contionalOrders;// 条件报单数据
+    std::vector<OrderData*> m_conditionalOrders;// 条件报单数据
 	CThostFtdcTraderSpi* m_pSpi;// 回调接口类的指针
 
     CThostFtdcRspInfoField m_successRspInfo;// 成功的响应信息
