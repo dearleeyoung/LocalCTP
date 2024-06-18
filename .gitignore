@@ -4,6 +4,7 @@
 *.exp
 *.log
 *.db
+libthosttraderapi_se_v*.so
 
 # Debug folder
 Debug

@@ -405,68 +405,119 @@ void CLocalTraderApi::updateByCancel(const CThostFtdcOrderField& o)
     {
         return;
     }
+    std::string instr = o.InstrumentID;
+    auto directionT = o.Direction;
+
+    auto handleOpen = [&]()
+    {
+        MarketDataMap::iterator itDepthMarketData;
+        {
+            std::lock_guard<std::mutex> mdGuard(m_mdMtx);
+            itDepthMarketData = m_mdData.find(instr);
+            if (itDepthMarketData == m_mdData.end())
+            {
+                return;
+            }
+        }
+        auto posKey = generatePositionKey(instr,
+            directionT,
+            THOST_FTDC_PSD_Today);
+        PositionDataMap::iterator itPos;
+        {
+            std::lock_guard<std::mutex> posGuard(m_positionMtx);
+            itPos = m_positionData.find(posKey);
+            if (itPos == m_positionData.end())
+            {
+                return;
+            }
+        }
+        double frozenMargin(0);
+        double frozenCash(0);
+        if (isOptions(it->second.ProductClass))
+        {
+            if (directionT == THOST_FTDC_D_Buy)//期权买入的委托, 需解冻一部分权利金
+            {
+                frozenCash = itDepthMarketData->second.PreSettlementPrice *
+                    it->second.VolumeMultiple * o.VolumeTotal;
+            }
+            else//期权卖出的(开仓)委托, 需解冻一部分保证金(期权保证金计算太复杂啦,本系统以期货保证金计算规则来算期权保证金)
+            {
+            }
+        }
+        frozenMargin = itDepthMarketData->second.PreSettlementPrice *
+            it->second.VolumeMultiple * o.VolumeTotal *
+            itPos->second.pos.MarginRateByMoney
+            + o.VolumeTotal * itPos->second.pos.MarginRateByVolume;
+        itPos->second.pos.FrozenMargin = (std::max)(
+            itPos->second.pos.FrozenMargin - frozenMargin, 0.0);
+        itPos->second.pos.FrozenCash = (std::max)(
+            itPos->second.pos.FrozenCash - frozenCash, 0.0);
+
+        m_tradingAccount.FrozenMargin = (std::max)(
+            m_tradingAccount.FrozenMargin - frozenMargin, 0.0);
+        m_tradingAccount.FrozenCash = (std::max)(
+            m_tradingAccount.FrozenCash - frozenCash, 0.0);
+        if (NEZ(frozenMargin) || NEZ(frozenCash))
+        {
+            CSqliteTransactionHandler transactionHandle(sqlHandler);
+            savePositionToDb(itPos->second.pos);
+            updatePNL();
+        }
+    };
+    auto handleClose = [&]()
+    {
+        MarketDataMap::iterator itDepthMarketData;
+        {
+            std::lock_guard<std::mutex> mdGuard(m_mdMtx);
+            itDepthMarketData = m_mdData.find(instr);
+            if (itDepthMarketData == m_mdData.end())
+            {
+                return;
+            }
+        }
+        auto posKey = generatePositionKey(instr,
+            directionT,
+            getDateTypeFromOffset(
+                it->second.ExchangeID, o.CombOffsetFlag[0]));
+        PositionDataMap::iterator itPos;
+        {
+            std::lock_guard<std::mutex> posGuard(m_positionMtx);
+            itPos = m_positionData.find(posKey);
+            if (itPos == m_positionData.end())
+            {
+                // 如果没找到持仓,则返回,并不插入持仓(因为持仓在开仓报单时已插入).此流程可改进
+                return;
+            }
+        }
+        int& frozenPositionNum = (itPos->second.pos.PosiDirection == THOST_FTDC_PD_Long ?
+            itPos->second.pos.ShortFrozen : itPos->second.pos.LongFrozen);
+        frozenPositionNum = (std::max)(
+            frozenPositionNum - o.VolumeTotal, 0);
+        double frozenCash(0);
+        if (isOptions(it->second.ProductClass))
+        {
+            if (getOppositeDirection(directionT) == THOST_FTDC_D_Buy)//期权买入的委托, 需解冻一部分权利金
+            {
+                frozenCash = itDepthMarketData->second.PreSettlementPrice *
+                    it->second.VolumeMultiple * o.VolumeTotal;
+            }
+        }
+        itPos->second.pos.FrozenCash = (std::max)(
+            itPos->second.pos.FrozenCash - frozenCash, 0.0);
+        CSqliteTransactionHandler transactionHandle(sqlHandler);
+        savePositionToDb(itPos->second.pos);
+        m_tradingAccount.FrozenCash = (std::max)(
+            m_tradingAccount.FrozenCash - frozenCash, 0.0);
+        if (NEZ(frozenCash))
+        {
+            updatePNL();
+        }
+    };
     // 开仓报单已撤单,则减少冻结保证金(对应数量是未成交数量)
     if (isOpen(o.CombOffsetFlag[0]))
     {
-        std::string instr = o.InstrumentID;
-        auto directionT = o.Direction;
-
-        auto handleOpen = [&]()
-        {
-            MarketDataMap::iterator itDepthMarketData;
-            {
-                std::lock_guard<std::mutex> mdGuard(m_mdMtx);
-                itDepthMarketData = m_mdData.find(instr);
-                if (itDepthMarketData == m_mdData.end())
-                {
-                    return;
-                }
-            }
-            auto posKey = generatePositionKey(instr,
-                directionT,
-                THOST_FTDC_PSD_Today);
-            PositionDataMap::iterator itPos;
-            {
-                std::lock_guard<std::mutex> posGuard(m_positionMtx);
-                itPos = m_positionData.find(posKey);
-                if (itPos == m_positionData.end())
-                {
-                    return;
-                }                
-            }
-            double frozenMargin(0);
-            double frozenCash(0);
-            if (isOptions(it->second.ProductClass))
-            {
-                if (directionT == THOST_FTDC_D_Buy)//期权买入的委托, 需解冻一部分权利金
-                {
-                    frozenCash = itDepthMarketData->second.PreSettlementPrice *
-                        it->second.VolumeMultiple * o.VolumeTotal;
-                }
-                else//期权卖出的(开仓)委托, 需解冻一部分保证金(期权保证金计算太复杂啦,本系统以期货保证金计算规则来算期权保证金)
-                {
-                }
-            }
-            frozenMargin = itDepthMarketData->second.PreSettlementPrice *
-                    it->second.VolumeMultiple * o.VolumeTotal *
-                    itPos->second.pos.MarginRateByMoney
-                    + o.VolumeTotal * itPos->second.pos.MarginRateByVolume;
-            itPos->second.pos.FrozenMargin = (std::max)(
-                itPos->second.pos.FrozenMargin - frozenMargin, 0.0);
-            itPos->second.pos.FrozenCash = (std::max)(
-                itPos->second.pos.FrozenCash - frozenCash, 0.0);
-
-            m_tradingAccount.FrozenMargin = (std::max)(
-                m_tradingAccount.FrozenMargin - frozenMargin, 0.0);
-            m_tradingAccount.FrozenCash = (std::max)(
-                m_tradingAccount.FrozenCash - frozenCash, 0.0);
-            if (NEZ(frozenMargin) || NEZ(frozenCash))
-            {
-                CSqliteTransactionHandler transactionHandle(sqlHandler);
-                savePositionToDb(itPos->second.pos);
-                updatePNL();
-            }
-        };
+        instr = o.InstrumentID;
+        directionT = o.Direction;
 
         if (it->second.ProductClass == THOST_FTDC_PC_Combination)
         {
@@ -480,7 +531,8 @@ void CLocalTraderApi::updateByCancel(const CThostFtdcOrderField& o)
                     o.Direction
                     : getOppositeDirection(o.Direction));
 
-                handleOpen();
+                ((o.IsSwapOrder != 0 && legNo % 2 != 0) ?
+                    handleClose() : handleOpen());//需考虑互换单的情况
             }
         }
         else
@@ -490,58 +542,8 @@ void CLocalTraderApi::updateByCancel(const CThostFtdcOrderField& o)
     }
     else// 平仓报单已撤单,则减少冻结持仓(对应数量是未成交数量)
     {
-        std::string instr = o.InstrumentID;
-        auto directionT = getOppositeDirection(o.Direction);
-
-        auto handleClose = [&]()
-        {
-            MarketDataMap::iterator itDepthMarketData;
-            {
-                std::lock_guard<std::mutex> mdGuard(m_mdMtx);
-                itDepthMarketData = m_mdData.find(instr);
-                if (itDepthMarketData == m_mdData.end())
-                {
-                    return;
-                }
-            }
-            auto posKey = generatePositionKey(instr,
-                directionT,
-                getDateTypeFromOffset(
-                    it->second.ExchangeID, o.CombOffsetFlag[0]));
-            PositionDataMap::iterator itPos;
-            {
-                std::lock_guard<std::mutex> posGuard(m_positionMtx);
-                itPos = m_positionData.find(posKey);
-                if (itPos == m_positionData.end())
-                {
-                    // 如果没找到持仓,则返回,并不插入持仓(因为持仓在开仓报单时已插入).此流程可改进
-                    return;
-                }
-            }
-            int& frozenPositionNum = (itPos->second.pos.PosiDirection == THOST_FTDC_PD_Long ?
-                itPos->second.pos.ShortFrozen : itPos->second.pos.LongFrozen);
-            frozenPositionNum = (std::max)(
-                frozenPositionNum - o.VolumeTotal, 0);
-            double frozenCash(0);
-            if (isOptions(it->second.ProductClass))
-            {
-                if (getOppositeDirection(directionT) == THOST_FTDC_D_Buy)//期权买入的委托, 需解冻一部分权利金
-                {
-                    frozenCash = itDepthMarketData->second.PreSettlementPrice *
-                        it->second.VolumeMultiple * o.VolumeTotal;
-                }
-            }
-            itPos->second.pos.FrozenCash = (std::max)(
-                itPos->second.pos.FrozenCash - frozenCash, 0.0);
-            CSqliteTransactionHandler transactionHandle(sqlHandler);
-            savePositionToDb(itPos->second.pos);
-            m_tradingAccount.FrozenCash = (std::max)(
-                m_tradingAccount.FrozenCash - frozenCash, 0.0);
-            if (NEZ(frozenCash))
-            {
-                updatePNL();
-            }
-        };
+        instr = o.InstrumentID;
+        directionT = getOppositeDirection(o.Direction);
 
         if (it->second.ProductClass == THOST_FTDC_PC_Combination)
         {
@@ -555,7 +557,8 @@ void CLocalTraderApi::updateByCancel(const CThostFtdcOrderField& o)
                     getOppositeDirection(o.Direction)
                     : o.Direction);
 
-                handleClose();
+                ((o.IsSwapOrder != 0 && legNo % 2 != 0) ?
+                    handleOpen() : handleClose());//需考虑互换单的情况
             }
         }
         else
@@ -1777,10 +1780,11 @@ int CLocalTraderApi::ReqOrderInsertImpl(CThostFtdcInputOrderField * pInputOrder,
                     instr = singleContracts[legNo];
                     directionT = (legNo % 2 == 0 ? pInputOrder->Direction : getOppositeDirection(pInputOrder->Direction));
 
-                    auto handleOpenRet = handleOpen(preCheck);
-                    if (!handleOpenRet.first)
+                    auto handleSingleContractRet = ((pInputOrder->IsSwapOrder != 0 && legNo % 2 != 0) ?
+                        handleClose(preCheck) : handleOpen(preCheck));//需考虑互换单的情况
+                    if (!handleSingleContractRet.first)
                     {
-                        return handleOpenRet;;
+                        return handleSingleContractRet;;
                     }
                 }
             }
@@ -1806,10 +1810,11 @@ int CLocalTraderApi::ReqOrderInsertImpl(CThostFtdcInputOrderField * pInputOrder,
                     instr = singleContracts[legNo];
                     directionT = (legNo % 2 == 0 ? getOppositeDirection(pInputOrder->Direction) : pInputOrder->Direction);
 
-                    auto handleCloseRet = handleClose(preCheck);
-                    if (!handleCloseRet.first)
+                    auto handleSingleContractRet = ((pInputOrder->IsSwapOrder != 0 && legNo % 2 != 0) ?
+                        handleOpen(preCheck) : handleClose(preCheck));//需考虑互换单的情况
+                    if (!handleSingleContractRet.first)
                     {
-                        return handleCloseRet;
+                        return handleSingleContractRet;
                     }
                 }
             }

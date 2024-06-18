@@ -417,11 +417,23 @@ void CLocalTraderApi::OrderData::getRtnTrade(const TradePriceVec& tradePriceVec,
         {
             ///买卖方向
             Trade.Direction = rtnOrder.Direction;
+            ///开平标志
+            Trade.OffsetFlag = rtnOrder.CombOffsetFlag[0];
         }
         else//若为第二腿
         {
             ///买卖方向
             Trade.Direction = getOppositeDirection(rtnOrder.Direction);
+            ///开平标志
+            if (rtnOrder.IsSwapOrder == 0)//非互换单. 第二腿的开平方向与第一腿相同.
+            {
+                Trade.OffsetFlag = rtnOrder.CombOffsetFlag[0];
+            }
+            else//互换单. 第二腿的开平方向与第一腿相反.
+            {
+                Trade.OffsetFlag = (rtnOrder.CombOffsetFlag[0] == THOST_FTDC_OF_Open ?
+                    THOST_FTDC_OF_Close: THOST_FTDC_OF_Open);
+            }
         }
         ///价格
         Trade.Price = tradePriceVec[_index];
@@ -435,8 +447,6 @@ void CLocalTraderApi::OrderData::getRtnTrade(const TradePriceVec& tradePriceVec,
         Trade.TradingRole = THOST_FTDC_ER_Broker;
         ///合约在交易所的代码
         strncpy(Trade.ExchangeInstID, Trade.InstrumentID, sizeof(Trade.ExchangeInstID));
-        ///开平标志
-        Trade.OffsetFlag = rtnOrder.CombOffsetFlag[0];
         ///投机套保标志
         Trade.HedgeFlag = rtnOrder.CombHedgeFlag[0];
 

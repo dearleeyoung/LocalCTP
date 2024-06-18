@@ -305,6 +305,7 @@ bool CSqliteHandler::Insert(const std::string& sql)
 
 bool CSqliteHandler::Delete(const std::string& sql)
 {
+    CHECK_DB_VALID
     // How to handle deletion operations ?
     // First method : Synchronous operation, perform deletion in both the file databaseand the memory database.
     // Second method : Similar to the insertion operation, delete only in the memory database first,

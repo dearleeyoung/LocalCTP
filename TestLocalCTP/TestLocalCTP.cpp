@@ -161,6 +161,7 @@ class MySpi : public CThostFtdcTraderSpi
         std::cout << "\n收到成交通知! " << " UserID:" << pTrade->UserID
             << " InstrumentID:" << pTrade->InstrumentID
             << " Direction:" << (pTrade->Direction == THOST_FTDC_D_Buy ? "买入":"卖出")
+            << " OffsetFlag:" << (pTrade->OffsetFlag == THOST_FTDC_OF_Open ? "开仓" : "平仓")
             << " Volume:" << pTrade->Volume << " Price:" << pTrade->Price << std::endl;
     }
     void OnRspOrderAction(CThostFtdcInputOrderActionField* pInputOrderAction, CThostFtdcRspInfoField* pRspInfo, int nRequestID, bool bIsLast) {
@@ -230,6 +231,7 @@ int main()
 
     InputOrder = generateNewOrderMsg("1000", "SPD MA403&MA405");
     InputOrder.LimitPrice = -985;//实际会以1010-2000 = (-990)元的差价成交
+    InputOrder.IsSwapOrder = 1;//互换单
     ret = pApi->ReqOrderInsert(&InputOrder, 109);//有行情数据后,再下一单(买入开仓成交)
 
     strcpy(InputOrder.OrderRef, "1001");
