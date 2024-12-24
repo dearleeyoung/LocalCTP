@@ -1,7 +1,7 @@
 ﻿#include "stdafx.h"
 #include "LocalTraderApi.h"
 #include "Properties.h"
-
+#include <iostream>
 #define READ_CHAR_ARRAY_MEMBER(m) \
     { std::getline(i, temp, ','); \
       strncpy(instr.m, temp.c_str(), sizeof(instr.m)); }
@@ -581,6 +581,7 @@ ACCUMULATE_WITH_SAME_NAME(FrozenCash) ";"
         CLocalTraderApi::initInstrMap();
         if (!checkSettlement())//启动后先判断结算一次
         {
+            std::cout << "doSettlement when start!" << std::endl;
             doSettlement();
         }
         while (m_running)
@@ -597,6 +598,7 @@ ACCUMULATE_WITH_SAME_NAME(FrozenCash) ";"
             }
             if (!checkSettlement())
             {
+                std::cout << "start doSettlement in timer!" << std::endl;
                 doSettlement();
             }
         }
@@ -1141,14 +1143,6 @@ void CLocalTraderApi::CSettlementHandler::doWorkInitialSettlement(
 
     //更新所有持仓明细, 对每一笔持仓明细, 以用于结算的价格作为其结算价, 计算保证金和盈亏等, 更新持仓明细表,
     //并且修改合约到期的合约的持仓明细, 将其持仓数量修改为0等.
-    const std::string positiondetailInitialSettlementSql1
-        = std::string("UPDATE CThostFtdcInvestorPositionDetailField SET Volume = 0 \
- WHERE CThostFtdcInvestorPositionDetailField.InstrumentID in \
-   (SELECT CThostFtdcInstrumentField.InstrumentID from CThostFtdcInstrumentField \
- WHERE CThostFtdcInstrumentField.ExpireDate <= '") + oldTradingDay + "');";
-
-    m_sqlHandler.Update(positiondetailInitialSettlementSql1);
-
     CSqliteHandler::SQL_VALUES posDetailSqlValues;
     m_sqlHandler.SelectData(CThostFtdcInvestorPositionDetailFieldWrapper::SELECT_SQL, posDetailSqlValues);
     std::vector<CThostFtdcInvestorPositionDetailFieldWrapper> posDetailVec;
@@ -1164,12 +1158,9 @@ void CLocalTraderApi::CSettlementHandler::doWorkInitialSettlement(
         auto itMdData = CLocalTraderApi::m_mdData.find(itInstr->second.InstrumentID);
         if (itMdData != CLocalTraderApi::m_mdData.end())
         {
-            //更新持仓明细中的结算价(因为可能用户没有给这个账号的API投喂行情)
+            //更新持仓明细中的结算价(因为可能用户没有给这个账号的API投喂行情,例如通过别的账户的API来投喂的)
             posDetail.SettlementPrice = itMdData->second.SettlementPrice;
         }
-        posDetail.Margin = posDetail.SettlementPrice * posDetail.Volume *
-            itInstr->second.VolumeMultiple * posDetail.MarginRateByMoney +
-            posDetail.Volume * posDetail.MarginRateByVolume;//更新保证金
         if (!isOptions(itInstr->second.ProductClass))
         {
             const double positionPrice(strcmp(posDetail.OpenDate, posDetail.TradingDay) == 0 ?
@@ -1181,9 +1172,22 @@ void CLocalTraderApi::CSettlementHandler::doWorkInitialSettlement(
                 (posDetail.SettlementPrice - posDetail.OpenPrice) *
                 posDetail.Volume * itInstr->second.VolumeMultiple;//更新浮动盈亏
         }
+        //如果合约已过期, 则将持仓设为0(即模拟强制平仓操作,无交易手续费,不产生交易记录).
+        //感谢Q友763606282"啦啦啦"提醒 强制平仓时需考虑持仓盈亏和期权权利金.
+        if (std::string(itInstr->second.ExpireDate) <= oldTradingDay)
+        {
+            posDetail.Volume = 0;
+        }
+        posDetail.Margin = posDetail.SettlementPrice * posDetail.Volume *
+            itInstr->second.VolumeMultiple * posDetail.MarginRateByMoney +
+            posDetail.Volume * posDetail.MarginRateByVolume;//更新保证金
 
         posDetailVec.emplace_back(posDetail);
     }
+    // 删除数据库中的持仓记录
+    // 如果不删除, 则下方的 REPLACE INTO 的 SQL 语句貌似不生效
+    const std::string deletePositionDetailSql = "DELETE FROM CThostFtdcInvestorPositionDetailField;";
+    m_sqlHandler.Delete(deletePositionDetailSql);
     // 将更新后的持仓明细的持仓记录, 全部写入到数据库中
     for (auto& posDetail : posDetailVec)
     {
@@ -1198,14 +1202,6 @@ void CLocalTraderApi::CSettlementHandler::doWorkInitialSettlement(
     //所以使用多个Update语句来分步执行更新
     //20230911更新(为支持将昨仓和今仓记录合并): 算了,完全用SQL语句来更新太麻烦了
     //, 最终选择: 从数据库持仓表读取到内存中的持仓变量,然后修改变量,再写回到数据库中
-    const std::string positionInitialSettlementSql1
-        = std::string("UPDATE CThostFtdcInvestorPositionField SET Position = 0 \
- WHERE CThostFtdcInvestorPositionField.InstrumentID in \
-   (SELECT CThostFtdcInstrumentField.InstrumentID from CThostFtdcInstrumentField \
- WHERE CThostFtdcInstrumentField.ExpireDate <= '") + oldTradingDay + "');";
-
-    m_sqlHandler.Update(positionInitialSettlementSql1);
-
     CSqliteHandler::SQL_VALUES posSqlValues;
     m_sqlHandler.SelectData(CThostFtdcInvestorPositionFieldWrapper::SELECT_SQL, posSqlValues);
     std::vector<CThostFtdcInvestorPositionFieldWrapper> todayPosVec;
@@ -1223,7 +1219,7 @@ void CLocalTraderApi::CSettlementHandler::doWorkInitialSettlement(
         auto itMdData = CLocalTraderApi::m_mdData.find(itInstr->second.InstrumentID);
         if (itMdData != CLocalTraderApi::m_mdData.end())
         {
-            //更新持仓中的结算价(因为可能用户没有给这个账号的API投喂行情)
+            //更新持仓中的结算价(因为可能用户没有给这个账号的API投喂行情,例如通过别的账户的API来投喂的)
             pos.SettlementPrice = itMdData->second.SettlementPrice;
         }
         if (!isOptions(itInstr->second.ProductClass))
@@ -1231,6 +1227,16 @@ void CLocalTraderApi::CSettlementHandler::doWorkInitialSettlement(
             pos.PositionProfit = (pos.PosiDirection == THOST_FTDC_PD_Long ? 1.0 : -1.0) *
                 (pos.SettlementPrice * pos.Position * itInstr->second.VolumeMultiple
                     - pos.PositionCost);//更新持仓盈亏
+        }
+        if (std::string(itInstr->second.ExpireDate) <= oldTradingDay)
+        {
+            //模拟强制平仓, 对期权合约的持仓按结算价平仓(无交易手续费,不产生交易记录), 更新权利金收支(CashIn)
+            if (isOptions(itInstr->second.ProductClass))
+            {
+                pos.CashIn += (pos.PosiDirection == THOST_FTDC_PD_Long ? 1.0 : -1.0) *
+                    pos.SettlementPrice * pos.Position * itInstr->second.VolumeMultiple;
+            }
+            pos.Position = 0;
         }
         pos.PositionCost = pos.SettlementPrice * pos.Position *
             itInstr->second.VolumeMultiple;//更新持仓成本

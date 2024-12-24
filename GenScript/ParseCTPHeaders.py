@@ -403,10 +403,11 @@ with open(ctp_api_path, 'r', encoding='GBK') as f:
             funcContent = singleLine # "virtual int ReqQryProductGroup(CThostFtdcQryProductGroupField *pQryProductGroup, int nRequestID) = 0;"
             apiFuncInfo = ApiFuncInfo()
             apiFuncInfo.funcName = funcContent.split()[2].split('(')[0] # "ReqQryProductGroup"
+            returnType = funcContent.split()[1] # 'int'
             if apiFuncInfo.funcName == 'char': # "virtual const char *GetTradingDay() = 0;"
                 apiFuncInfo.funcName = "GetTradingDay"
-            if funcContent.endswith("= 0;"):
-                funcContent = funcContent[0:-4] + "override { return -1; }"
+            if funcContent.endswith("= 0;") or funcContent.endswith("=0;"):
+                funcContent = funcContent[0:-4] + ( "override { return; }" if returnType == 'void' else "override { return -1; }" )
             apiFuncInfo.funcContent = funcContent
             apiFuncInfo.funcComment = funcComment
             #print(apiFuncInfo)
