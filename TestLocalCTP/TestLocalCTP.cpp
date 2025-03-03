@@ -175,6 +175,7 @@ class MySpi : public CThostFtdcTraderSpi
 
 int main()
 {
+    int i;
     pApi = CThostFtdcTraderApi::CreateFtdcTraderApi();
     std::cout << pApi->GetApiVersion() << std::endl;
     //std::cout << pApi->GetTradingDay() << std::endl;
@@ -183,7 +184,6 @@ int main()
     pApi->Init();
 
     std::cout << "请输入任意数字以登录..." << std::endl;
-    int i;
     std::cin >> i;
     CThostFtdcReqUserLoginField ReqUserLoginField = { "", "9876", "TestUserID", "TestPassword" };
     pApi->ReqUserLogin(&ReqUserLoginField, 100);
@@ -222,11 +222,14 @@ int main()
     md.BidPrice1 = 1000;
     md.AskPrice1 = 1010;
     md.SettlementPrice = md.PreSettlementPrice = 1020;
+    strcpy(md.TradingDay, "20250228");
+    strcpy(md.UpdateTime, "10:55:58");
     pApi->RegisterFensUserInfo((CThostFtdcFensUserInfoField*)&md);//喂一个行情快照给API
     strcpy(md.InstrumentID, "MA405");
     md.BidPrice1 = 2000;
     md.AskPrice1 = 2010;
     md.SettlementPrice = md.PreSettlementPrice = 2020;
+    strcpy(md.UpdateTime, "10:55:59");
     pApi->RegisterFensUserInfo((CThostFtdcFensUserInfoField*)&md);//喂一个行情快照给API
 
     InputOrder = generateNewOrderMsg("1000", "SPD MA403&MA405");
@@ -294,6 +297,10 @@ int main()
     CThostFtdcQryInvestorPositionField QryInvestorPosition = { "9876","TestUserID" };
     strcpy(QryTrade.ExchangeID, "CZCE");
     ret = pApi->ReqQryInvestorPosition(&QryInvestorPosition, 100);
+
+    strcpy(md.TradingDay, "20250305");
+    strcpy(md.UpdateTime, "09:00:00");
+    pApi->RegisterFensUserInfo((CThostFtdcFensUserInfoField*)&md);//喂一个(晚于应执行结算的时间的)行情快照给API(让API进行结算)(仅限回测模式)
 
     std::cout << ret << std::endl;
     pApi->Release();

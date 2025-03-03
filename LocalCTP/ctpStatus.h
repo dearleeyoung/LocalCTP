@@ -66,7 +66,7 @@ inline std::string getStatusMsgByStatus(TThostFtdcOrderStatusType status)
     }
 }
 
-inline bool isTradingDay(const CLeeDateTime& date = CLeeDateTime::GetCurrentTime())
+inline bool isTradingDay(const CLeeDateTime& date)
 {
     const int dayOfWeek = date.GetDayOfWeek();
     if (dayOfWeek == 6 || dayOfWeek == 0)//TODO:不会判断长假假日

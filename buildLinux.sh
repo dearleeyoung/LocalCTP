@@ -12,7 +12,7 @@ buildFunc(){
     cd ${WORK_DIR}/GenScript
     python3 ParseCTPHeaders.py
     cd ${WORK_DIR}/LocalCTP
-    make clean && make
+    make clean && make -j 30
     mv ${INSTALL_PATH}/libthosttraderapi_se.so ${INSTALL_PATH}/libthosttraderapi_se_v$1.so
 }
 
@@ -20,8 +20,10 @@ buildDemoFunc(){
     echo "---------------"
     echo "Start building DEMO ..."
     cd ${WORK_DIR}/TestLocalCTP
-    make clean && make
+    make clean && make -j 30
 }
+
+# choose the CTP version you use
 
 # v6.3.19
 buildFunc 6.3.19
@@ -44,7 +46,7 @@ buildFunc 6.7.8
 # v6.5.1, put it at last, because we want the code to be set as v6.5.1 finally
 buildFunc 6.5.1
 
-mv ${INSTALL_PATH}/libthosttraderapi_se_v6.5.1.so ${INSTALL_PATH}/libthosttraderapi_se.so
+cp ${INSTALL_PATH}/libthosttraderapi_se_v6.5.1.so ${INSTALL_PATH}/libthosttraderapi_se.so
 
 buildDemoFunc
 

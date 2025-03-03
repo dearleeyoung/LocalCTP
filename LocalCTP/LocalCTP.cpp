@@ -237,7 +237,7 @@ CThostFtdcOrderField CLocalTraderApi::OrderData::genrateRtnOrderFromInputOrder(
     ///剩余数量
     rtnOrder.VolumeTotal = rtnOrder.VolumeTotalOriginal;
     ///报单日期
-    const CLeeDateTime now_time = CLeeDateTime::GetCurrentTime();
+    const CLeeDateTime now_time = CLocalTraderApi::getNowTime(); //CLeeDateTime::GetCurrentTime();
     strncpy(rtnOrder.InsertDate, now_time.Format("%Y%m%d").c_str(), sizeof(rtnOrder.InsertDate));
     ///委托时间
     strncpy(rtnOrder.InsertTime, now_time.Format("%H:%M:%S").c_str(), sizeof(rtnOrder.InsertTime));
@@ -373,7 +373,7 @@ void CLocalTraderApi::OrderData::handleCancel(bool cancelFromClient)
     strncpy(rtnOrder.StatusMsg, getStatusMsgByStatus(rtnOrder.OrderStatus).c_str(),
         sizeof(rtnOrder.StatusMsg));
 
-    const CLeeDateTime now_time = CLeeDateTime::GetCurrentTime();
+    const CLeeDateTime now_time = CLocalTraderApi::getNowTime(); //CLeeDateTime::GetCurrentTime();
     ///成交时间
     strncpy(rtnOrder.CancelTime, now_time.Format("%H:%M:%S").c_str(),
         sizeof(rtnOrder.CancelTime));
@@ -452,8 +452,8 @@ void CLocalTraderApi::OrderData::getRtnTrade(const TradePriceVec& tradePriceVec,
 
         ///数量
         Trade.Volume = tradedSize;
-        ///成交时期
-        const CLeeDateTime now_time = CLeeDateTime::GetCurrentTime();
+        ///成交时间
+        const CLeeDateTime now_time = CLocalTraderApi::getNowTime(); //CLeeDateTime::GetCurrentTime();
         strncpy(Trade.TradeDate, now_time.Format("%Y%m%d").c_str(), sizeof(Trade.TradeDate));
         ///成交时间
         strncpy(Trade.TradeTime, now_time.Format("%H:%M:%S").c_str(), sizeof(Trade.TradeTime));
@@ -576,12 +576,22 @@ ACCUMULATE_WITH_SAME_NAME(FrozenCash) ";"
     )
     , m_sleepSecond(1)
     , m_settlementStartHour(17)
+    , m_nextSettlementTime()
     , m_count(0)
     , m_timerThread([this]() {
+        std::this_thread::sleep_for(std::chrono::seconds(3));//等待其他线程的initInstrMap初始化好
         CLocalTraderApi::initInstrMap();
-        if (!checkSettlement())//启动后先判断结算一次
+        std::string tradingDay = CLocalTraderApi::StaticGetTradingDay();//it can work!
+        m_nextSettlementTime.SetDateTime(
+            std::stoi(tradingDay.substr(0, 4)),
+            std::stoi(tradingDay.substr(4, 2)),
+            std::stoi(tradingDay.substr(6, 2)),
+            m_settlementStartHour,
+            0,
+            0);
+        std::cout << "[LocalCTP] next Settlement Time is " << m_nextSettlementTime.Format() << std::endl;
+        if (checkSettlement())//启动后先判断结算一次
         {
-            std::cout << "doSettlement when start!" << std::endl;
             doSettlement();
         }
         while (m_running)
@@ -596,9 +606,8 @@ ACCUMULATE_WITH_SAME_NAME(FrozenCash) ";"
             {
                 continue;
             }
-            if (!checkSettlement())
+            if (checkSettlement())
             {
-                std::cout << "start doSettlement in timer!" << std::endl;
                 doSettlement();
             }
         }
@@ -617,16 +626,16 @@ bool CLocalTraderApi::CSettlementHandler::checkSettlement()
 {
     // 在什么情况下需要进行结算? 需要满足以下三个条件:
     // 1.当前日期是交易日
-    // 2.当前时间大于结算开始时间(如 17:00 )
+    // 2.当前时间大于结算开始时间(如 当前交易日的17:00 )
     // 3.数据库结算表中没有当天的结算记录
-    const auto nowTime = CLeeDateTime::GetCurrentTime();
+    const auto nowTime = CLocalTraderApi::getNowTime(); //CLeeDateTime::GetCurrentTime();
     if (!isTradingDay(nowTime))
     {
-        return true;
+        return false;
     }
-    if (nowTime.GetHour() < m_settlementStartHour)
+    if (nowTime < m_nextSettlementTime)
     {
-        return true;
+        return false;
     }
     CSqliteHandler::SQL_VALUES sqlValues;
     m_sqlHandler.SelectData(
@@ -634,9 +643,9 @@ bool CLocalTraderApi::CSettlementHandler::checkSettlement()
         sqlValues);
     if (sqlValues.empty())
     {
-        return false;
+        return true;
     }
-    return true;
+    return false;
 }
 
 void CLocalTraderApi::CSettlementHandler::init_format_settlement()
@@ -1117,8 +1126,9 @@ void CLocalTraderApi::CSettlementHandler::doSettlement()
 {
     init_format_settlement();
 
-    CLeeDateTime nowTime = CLeeDateTime::GetCurrentTime();
-    const std::string TradingDay = nowTime.Format("%Y%m%d");
+
+    const std::string TradingDay = CLocalTraderApi::StaticGetTradingDay();
+    std::cout << "[LocalCTP] doSettlement for TradingDay " << TradingDay << std::endl;
     doWorkInitialSettlement(TradingDay);//结算的前期工作
     CSqliteHandler::SQL_VALUES sqlValues;
     m_sqlHandler.SelectData(CThostFtdcTradingAccountFieldWrapper::SELECT_SQL, sqlValues);
@@ -1129,9 +1139,23 @@ void CLocalTraderApi::CSettlementHandler::doSettlement()
 
         doGenerateUserSettlement(tradingAccountFieldWrapper, TradingDay);
     }
-    nowTime.SetMiddleNight();
-    const std::string newTradingDay = getNextTradingDay(nowTime);
+    const CLeeDateTime dtTradingDay(
+        std::stoi(TradingDay.substr(0, 4)),
+        std::stoi(TradingDay.substr(4, 2)),
+        std::stoi(TradingDay.substr(6, 2)),
+        0,
+        0,
+        0);
+    const std::string newTradingDay = getNextTradingDay(dtTradingDay);
     doWorkAfterSettlement(TradingDay, newTradingDay);//结算后的工作
+
+    m_nextSettlementTime.SetDateTime(
+        std::stoi(newTradingDay.substr(0, 4)),
+        std::stoi(newTradingDay.substr(4, 2)),
+        std::stoi(newTradingDay.substr(6, 2)),
+        m_settlementStartHour,
+        0,
+        0);
     return;
 }
 

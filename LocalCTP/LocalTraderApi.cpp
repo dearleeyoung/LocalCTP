@@ -1,5 +1,6 @@
 ﻿#include "stdafx.h"
 #include "LocalTraderApi.h"
+#include "Properties.h"
 #include <iostream>
 
 using namespace localCTP;
@@ -17,6 +18,72 @@ using namespace localCTP;
 
 #define CREATE_SQL_TABLE(tableName) sqlHandler.CreateTable(tableName##Wrapper::CREATE_TABLE_SQL, #tableName);
 
+std::pair<RUNNING_MODE, CLeeDateTime> getParamsFromConfig()
+{
+    static bool isFirstTimeLoad(true);
+    static std::pair<RUNNING_MODE, CLeeDateTime> ret;
+    if (isFirstTimeLoad)
+    {
+        auto loadConfigFile = [&] {
+            std::ifstream ifs("localctp.config");
+            Properties prop;
+            prop.loadProperties(ifs, '=', false);
+
+            int running_mode = prop.getValue("running_mode", 0);
+            if (running_mode == 0)
+            {
+                ret.first = RUNNING_MODE::REALTIME_MODE;
+            }
+            else if (running_mode == 1)
+            {
+                ret.first = RUNNING_MODE::BACKTEST_MODE;
+            }
+            else
+            {
+                ret.first = RUNNING_MODE::REALTIME_MODE;
+            }
+
+            std::string backtest_startdate = prop.getValue("backtest_startdate", std::string());
+            if (!backtest_startdate.empty())
+            {
+                ret.second.SetDateTime(
+                    std::stoi(backtest_startdate.substr(0, 4)),//2025 in "20250326"
+                    std::stoi(backtest_startdate.substr(4, 2)),//3 in "20250326"
+                    std::stoi(backtest_startdate.substr(6, 2)),//26 in "20250326"
+                    0,
+                    0,
+                    0
+                );
+            }
+
+            std::cout << "[LocalCTP] Load local config file, running_mode:" << running_mode
+                << "(" << ret.first << ")"
+                << ", backtest_startdate:" << backtest_startdate << std::endl;
+            if (RUNNING_MODE::BACKTEST_MODE == ret.first)
+            {
+                std::cout << "[LocalCTP] Note: You are in " << RUNNING_MODE::BACKTEST_MODE
+                    << ", it will delete all account data in database at the beginning!"
+                    << " If you want to use " << RUNNING_MODE::REALTIME_MODE
+                    << ", set running_mode=0 in config file (localctp.config)" << std::endl;
+            }
+        };
+        loadConfigFile();
+
+        isFirstTimeLoad = false;
+    }
+    return ret;
+}
+
+RUNNING_MODE getRunningModeFromConfig()
+{
+    return getParamsFromConfig().first;
+}
+CLeeDateTime getDefaultTimeInBackTestModeFromConfig()
+{
+    return getParamsFromConfig().second;
+}
+
+
 std::set<CLocalTraderApi::SP_TRADE_API> CLocalTraderApi::trade_api_set;
 std::atomic<int> CLocalTraderApi::maxSessionID(0);
 std::map<std::string, long long> CLocalTraderApi::m_orderSysID; // 当前最大委托编号
@@ -24,17 +91,20 @@ std::map<std::string, long long> CLocalTraderApi::m_tradeID; // 当前最大成�
 CLocalTraderApi::InstrMap CLocalTraderApi::m_instrData; //合约数据
 std::map<std::string, CThostFtdcExchangeField> CLocalTraderApi::m_exchanges;// 交易所数据. key:交易所代码
 std::map<std::string, CThostFtdcProductField> CLocalTraderApi::m_products;// 品种数据. key:品种代码
-CSqliteHandler CLocalTraderApi::sqlHandler("LocalCTP.db", {
-    "CThostFtdcInvestorPositionField", "CThostFtdcInvestorPositionDetailField",  "CThostFtdcOrderField",
-    "CThostFtdcTradeField", "CThostFtdcTradingAccountField", "CThostFtdcInstrumentField",
-    "CThostFtdcInstrumentMarginRateField", "CThostFtdcInstrumentCommissionRateField",
-    "CloseDetail", "SettlementData"
-});
 CLocalTraderApi::CSettlementHandler& CLocalTraderApi::settlementHandler =
     CLocalTraderApi::CSettlementHandler::getSettlementHandler(
         CLocalTraderApi::sqlHandler);
 std::mutex CLocalTraderApi::m_mdMtx;
 CLocalTraderApi::MarketDataMap CLocalTraderApi::m_mdData; //行情数据
+RUNNING_MODE CLocalTraderApi::m_runningMode = getRunningModeFromConfig();
+CLeeDateTime CLocalTraderApi::m_latestMarketTime;//行情中最新的时间
+CLeeDateTime CLocalTraderApi::m_defaultTimeInBackTestMode = getDefaultTimeInBackTestModeFromConfig();
+CSqliteHandler CLocalTraderApi::sqlHandler("LocalCTP.db", {
+    "CThostFtdcInvestorPositionField", "CThostFtdcInvestorPositionDetailField",  "CThostFtdcOrderField",
+    "CThostFtdcTradeField", "CThostFtdcTradingAccountField", "CThostFtdcInstrumentField",
+    "CThostFtdcInstrumentMarginRateField", "CThostFtdcInstrumentCommissionRateField",
+    "CloseDetail", "SettlementData"
+    });
 const long long CLocalTraderApi::initStartTime = CLeeDateTime::GetCurrentTime().Get_time_t() * 1000 +
      CLeeDateTime::GetCurrentTime().GetMillisecond(); // 1612345678 999
 std::string CLocalTraderApi::tradingDay;
@@ -84,7 +154,7 @@ bool CLocalTraderApi::isMatchTrade(TThostFtdcDirectionType direction, double ord
         // 组合合约示例: m2401-m2405 组合合约.买入报单价480元.
         // m2401 买一价3998元,卖一价4000元.
         // m2405 买一价3500元,卖一价3505元.
-        // 则买入对应的组合合约对手价(卖一价差)是: 4000-3500=500元. 500>480,可以成交.
+        // 则买入对应的组合合约对手价(卖一价差)是: 4000-3500=500元. 500>480,无法成交.
         for (std::size_t legNo = 0; legNo < mdVec.size(); ++legNo)
         {
             auto directionT = (legNo % 2 == 0 ?
@@ -117,8 +187,10 @@ CLocalTraderApi::CLocalTraderApi(const char *pszFlowPath/* = ""*/)
     m_tradingAccount.PreBalance = 2e7;
     m_tradingAccount.Balance = 2e7;
 
+
+
 #ifdef _DEBUG
-    std::cout << "Welcome to LocalCTP!" << std::endl;
+    std::cout << "[LocalCTP] Welcome to LocalCTP!" << std::endl;
 #endif
 }
 
@@ -145,8 +217,28 @@ void CLocalTraderApi::onSnapshot(const CThostFtdcDepthMarketDataField& mdData)
 {
     const std::string instrumentID = mdData.InstrumentID;
     {
+        //选取 ActionDay 和 TradingDay 中的较大者
+        const std::string greaterDateStr =
+            (std::max)(std::string(mdData.ActionDay), std::string(mdData.TradingDay));
+        const std::string updateTimeStr = std::string(mdData.UpdateTime);
+
         std::lock_guard<std::mutex> mdGuard(m_mdMtx);
         m_mdData[instrumentID] = mdData;
+        if (greaterDateStr.size() >= 8 && updateTimeStr.size() >= 8)
+        {
+            const CLeeDateTime updateTime(
+                std::stoi(greaterDateStr.substr(0, 4)),//2025 in "20250326"
+                std::stoi(greaterDateStr.substr(4, 2)),//3 in "20250326"
+                std::stoi(greaterDateStr.substr(6, 2)),//26 in "20250326"
+                std::stoi(updateTimeStr.substr(0, 2)),//21 in "21:55:58"
+                std::stoi(updateTimeStr.substr(3, 2)),//55 in "21:55:58"
+                std::stoi(updateTimeStr.substr(6, 2)),//58 in "21:55:58"
+                mdData.UpdateMillisec);
+            if (updateTime > m_latestMarketTime)
+            {
+                m_latestMarketTime = updateTime;
+            }
+        }
     }
 
     auto it = m_instrData.find(instrumentID);
@@ -873,7 +965,7 @@ void CLocalTraderApi::reloadAccountData()
             m_instrumentMarginRateData[marginRate.data.InstrumentID] = marginRate.data;
         }
 #ifdef _DEBUG
-        std::cout << "Total instrument marinRate count from table in database: "
+        std::cout << "[LocalCTP] Total instrument marinRate count from table in database: "
             << marinRateSqlValues.size() << std::endl;
 #endif
         CSqliteHandler::SQL_VALUES commissionRateSqlValues;
@@ -885,7 +977,7 @@ void CLocalTraderApi::reloadAccountData()
             m_instrumentCommissionRateData[commissionRate.data.InstrumentID] = commissionRate.data;
         }
 #ifdef _DEBUG
-        std::cout << "Total instrument CommissionRate count from table in database: "
+        std::cout << "[LocalCTP] Total instrument CommissionRate count from table in database: "
             << commissionRateSqlValues.size() << std::endl;
 #endif
     };
@@ -1057,6 +1149,27 @@ void CLocalTraderApi::saveOrderToDb(const CThostFtdcOrderField& order)
 ///@param pszFlowPath 存贮订阅信息文件的目录，默认为当前目录
 ///@return 创建出的UserApi
 CThostFtdcTraderApi* CThostFtdcTraderApi::CreateFtdcTraderApi(const char *pszFlowPath/* = ""*/) {
+    if (CLocalTraderApi::trade_api_set.empty())
+    {
+        CLocalTraderApi::initInstrMap();
+
+        if (CLocalTraderApi::m_runningMode == RUNNING_MODE::BACKTEST_MODE)
+        {
+            //回测模式下会先删除数据库中所有交易数据.
+            auto deleteAllAccountDataInDB = [&]() {
+                const std::vector<std::string> toBeDeletedTables{
+                    "CThostFtdcInvestorPositionField", "CThostFtdcInvestorPositionDetailField",
+                    "CThostFtdcOrderField","CThostFtdcTradeField", "CThostFtdcTradingAccountField",
+                    "CloseDetail", "SettlementData" };
+                for (const auto& tableName : toBeDeletedTables)
+                {
+                    const std::string deleteTableSql = "DELETE FROM '" + tableName + "';";
+                    CLocalTraderApi::sqlHandler.Delete(deleteTableSql);
+                }
+            };
+            deleteAllAccountDataInDB();
+        }
+    }
 	auto sp_this = std::make_shared<CLocalTraderApi>(pszFlowPath);
     CLocalTraderApi::trade_api_set.insert(sp_this);
 	return sp_this.get();
@@ -1126,7 +1239,7 @@ void CLocalTraderApi::initInstrMap()
             m_instrData[instr.InstrumentID] = instr;
         }
 #ifdef _DEBUG
-        std::cout << "Total instrument count from instrument.csv: " << m_instrData.size() << std::endl;
+        std::cout << "[LocalCTP] Total instrument count from instrument.csv: " << m_instrData.size() << std::endl;
 #endif
         return true;
     };
@@ -1141,7 +1254,7 @@ void CLocalTraderApi::initInstrMap()
         m_instrData[instrument.data.InstrumentID] = instrument.data;
     }
 #ifdef _DEBUG
-    std::cout << "Total instrument count from instrument table in database: "
+    std::cout << "[LocalCTP] Total instrument count from instrument table in database: "
         << instrumentSqlValues.size() << std::endl;
 #endif
     // 将从csv文件获取的合约数据,重新写入数据库中
@@ -1235,7 +1348,6 @@ void CLocalTraderApi::initInstrMap()
 ///@remark 初始化运行环境,只有调用后,接口才开始工作
 void CLocalTraderApi::Init() {
     m_bRunning = true;
-    CLocalTraderApi::initInstrMap();
 
     // 从数据库中读取合约的保证金率和手续费.
     // 临时措施:对数据库中没有数据的合约,将合约的保证金率和手续费率初始化(保证金率为10%,手续费为1元每手)
@@ -1274,12 +1386,27 @@ int CLocalTraderApi::Join() {
 	return 0;
 }
 
-///获取当前交易日
-///@retrun 获取到的交易日
-///@remark 只有登录成功后,才能得到正确的交易日
-const char* CLocalTraderApi::GetTradingDay() {
+CLeeDateTime CLocalTraderApi::getNowTime()
+{
+    switch (m_runningMode)
+    {
+    case RUNNING_MODE::REALTIME_MODE:
+        return CLeeDateTime::now();
+    case RUNNING_MODE::BACKTEST_MODE:
+        return (m_latestMarketTime == CLeeDateTime() ?
+            m_defaultTimeInBackTestMode : m_latestMarketTime);
+    case RUNNING_MODE::NONE:
+    default:
+        return CLeeDateTime::now();
+    }
+}
+
+const char* CLocalTraderApi::StaticGetTradingDay() {
+    static std::mutex tradingDayMutex;
+    std::lock_guard<std::mutex> tradingDayGuard(tradingDayMutex);
     if (CLocalTraderApi::tradingDay.empty())
     {
+        std::cout << "[LocalCTP] tradingDay is empty, let's init it!" << std::endl;
         auto getRawTradingDay = []() ->std::string
         {
             // use ( now time + 4 hours) as trading date,
@@ -1288,7 +1415,7 @@ const char* CLocalTraderApi::GetTradingDay() {
             // 1. 2023-08-07 10:00 -> 2023-08-07 14:00 -> return "20230807"
             // 2. 2023-08-07 20:00 -> 2023-08-08 02:00 -> return "20230808"
             // 3. 2023-08-04 20:00(Fri) -> 2023-08-05 02:00(Sat) -> 2023-08-07 02:00(Mon) -> return "20230807"
-            auto checkTime = CLeeDateTime::now() + CLeeDateTimeSpan(0, 4, 0, 0);
+            auto checkTime = CLocalTraderApi::getNowTime() + CLeeDateTimeSpan(0, 4, 0, 0);
             if (isTradingDay(checkTime))
             {
                 return checkTime.Format("%Y%m%d");
@@ -1299,6 +1426,14 @@ const char* CLocalTraderApi::GetTradingDay() {
             }
         };
         const std::string rawTradingDay = getRawTradingDay();
+        if (CLocalTraderApi::m_runningMode == RUNNING_MODE::BACKTEST_MODE)
+        {
+            //回测模式下初始化时不读取数据库结算单表来设置交易日,
+            //也就是说即使结算单表中有当天日期的结算单, 仍然会以当天(而非下一天)作为交易日.
+            //(不过现在回测模式下启动时会将数据库里所有账户数据清空,因此其实并不会发生上述情况)
+            CLocalTraderApi::tradingDay = rawTradingDay;
+            return CLocalTraderApi::tradingDay.c_str();;
+        }
         CSqliteHandler::SQL_VALUES sqlValues;
         auto selectRet = CLocalTraderApi::sqlHandler.SelectData(
             "SELECT TradingDay FROM 'SettlementData' ORDER BY TradingDay DESC LIMIT 1;",
@@ -1320,6 +1455,12 @@ const char* CLocalTraderApi::GetTradingDay() {
         }
     }
     return CLocalTraderApi::tradingDay.c_str();
+}
+
+///获取当前交易日
+///@retrun 获取到的交易日
+const char* CLocalTraderApi::GetTradingDay() {
+    return CLocalTraderApi::StaticGetTradingDay();
 }
 
 ///注册前置机网络地址
@@ -1428,7 +1569,8 @@ int CLocalTraderApi::ReqUserLogin(CThostFtdcReqUserLoginField *pReqUserLoginFiel
 
     if (m_pSpi == nullptr) return 0;
     strncpy(RspUserLogin.TradingDay, GetTradingDay(), sizeof(RspUserLogin.TradingDay));
-    strncpy(RspUserLogin.LoginTime, CLeeDateTime::GetCurrentTime().Format("%H:%M:%S").c_str(),
+    strncpy(RspUserLogin.LoginTime, CLocalTraderApi::getNowTime() //CLeeDateTime::GetCurrentTime()
+        .Format("%H:%M:%S").c_str(),
         sizeof(RspUserLogin.LoginTime));
     strncpy(RspUserLogin.SHFETime, RspUserLogin.LoginTime, sizeof(RspUserLogin.SHFETime));
     strncpy(RspUserLogin.DCETime, RspUserLogin.LoginTime, sizeof(RspUserLogin.DCETime));
@@ -2022,7 +2164,7 @@ int CLocalTraderApi::ReqOrderAction(CThostFtdcInputOrderActionField *pInputOrder
 ///投资者结算结果确认
 int CLocalTraderApi::ReqSettlementInfoConfirm(CThostFtdcSettlementInfoConfirmField *pSettlementInfoConfirm, int nRequestID) {
     CHECK_LOGIN_INVESTOR(pSettlementInfoConfirm);
-    const auto nowTime = CLeeDateTime::GetCurrentTime();
+    const auto nowTime = CLocalTraderApi::getNowTime(); //CLeeDateTime::GetCurrentTime();
     //更新最新的交易日的结算结果确认信息
     const std::string UPDATE_NEWEST_SETTLEMENT_RECORD_TO_CONFIRMED =
         std::string("UPDATE 'SettlementData' SET ConfirmDay='") + GetTradingDay()

@@ -111,6 +111,7 @@ private:
         const std::string m_tradingAccountUpdateFromPositionSql3;
         const int m_sleepSecond;
         const int m_settlementStartHour;
+        CLeeDateTime m_nextSettlementTime;
         int m_count;
         std::thread m_timerThread;
 
@@ -206,7 +207,7 @@ private:
         std::string format_settlement_position_end8;
 
         void init_format_settlement();
-        bool checkSettlement();//检查结算情况
+        bool checkSettlement();//检查结算情况. 返回值: true->需要结算. false->不需要结算. 
         void doSettlement();//开始结算!
         void doGenerateUserSettlement(
             const CThostFtdcTradingAccountFieldWrapper& tradingAccountFieldWrapper,
@@ -232,12 +233,17 @@ public:
     static InstrMap m_instrData; //合约数据
     static std::map<std::string, CThostFtdcExchangeField> m_exchanges;// 交易所数据. key:交易所代码
     static std::map<std::string, CThostFtdcProductField> m_products;// 品种数据. key:品种代码
-    static CSqliteHandler sqlHandler; // SQL管理器
-    static CSettlementHandler& settlementHandler; // 结算管理器
     static std::mutex m_mdMtx; // 行情数据互斥体
     static MarketDataMap m_mdData; // 行情数据
     static const long long initStartTime;
     static std::string tradingDay;
+    static RUNNING_MODE m_runningMode;//运行的模式
+    static CLeeDateTime m_latestMarketTime;//行情中最新的时间
+    static CLeeDateTime m_defaultTimeInBackTestMode;//(回测模式中)(当未接收到行情时)默认的初始时间
+    static CSqliteHandler sqlHandler; // SQL管理器
+    static CSettlementHandler& settlementHandler; // 结算管理器
+    static CLeeDateTime getNowTime();//根据运行的模式, 获取"当前"的时间
+    static const char* StaticGetTradingDay();
 
     // 生成会话的key
     static std::string generateSessionKey(int frontID, int sessionID)
@@ -401,7 +407,7 @@ public:
 
     ///获取当前交易日
     ///@retrun 获取到的交易日
-    ///@remark 只有登录成功后,才能得到正确的交易日
+    ///@remark 在原版CTP里只有登录成功后, 才能得到正确的交易日, LocalCTP中则无此限制
     virtual const char *GetTradingDay() override;
 
     ///注册前置机网络地址
