@@ -2358,7 +2358,7 @@ int CLocalTraderApi::ReqQryExchange(CThostFtdcQryExchangeField *pQryExchange, in
     }
     if (v.empty())
     {
-        m_messageQueue.addMsg(OnRspQryInstrumentMsg(nullptr, &m_successRspInfo, nRequestID, true));
+        m_messageQueue.addMsg(OnRspQryExchangeMsg(nullptr, &m_successRspInfo, nRequestID, true));
     }
     return 0;
 }
@@ -2525,7 +2525,7 @@ int CLocalTraderApi::ReqQryInvestorPositionDetail(CThostFtdcQryInvestorPositionD
     }
     if (v.empty())
     {
-        m_messageQueue.addMsg(OnRspQryTradeMsg(nullptr, &m_successRspInfo, nRequestID, true));
+        m_messageQueue.addMsg(OnRspQryInvestorPositionDetailMsg(nullptr, &m_successRspInfo, nRequestID, true));
     }
     return 0;
 }
