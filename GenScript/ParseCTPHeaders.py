@@ -351,10 +351,9 @@ class ApiFuncInfo:
         self.funcComment = ''#函数注释(可能有多行,每行以" \"结尾)
         self.funcName = ''#函数名
         self.funcContent = ''#函数内容
+        self.funcParams = [] #函数参数列表, 仅对SPI函数有效, 而API函数不维护.
     def __str__(self):
         return "ApiFuncInfo obj. funcName: " + self.funcName + " funcComment: " + self.funcComment + " funcContent: " + self.funcContent
-
-apiFuncInfos = [] # a list of ApiFuncInfo
 
 '''
 #示例:
@@ -375,49 +374,80 @@ apiFuncInfos = [] # a list of ApiFuncInfo
 
 '''
 
-# read API virtual functions from header file
-with open(ctp_api_path, 'r', encoding='GBK') as f:
-    classStartPreFix = "class TRADER_API_EXPORT CThostFtdcTraderApi"
-    commentPreFix = "///"
-    virtualFuncPreFix = "virtual "
-    isInApiClass = False
-    funcComment = ""
-    macroPostFix = " \\\n"
-    singleLine = f.readline()
-    while len(singleLine) > 0:
-        singleLine = singleLine.strip()
-        #print(singleLine)
-        if len(singleLine) == 0:
-            singleLine = f.readline()
-            funcComment = ""#读取到一个空行,则将API函数的注释清空
-            continue
-        if not isInApiClass:
-            if singleLine.startswith(classStartPreFix):
-                isInApiClass = True
-            singleLine = f.readline()
-            continue
-        if singleLine.startswith(commentPreFix):
-            # CTP的注释以///开头,放在宏里会导致最后的"\"无法被识别为续行符而续行,因此需要用/**/包起来套娃一层
-            funcComment += tapStr + "/*" + singleLine + "*/" + macroPostFix
-        elif singleLine.startswith(virtualFuncPreFix):
-            funcContent = singleLine # "virtual int ReqQryProductGroup(CThostFtdcQryProductGroupField *pQryProductGroup, int nRequestID) = 0;"
-            apiFuncInfo = ApiFuncInfo()
-            apiFuncInfo.funcName = funcContent.split()[2].split('(')[0] # "ReqQryProductGroup"
-            returnType = funcContent.split()[1] # 'int'
-            if apiFuncInfo.funcName == 'char': # "virtual const char *GetTradingDay() = 0;"
-                apiFuncInfo.funcName = "GetTradingDay"
-            if funcContent.endswith("= 0;") or funcContent.endswith("=0;"):
-                funcContent = funcContent[0:-4] + ( "override { return; }" if returnType == 'void' else "override { return -1; }" )
-            apiFuncInfo.funcContent = funcContent
-            apiFuncInfo.funcComment = funcComment
-            #print(apiFuncInfo)
-            apiFuncInfos.append(apiFuncInfo)
+macroPostFix = " \\\n"
+
+# read API or SPI virtual functions from header file, return a list of ApiFuncInfo
+def readApiOrSpiFuncInfos(isApi):
+    global ctp_api_path
+    global macroPostFix
+    retFuncInfos = []
+    classStartPreFix = ("class TRADER_API_EXPORT CThostFtdcTraderApi" if isApi else "class CThostFtdcTraderSpi")
+    with open(ctp_api_path, 'r', encoding='GBK') as f:
+        commentPreFix = "///"
+        virtualFuncPreFix = "virtual "
+        isInApiClass = False
+        funcComment = ""
         singleLine = f.readline()
+        while len(singleLine) > 0:
+            singleLine = singleLine.strip()
+            #print(singleLine)
+            if len(singleLine) == 0:
+                singleLine = f.readline()
+                funcComment = ""#读取到一个空行,则将API函数的注释清空
+                continue
+            if not isInApiClass:
+                if singleLine.startswith(classStartPreFix):
+                    isInApiClass = True
+                singleLine = f.readline()
+                continue
+            if singleLine.startswith(commentPreFix):
+                # CTP的注释以///开头,放在宏里会导致最后的"\"无法被识别为续行符而续行,因此需要用/**/包起来套娃一层
+                funcComment += tapStr + "/*" + singleLine + "*/" + macroPostFix
+            elif singleLine.startswith(virtualFuncPreFix):
+                funcContent = singleLine # "virtual int ReqQryProductGroup(CThostFtdcQryProductGroupField *pQryProductGroup, int nRequestID) = 0;"
+                apiFuncInfo = ApiFuncInfo()
+                apiFuncInfo.funcName = funcContent.split()[2].split('(')[0] # "ReqQryProductGroup"
+                returnType = funcContent.split()[1] # 'int'
+                if isApi and apiFuncInfo.funcName == 'char': # "virtual const char *GetTradingDay() = 0;"
+                    apiFuncInfo.funcName = "GetTradingDay"
+                if isApi and (funcContent.endswith("= 0;") or funcContent.endswith("=0;")):
+                    funcContent = funcContent[0:-4] + ( "override { return; }" if returnType == 'void' else "override { return -1; }" )
+                elif (not isApi) and funcContent.endswith("{};"):
+                    funcContent = funcContent.split('(')[1]
+                    funcContent = funcContent.split(')')[0]
+                    # each param is a str, like "CThostFtdcRspAuthenticateField *pRspAuthenticateField" or "int nRequestID"
+                    params = funcContent.split(', ')
+                    for param in params:
+                        if len(param) == 0:
+                            continue
+                        paramInfo = ["", "", False] #[param type, param name, is pointer type]
+                        try:
+                            paramInfo[0] = param.split()[0]
+                            paramInfo[1] = param.split()[1]
+                            if paramInfo[1].startswith("*"): #is a pointer type
+                                paramInfo[1] = paramInfo[1][1:] #remove the beginning "*"
+                                paramInfo[2] = True
+                        except Exception as e:
+                            print("Error !" + funcContent + ":" + param + ":" + str(e))
+                        #print('paramInfo:',paramInfo)
+                        apiFuncInfo.funcParams.append(paramInfo)
+                apiFuncInfo.funcContent = funcContent
+                apiFuncInfo.funcComment = funcComment
+                #print(apiFuncInfo)
+                retFuncInfos.append(apiFuncInfo)
+            elif singleLine.startswith("};"):
+                break
+            singleLine = f.readline()
+    return retFuncInfos
+
+# a list of ApiFuncInfo
+apiFuncInfos = readApiOrSpiFuncInfos(True)
+# a list of ApiFuncInfo, but presents the SPI func info
+spiFuncInfos = readApiOrSpiFuncInfos(False)
 
 ReqQryClassifiedInstrumentStr = '''/* Special func */ \\
 virtual int ReqQryClassifiedInstrument(CThostFtdcQryClassifiedInstrumentField* pQryClassifiedInstrument, int nRequestID) override { \\
     if (pQryClassifiedInstrument == nullptr || !m_logined) return -1; \\
-    if (m_pSpi == nullptr) return 0; \\
     std::vector<CThostFtdcInstrumentField*> v; \\
     v.reserve(1000); /* maybe less than this count ? */ \\
     for (auto& instrPair : m_instrData) \\
@@ -453,11 +483,11 @@ virtual int ReqQryClassifiedInstrument(CThostFtdcQryClassifiedInstrumentField* p
     } \\
     for (auto it = v.begin(); it != v.end(); ++it) \\
     { \\
-        m_pSpi->OnRspQryClassifiedInstrument(*it, &m_successRspInfo, nRequestID, (it + 1 == v.end() ? true : false)); \\
+        m_messageQueue.addMsg(OnRspQryClassifiedInstrumentMsg(*it, &m_successRspInfo, nRequestID, (it + 1 == v.end() ? true : false))); \\
     } \\
     if (v.empty()) \\
     { \\
-        m_pSpi->OnRspQryClassifiedInstrument(nullptr, &m_successRspInfo, nRequestID, true); \\
+        m_messageQueue.addMsg(OnRspQryClassifiedInstrumentMsg(nullptr, &m_successRspInfo, nRequestID, true)); \\
     } \\
     return 0; \\
 } \\
@@ -466,9 +496,63 @@ virtual int ReqQryClassifiedInstrument(CThostFtdcQryClassifiedInstrumentField* p
 # write the api functions marcro to cpp code file, with encoding of utf-8 with BOM
 with open(output_api_path, 'w', encoding='utf-8-sig') as f:
     f.write("#pragma once\n")
+    f.write("#include \"../Variant.hpp\"\n")
+    f.write("#include \"ThostFtdcUserApiStruct.h\"\n")
     f.write(noticeStr + "\n")
     #f.write("#pragma warning(disable: 4010)\n")
     f.write("\n")
+
+    for spiFuncInfo in spiFuncInfos:
+        f.write("struct " + spiFuncInfo.funcName + "Msg {\n")
+        f.write("\t" + spiFuncInfo.funcName + "Msg(" + spiFuncInfo.funcContent + ")\n")
+        if len(spiFuncInfo.funcParams) != 0:
+            f.write("\t: ")
+            for i in range(len(spiFuncInfo.funcParams)):
+                paramInfo = spiFuncInfo.funcParams[i]
+                postFix = ', ' if i < len(spiFuncInfo.funcParams)-1 else ' '
+                if paramInfo[2]: # if is a pointer type
+                    isNullArgName = "m_" + paramInfo[1] + "IsNull"
+                    f.write(isNullArgName + "(" + paramInfo[1] + "==nullptr), ") # it will continue with a (pointer) arg, so add ", " to end is OK
+                    f.write("m_" + paramInfo[1] + "(" + isNullArgName +" ? "+ paramInfo[0] + "() : *" + paramInfo[1] +")" + postFix)
+                else:
+                    f.write("m_" + paramInfo[1] + "(" + paramInfo[1] + ")" + postFix)
+            f.write("\n")
+        f.write("\t{}\n")# end of construction func of SPI msg
+        for paramInfo in spiFuncInfo.funcParams:
+            if paramInfo[2]: # if is a pointer type
+                f.write("\t" + "bool m_" + paramInfo[1] + "IsNull" + ";\n")
+            f.write("\t" + paramInfo[0] + " m_" + paramInfo[1] + ";\n")
+        f.write("};\n")
+        f.write("\n")
+    f.write("\n")
+
+    f.write("#define VARIANT_MSG_TYPE_MACRO Variant< \\\n")
+    for i in range(len(spiFuncInfos)):
+        spiFuncInfo = spiFuncInfos[i]
+        postFix = "," + macroPostFix if i < len(spiFuncInfos)-1 else macroPostFix
+        f.write("\t" + spiFuncInfo.funcName + "Msg" + postFix)
+    f.write(">\n")
+    f.write("\n")
+
+    f.write("#define MESSAGE_HANDLE_MACRO msg.Visit( \\\n")
+    for i in range(len(spiFuncInfos)):
+        spiFuncInfo = spiFuncInfos[i]
+        postFix = "," + macroPostFix if i < len(spiFuncInfos)-1 else macroPostFix
+        f.write("\t" + "[&](" + spiFuncInfo.funcName + "Msg& i) { if(m_pSpi) m_pSpi->" +  spiFuncInfo.funcName + "(")
+        for j in range(len(spiFuncInfo.funcParams)):
+            paramInfo = spiFuncInfo.funcParams[j]
+            postFix2 = ", " if j < len(spiFuncInfo.funcParams)-1 else ''
+            if paramInfo[2]: # if is a pointer type
+                f.write("i.m_" + paramInfo[1] + "IsNull ? nullptr : &i.m_" + paramInfo[1])
+            else:
+                f.write("i.m_" + paramInfo[1])
+            f.write(postFix2)
+        f.write("); }")
+        f.write(postFix)
+    f.write(");\n")
+    f.write("\n")
+
+
     f.write("#ifndef UNSUPPORTED_CTP_API_FUNC\n")
     f.write("#define UNSUPPORTED_CTP_API_FUNC \\\n")
     for i in range(len(apiFuncInfos)):
@@ -480,4 +564,6 @@ with open(output_api_path, 'w', encoding='utf-8-sig') as f:
             postFix = macroPostFix if i < len(apiFuncInfos)-1 else "\n"
             f.write(tapStr + apiFuncInfo.funcContent + postFix)
             f.write(postFix)
+    f.write("\n")
+
     f.write("#endif\n")

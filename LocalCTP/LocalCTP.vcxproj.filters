@@ -18,8 +18,14 @@
     <ClInclude Include="stdafx.h">
       <Filter>头文件</Filter>
     </ClInclude>
+    <ClInclude Include="CSqliteHandler.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="LocalTraderApi.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
     <ClInclude Include="ctpStatus.h">
-      <Filter>源文件</Filter>
+      <Filter>头文件</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -48,6 +54,9 @@
       <Filter>源文件</Filter>
     </ClCompile>
     <ClCompile Include="auto_generated_code\CTPSQLWrapper.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="Properties.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
   </ItemGroup>

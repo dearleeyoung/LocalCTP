@@ -51,8 +51,8 @@ int g_sessionID = 0;
 class MySpi : public CThostFtdcTraderSpi
 {
     void OnFrontConnected(){
+        std::cout << "收到连接成功通知!" << std::endl;
         CThostFtdcReqAuthenticateField ReqAuthenticateField = { "9876", "TestUserID", "Test", "TestAuthCode", "TestAppID" };
-
         pApi->ReqAuthenticate(&ReqAuthenticateField, 100);
     }
     void OnRspAuthenticate(CThostFtdcRspAuthenticateField* pRspAuthenticateField, CThostFtdcRspInfoField* pRspInfo, int nRequestID, bool bIsLast) {
@@ -208,7 +208,7 @@ int main()
     pApi->ReqQryProduct(&QryProduct, 108);
 
     // 查询完毕, 开始下单
-    auto InputOrder = generateNewOrderMsg("1000", "MA403");
+    auto InputOrder = generateNewOrderMsg("1000", "MA509");
     int ret = pApi->ReqOrderInsert(&InputOrder,109);//没有行情数据时,下一单(预期被拒单)
 
     CThostFtdcDepthMarketDataField md = { 0 };
@@ -218,21 +218,21 @@ int main()
     //md.AskPrice1 = 5000;
     //md.PreSettlementPrice = 6000;
     //pApi->RegisterFensUserInfo((CThostFtdcFensUserInfoField*)&md);//喂一个行情快照给API
-    strcpy(md.InstrumentID, "MA403");
+    strcpy(md.InstrumentID, "MA509");
     md.BidPrice1 = 1000;
     md.AskPrice1 = 1010;
     md.SettlementPrice = md.PreSettlementPrice = 1020;
     strcpy(md.TradingDay, "20250228");
     strcpy(md.UpdateTime, "10:55:58");
     pApi->RegisterFensUserInfo((CThostFtdcFensUserInfoField*)&md);//喂一个行情快照给API
-    strcpy(md.InstrumentID, "MA405");
+    strcpy(md.InstrumentID, "MA511");
     md.BidPrice1 = 2000;
     md.AskPrice1 = 2010;
     md.SettlementPrice = md.PreSettlementPrice = 2020;
     strcpy(md.UpdateTime, "10:55:59");
     pApi->RegisterFensUserInfo((CThostFtdcFensUserInfoField*)&md);//喂一个行情快照给API
 
-    InputOrder = generateNewOrderMsg("1000", "SPD MA403&MA405");
+    InputOrder = generateNewOrderMsg("1000", "SPD MA509&MA511");
     InputOrder.LimitPrice = -985;//实际会以1010-2000 = (-990)元的差价成交
     InputOrder.IsSwapOrder = 1;//互换单
     ret = pApi->ReqOrderInsert(&InputOrder, 109);//有行情数据后,再下一单(买入开仓成交)
@@ -243,10 +243,10 @@ int main()
     //    InputOrder.LimitPrice = -1111;//卖出时价格足够低则会成交
     ret = pApi->ReqOrderInsert(&InputOrder, 109);//有行情数据后,再下一单(卖出平仓)
 
-    auto InputOrderAction = generateCancelOrderMsg("1001", "SPD MA403&MA405", g_frontID, g_sessionID);
+    auto InputOrderAction = generateCancelOrderMsg("1001", "SPD MA509&MA511", g_frontID, g_sessionID);
     ret = pApi->ReqOrderAction(&InputOrderAction, 110);//把这个单子撤掉
 
-    InputOrder = generateNewOrderMsg("1002", "MA403");
+    InputOrder = generateNewOrderMsg("1002", "MA509");
     InputOrder.Direction = THOST_FTDC_D_Buy;
     InputOrder.CombOffsetFlag[0] = THOST_FTDC_OF_Open;
     InputOrder.ContingentCondition = THOST_FTDC_CC_LastPriceGreaterThanStopPrice;//下一个条件单
@@ -254,7 +254,7 @@ int main()
     ret = pApi->ReqOrderInsert(&InputOrder, 109);
 
     CThostFtdcInputQuoteField marketData = { 0 };
-    strcpy(marketData.InstrumentID, "MA403");
+    strcpy(marketData.InstrumentID, "MA509");
     marketData.BidPrice = 1000;
     marketData.AskPrice = 1010;
     strcpy(marketData.QuoteRef, "1020.0");// PreSettlementPrice
@@ -266,12 +266,12 @@ int main()
     int Volume = 88888;
     pApi->ReqQuoteInsert(&marketData, Volume);//使用ReqQuoteInsert接口, 喂一个行情快照给API(以触发条件单), 
 
-    strcpy(md.InstrumentID, "IO2406-C-3300");
+    strcpy(md.InstrumentID, "IO2509-C-3300");
     md.BidPrice1 = 10.0;
     md.AskPrice1 = 10.4;
     md.SettlementPrice = md.PreSettlementPrice = 9.0;
     pApi->RegisterFensUserInfo((CThostFtdcFensUserInfoField*)&md);//喂一个(期权)行情快照给API
-    InputOrder = generateNewOrderMsg("1004", "IO2406-C-3300");
+    InputOrder = generateNewOrderMsg("1004", "IO2509-C-3300");
     strcpy(InputOrder.ExchangeID, "CFFEX");
     InputOrder.LimitPrice = 10.4;
     InputOrder.VolumeTotalOriginal = 2;
@@ -302,6 +302,7 @@ int main()
     strcpy(md.UpdateTime, "09:00:00");
     pApi->RegisterFensUserInfo((CThostFtdcFensUserInfoField*)&md);//喂一个(晚于应执行结算的时间的)行情快照给API(让API进行结算)(仅限回测模式)
 
+    std::cin >> i;
     std::cout << ret << std::endl;
     pApi->Release();
     std::cin >> i;

@@ -24,7 +24,6 @@ CSqliteHandler::CSqliteHandler(const std::string& dbPath,
             }
             std::this_thread::sleep_for(std::chrono::seconds(1));
         }
-        // TODO: the below part will actually not be run in Windows, do you guys know why?
         std::cout << "Quit the CSqliteHandler, let's sync for the last time...!" << std::endl;
         SyncMemoryAndFileDatabase(); //sync once more before exit
     });
