@@ -1,5 +1,7 @@
 #pragma once
 
+// This file Variant.hpp is from qicosmos/cosmos (https://github.com/qicosmos/cosmos), add add some comments and other changes
+
 #include <typeindex>
 #include <iostream>
 #include <functional>

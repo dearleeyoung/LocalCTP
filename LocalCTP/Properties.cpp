@@ -5,6 +5,8 @@
 #include <stdlib.h>
 #include "Properties.h"
 
+// Properties.cpp is from quantcast/qfs(https://github.com/quantcast/qfs), and add some comments and other changes
+
 Properties::Properties()
 : propmap()
 {

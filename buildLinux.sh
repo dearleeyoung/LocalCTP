@@ -25,8 +25,14 @@ buildDemoFunc(){
 
 # choose the CTP version you use
 
+# v6.3.15
+#buildFunc 6.3.15
+
 # v6.3.19
 #buildFunc 6.3.19
+
+# v6.6.1
+#buildFunc 6.6.1
 
 # v6.6.9
 #buildFunc 6.6.9

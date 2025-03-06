@@ -259,6 +259,11 @@ Windows中可使用 [DB Browser for SQLite](https://sqlitebrowser.org/) 等软�
     sudo yum install -y kde-l10n-Chinese
     sudo yum reinstall -y glibc-common
 
+### References
+
+1. `Variant.hpp` is from [qicosmos/cosmos](https://github.com/qicosmos/cosmos), add add some comments and other changes
+
+1. `Properties.h/cpp` is from [quantcast/qfs](https://github.com/quantcast/qfs), and add some comments and other changes
 
 **制作不容易，请一定要多多支持！欢迎打赏投食鼓励！~**
 

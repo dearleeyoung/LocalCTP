@@ -20,6 +20,9 @@
 // permissions and limitations under the License.
 //
 //----------------------------------------------------------------------------
+
+// Properties.h is from quantcast/qfs(https://github.com/quantcast/qfs), and add some comments and other changes
+
 #ifndef COMMON_PROPERTIES_H
 #define COMMON_PROPERTIES_H
 #if defined(_WIN32)
