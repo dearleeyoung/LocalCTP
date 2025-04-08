@@ -18,10 +18,11 @@ using namespace localCTP;
 
 #define CREATE_SQL_TABLE(tableName) sqlHandler.CreateTable(tableName##Wrapper::CREATE_TABLE_SQL, #tableName);
 
-std::pair<RUNNING_MODE, CLeeDateTime> getParamsFromConfig()
+
+LocalCTPConfig getParamsFromConfig()
 {
     static bool isFirstTimeLoad(true);
-    static std::pair<RUNNING_MODE, CLeeDateTime> ret;
+    static LocalCTPConfig ret;
     if (isFirstTimeLoad)
     {
         auto loadConfigFile = [&] {
@@ -32,21 +33,21 @@ std::pair<RUNNING_MODE, CLeeDateTime> getParamsFromConfig()
             int running_mode = prop.getValue("running_mode", 0);
             if (running_mode == 0)
             {
-                ret.first = RUNNING_MODE::REALTIME_MODE;
+                ret.running_mode = RUNNING_MODE::REALTIME_MODE;
             }
             else if (running_mode == 1)
             {
-                ret.first = RUNNING_MODE::BACKTEST_MODE;
+                ret.running_mode = RUNNING_MODE::BACKTEST_MODE;
             }
             else
             {
-                ret.first = RUNNING_MODE::REALTIME_MODE;
+                ret.running_mode = RUNNING_MODE::REALTIME_MODE;
             }
 
             std::string backtest_startdate = prop.getValue("backtest_startdate", std::string());
             if (!backtest_startdate.empty())
             {
-                ret.second.SetDateTime(
+                ret.backtest_startdate.SetDateTime(
                     std::stoi(backtest_startdate.substr(0, 4)),//2025 in "20250326"
                     std::stoi(backtest_startdate.substr(4, 2)),//3 in "20250326"
                     std::stoi(backtest_startdate.substr(6, 2)),//26 in "20250326"
@@ -56,10 +57,21 @@ std::pair<RUNNING_MODE, CLeeDateTime> getParamsFromConfig()
                 );
             }
 
+            int exit_after_settlement = prop.getValue("exit_after_settlement", 0);
+            if (exit_after_settlement == 0)
+            {
+                ret.exit_after_settlement = false;
+            }
+            else
+            {
+                ret.exit_after_settlement = true;
+            }
+
             std::cout << "[LocalCTP] Load local config file, running_mode:" << running_mode
-                << "(" << ret.first << ")"
-                << ", backtest_startdate:" << backtest_startdate << std::endl;
-            if (RUNNING_MODE::BACKTEST_MODE == ret.first)
+                << "(" << ret.running_mode << ")"
+                << ", backtest_startdate:" << backtest_startdate
+                << ", exit_after_settlement:" << exit_after_settlement << std::endl;
+            if (RUNNING_MODE::BACKTEST_MODE == ret.running_mode)
             {
                 std::cout << "[LocalCTP] Note: You are in " << RUNNING_MODE::BACKTEST_MODE
                     << ", it will delete all account data in database at the beginning!"
@@ -76,11 +88,15 @@ std::pair<RUNNING_MODE, CLeeDateTime> getParamsFromConfig()
 
 RUNNING_MODE getRunningModeFromConfig()
 {
-    return getParamsFromConfig().first;
+    return getParamsFromConfig().running_mode;
 }
 CLeeDateTime getDefaultTimeInBackTestModeFromConfig()
 {
-    return getParamsFromConfig().second;
+    return getParamsFromConfig().backtest_startdate;
+}
+bool getExitAfterSettlementFromConfig()
+{
+    return getParamsFromConfig().exit_after_settlement;
 }
 
 
@@ -96,6 +112,7 @@ CSettlementHandler& CLocalTraderApi::settlementHandler =
 std::mutex CLocalTraderApi::m_mdMtx;
 CLocalTraderApi::MarketDataMap CLocalTraderApi::m_mdData; //行情数据
 RUNNING_MODE CLocalTraderApi::m_runningMode = getRunningModeFromConfig();
+bool CLocalTraderApi::m_exitAfterSettlement = getExitAfterSettlementFromConfig();
 CLeeDateTime CLocalTraderApi::m_latestMarketTime;//行情中最新的时间
 CLeeDateTime CLocalTraderApi::m_defaultTimeInBackTestMode = getDefaultTimeInBackTestModeFromConfig();
 CSqliteHandler CLocalTraderApi::sqlHandler("LocalCTP.db", {
@@ -216,27 +233,48 @@ void CLocalTraderApi::onSnapshot(const CThostFtdcDepthMarketDataField& mdData)
 {
     const std::string instrumentID = mdData.InstrumentID;
     {
-        //选取 ActionDay 和 TradingDay 中的较大者
-        const std::string greaterDateStr =
-            (std::max)(std::string(mdData.ActionDay), std::string(mdData.TradingDay));
-        const std::string updateTimeStr = std::string(mdData.UpdateTime);
-
         std::lock_guard<std::mutex> mdGuard(m_mdMtx);
         m_mdData[instrumentID] = mdData;
-        if (greaterDateStr.size() >= 8 && updateTimeStr.size() >= 8)
+    }
+    {
+        //更新回测模式中的当前时间
+        const std::string updateTimeStr = mdData.UpdateTime; //"21:55:59"
+        CLeeDateTime updateTime;
+        if (std::stoi(updateTimeStr.substr(0, 2)) >= 20) //夜盘行情时间
         {
-            const CLeeDateTime updateTime(
-                std::stoi(greaterDateStr.substr(0, 4)),//2025 in "20250326"
-                std::stoi(greaterDateStr.substr(4, 2)),//3 in "20250326"
-                std::stoi(greaterDateStr.substr(6, 2)),//26 in "20250326"
-                std::stoi(updateTimeStr.substr(0, 2)),//21 in "21:55:58"
-                std::stoi(updateTimeStr.substr(3, 2)),//55 in "21:55:58"
-                std::stoi(updateTimeStr.substr(6, 2)),//58 in "21:55:58"
+            const std::string minDayStr = (std::min)(std::string(mdData.ActionDay), std::string(mdData.TradingDay)); //"20250313"
+            if (tradingDay.empty() || minDayStr.size() < 8) return;
+            updateTime.SetDateTime(std::stoi(minDayStr.substr(0, 4)),
+                std::stoi(minDayStr.substr(4, 2)),
+                std::stoi(minDayStr.substr(6, 2)),
+                std::stoi(updateTimeStr.substr(0, 2)),
+                std::stoi(updateTimeStr.substr(3, 2)),
+                std::stoi(updateTimeStr.substr(6, 2)),
                 mdData.UpdateMillisec);
-            if (updateTime > m_latestMarketTime)
+            if (minDayStr < tradingDay)
             {
-                m_latestMarketTime = updateTime;
             }
+            else //说明 ActionDay和TradingDay 的较小者仍不为当前实际日期, 则需要求出交易日的前一天作为当前实际日期
+            {
+                while (!isTradingDay(updateTime))
+                {
+                    updateTime -= CLeeDateTimeSpan(1, 0, 0, 0);
+                }
+            }
+        }
+        else
+        {
+            updateTime.SetDateTime(std::stoi(tradingDay.substr(0, 4)),
+                std::stoi(tradingDay.substr(4, 2)),
+                std::stoi(tradingDay.substr(6, 2)),
+                std::stoi(updateTimeStr.substr(0, 2)),
+                std::stoi(updateTimeStr.substr(3, 2)),
+                std::stoi(updateTimeStr.substr(6, 2)),
+                mdData.UpdateMillisec);
+        }
+        if (updateTime > m_latestMarketTime)
+        {
+            m_latestMarketTime = updateTime;
         }
     }
 
@@ -351,6 +389,20 @@ void CLocalTraderApi::onSnapshot(const CThostFtdcDepthMarketDataField& mdData)
         mdData.SettlementPrice : mdData.LastPrice;//优先使用结算价进行计算
     double diffPositionProfit(0);
     CSqliteTransactionHandler transactionHandle(sqlHandler);
+    static size_t mdDataCounter = 0;
+    bool shouldUpdateSql = true;
+    if (CLocalTraderApi::m_runningMode == RUNNING_MODE::BACKTEST_MODE)
+    {
+        if (++mdDataCounter >= 100)
+        {
+            mdDataCounter = 0;
+            shouldUpdateSql = true;
+        }
+        else
+        {
+            shouldUpdateSql = false;
+        }
+    }
     for (auto dir : { THOST_FTDC_D_Buy, THOST_FTDC_D_Sell })
     {
         for (auto dateType : { THOST_FTDC_PSD_Today, THOST_FTDC_PSD_History })
@@ -405,7 +457,10 @@ void CLocalTraderApi::onSnapshot(const CThostFtdcDepthMarketDataField& mdData)
                         + "' AND OpenDate='" + posDetail.OpenDate
                         + "' AND TradeID='" + posDetail.TradeID
                         + "';";
-                    sqlHandler.Update(updatePositionDetailProfitSql);
+                    if (shouldUpdateSql)
+                    {
+                        sqlHandler.Update(updatePositionDetailProfitSql);
+                    }
                 }
 
                 //行情没变化则不更新
@@ -439,20 +494,23 @@ void CLocalTraderApi::onSnapshot(const CThostFtdcDepthMarketDataField& mdData)
                     + "' AND InstrumentID='" + itPos->second.pos.InstrumentID
                     + "' AND PosiDirection='" + itPos->second.pos.PosiDirection
                     + "' AND PositionDate='" + itPos->second.pos.PositionDate + "';";
-                sqlHandler.Update(updatePositionProfitSql);
+                if (shouldUpdateSql)
+                {
+                    sqlHandler.Update(updatePositionProfitSql);
+                }
             }
         }
     }
     m_tradingAccount.PositionProfit += diffPositionProfit;
     if (NEZ(diffPositionProfit))
     {
-        updatePNL();
+        updatePNL(false, shouldUpdateSql);
     }
 }
 
 
 // 计算PNL(profit and loss, 盈亏)
-void CLocalTraderApi::updatePNL(bool needTotalCalc /*= false*/)
+void CLocalTraderApi::updatePNL(bool needTotalCalc /*= false*/, bool shouldUpdateSql /*= true*/)
 {
     if (needTotalCalc)
     {
@@ -484,7 +542,10 @@ void CLocalTraderApi::updatePNL(bool needTotalCalc /*= false*/)
         - m_tradingAccount.FrozenCash;
 
     // PNL更新时保存资金数据到数据库中. 可根据需要修改控制保存的时机(如定时保存等).
-    saveTradingAccountToDb();
+    if (shouldUpdateSql)
+    {
+        saveTradingAccountToDb();
+    }
 }
 
 void CLocalTraderApi::updateByCancel(const CThostFtdcOrderField& o)

@@ -596,7 +596,9 @@ ACCUMULATE_WITH_SAME_NAME(FrozenCash) ";"
         {
             //别在一次sleep中sleep太长时间(影响Join的等待时间)
             std::this_thread::sleep_for(std::chrono::seconds(m_sleepSecond));
-            if (++m_count >= 60 * 2 / m_sleepSecond)//每隔固定时间间隔,检查是否需要结算
+            const int checkInterval =
+                (CLocalTraderApi::m_runningMode == RUNNING_MODE::BACKTEST_MODE ? 10 : (60 * 2));
+            if (++m_count >= checkInterval / m_sleepSecond)//每隔固定时间间隔,检查是否需要结算
             {
                 m_count = 0;
             }
@@ -607,6 +609,15 @@ ACCUMULATE_WITH_SAME_NAME(FrozenCash) ";"
             if (checkSettlement())
             {
                 doSettlement();
+                if (CLocalTraderApi::m_exitAfterSettlement)
+                {
+#ifdef _WIN32
+                    std::exit(1);
+#else
+                    // 主动发出SIGTERM信号
+                    kill(getpid(), SIGTERM);
+#endif
+                }
             }
         }
     })

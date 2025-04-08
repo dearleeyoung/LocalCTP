@@ -11,6 +11,7 @@
 #include <windows.h>
 #else
 #include <unistd.h>
+#include <csignal>
 #endif
 
 
@@ -162,4 +163,12 @@ inline std::ostream& operator<<(std::ostream& o, RUNNING_MODE m)
     }
     return o;
 }
+
+struct LocalCTPConfig
+{
+    RUNNING_MODE running_mode = RUNNING_MODE::REALTIME_MODE;
+    CLeeDateTime backtest_startdate = CLeeDateTime(2025, 3, 13, 0, 0, 0);
+    bool exit_after_settlement = false;
+};
+
 } // end namespace localCTP

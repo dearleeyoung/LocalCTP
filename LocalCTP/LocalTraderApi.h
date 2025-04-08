@@ -324,6 +324,7 @@ public:
     static const long long initStartTime;
     static std::string tradingDay;
     static RUNNING_MODE m_runningMode;//运行的模式
+    static bool m_exitAfterSettlement;//是否在结算后退出程序
     static CLeeDateTime m_latestMarketTime;//行情中最新的时间
     static CLeeDateTime m_defaultTimeInBackTestMode;//(回测模式中)(当未接收到行情时)默认的初始时间
     static CSqliteHandler sqlHandler; // SQL管理器
@@ -456,7 +457,7 @@ private:
     CThostFtdcRspInfoField m_errorRspInfo;// 错误的响应信息
     CThostFtdcRspInfoField* setErrorMsgAndGetRspInfo(const char* errorMsg = "error");// 设置并返回错误的响应信息
     void onSnapshot(const CThostFtdcDepthMarketDataField& mdData);// 处理行情快照的接口
-    void updatePNL(bool needTotalCalc = false);// 更新PNL(盈亏)的接口
+    void updatePNL(bool needTotalCalc = false, bool shouldUpdateSql = true);// 更新PNL(盈亏)的接口
     void updateByCancel(const CThostFtdcOrderField& o);// 根据已撤单的委托更新账户数据的接口,在委托被撤单后被调用
     void updateByTrade(const CThostFtdcTradeFieldWrapper& t);// 根据成交更新账户数据的接口,在发生成交后被调用
     void saveTradingAccountToDb();// 保存账户资金数据到数据库中的接口
