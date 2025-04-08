@@ -67,10 +67,20 @@ LocalCTPConfig getParamsFromConfig()
                 ret.exit_after_settlement = true;
             }
 
+            std::string settlement_time = prop.getValue("settlement_time", std::string("17:00:00"));
+            if (settlement_time.size() != 8)
+            {
+                std::cerr << "length of settlement_time param should be 8, for example: 17:00:00" << std::endl;
+                std::exit(1);
+            }
+            ret.settlement_time = settlement_time;
+
             std::cout << "[LocalCTP] Load local config file, running_mode:" << running_mode
                 << "(" << ret.running_mode << ")"
                 << ", backtest_startdate:" << backtest_startdate
-                << ", exit_after_settlement:" << exit_after_settlement << std::endl;
+                << ", exit_after_settlement:" << exit_after_settlement
+                << ", settlement_time:" << settlement_time
+                << std::endl;
             if (RUNNING_MODE::BACKTEST_MODE == ret.running_mode)
             {
                 std::cout << "[LocalCTP] Note: You are in " << RUNNING_MODE::BACKTEST_MODE
@@ -98,6 +108,10 @@ bool getExitAfterSettlementFromConfig()
 {
     return getParamsFromConfig().exit_after_settlement;
 }
+std::string getSettlementTimeFromConfig()
+{
+    return getParamsFromConfig().settlement_time;
+}
 
 
 std::set<CLocalTraderApi::SP_TRADE_API> CLocalTraderApi::trade_api_set;
@@ -111,10 +125,11 @@ CSettlementHandler& CLocalTraderApi::settlementHandler =
     CSettlementHandler::getSettlementHandler( CLocalTraderApi::sqlHandler);
 std::mutex CLocalTraderApi::m_mdMtx;
 CLocalTraderApi::MarketDataMap CLocalTraderApi::m_mdData; //行情数据
-RUNNING_MODE CLocalTraderApi::m_runningMode = getRunningModeFromConfig();
-bool CLocalTraderApi::m_exitAfterSettlement = getExitAfterSettlementFromConfig();
+const RUNNING_MODE CLocalTraderApi::m_runningMode = getRunningModeFromConfig();
+const bool CLocalTraderApi::m_exitAfterSettlement = getExitAfterSettlementFromConfig();
+const std::string CLocalTraderApi::m_settlementTime = getSettlementTimeFromConfig();
+const CLeeDateTime CLocalTraderApi::m_defaultTimeInBackTestMode = getDefaultTimeInBackTestModeFromConfig();
 CLeeDateTime CLocalTraderApi::m_latestMarketTime;//行情中最新的时间
-CLeeDateTime CLocalTraderApi::m_defaultTimeInBackTestMode = getDefaultTimeInBackTestModeFromConfig();
 CSqliteHandler CLocalTraderApi::sqlHandler("LocalCTP.db", {
     "CThostFtdcInvestorPositionField", "CThostFtdcInvestorPositionDetailField",  "CThostFtdcOrderField",
     "CThostFtdcTradeField", "CThostFtdcTradingAccountField", "CThostFtdcInstrumentField",
@@ -239,6 +254,10 @@ void CLocalTraderApi::onSnapshot(const CThostFtdcDepthMarketDataField& mdData)
     {
         //更新回测模式中的当前时间
         const std::string updateTimeStr = mdData.UpdateTime; //"21:55:59"
+        if (updateTimeStr.size() < 8)
+        {
+            return;
+        }
         CLeeDateTime updateTime;
         if (std::stoi(updateTimeStr.substr(0, 2)) >= 20) //夜盘行情时间
         {

@@ -183,7 +183,10 @@ Windows中可使用 [DB Browser for SQLite](https://sqlitebrowser.org/) 等软�
 
 注意: 若处于回测模式, 为保持每次回测的数据独立和完整, 系统在回测启动时会清空数据库中各账户的数据, 请做好数据备份.
 
-通过配置文件 `localctp.config` 配置运行模式和回测开始的时间, `running_mode`为0表示实时模式(默认),为1表示回测模式,`backtest_startdate`表示回测起始日期,
+回测中,为避免更新数据库频繁导致性能问题,在接受行情投喂时,每间隔100个行情快照,才将资金和持仓等(随着行情而变化的)数据更新到SQL数据库里一次.
+
+#### 配置文件说明
+通过配置文件 `localctp.config` 配置运行模式和回测开始的时间, `running_mode`为0表示实时模式(默认),为1表示回测模式,`backtest_startdate`表示回测起始日期, `exit_after_settlement`表示是否在结算后退出程序(默认为0即不退出,非0值表示退出), `settlement_time`表示结算时间(默认17:00:00, 建议不早于16点以免还没有收到含结算价的行情数据)
 
 示例:
 
@@ -192,6 +195,10 @@ Windows中可使用 [DB Browser for SQLite](https://sqlitebrowser.org/) 等软�
     running_mode=1
     
     backtest_startdate=20250228
+
+    exit_after_settlement = 1
+
+    settlement_time=17:00:00
 
 
 ### 本项目还存在的一些可以改进的小的点：

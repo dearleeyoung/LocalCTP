@@ -169,6 +169,7 @@ struct LocalCTPConfig
     RUNNING_MODE running_mode = RUNNING_MODE::REALTIME_MODE;
     CLeeDateTime backtest_startdate = CLeeDateTime(2025, 3, 13, 0, 0, 0);
     bool exit_after_settlement = false;
+    std::string settlement_time = "17:00:00";
 };
 
 } // end namespace localCTP

@@ -263,6 +263,7 @@ int main()
     strcpy(marketData.BidOrderRef, "9999.0");// UpperLimitPrice
     strcpy(marketData.AskOrderRef, "500.0");// LowerLimitPrice
     strcpy(marketData.BusinessUnit, "8888888");// OpenInterest
+    strcpy(marketData.ClientID, "10:00:00");// UpdateTime
     int Volume = 88888;
     pApi->ReqQuoteInsert(&marketData, Volume);//使用ReqQuoteInsert接口, 喂一个行情快照给API(以触发条件单), 
 

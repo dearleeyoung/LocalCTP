@@ -573,20 +573,19 @@ ACCUMULATE_WITH_SAME_NAME(FrozenCash) ";"
         " Available = Balance-CurrMargin-FrozenMargin-FrozenCommission-FrozenCash;"
     )
     , m_sleepSecond(1)
-    , m_settlementStartHour(17)
     , m_nextSettlementTime()
     , m_count(0)
     , m_timerThread([this]() {
         std::this_thread::sleep_for(std::chrono::seconds(3));//等待其他线程的initInstrMap初始化好
         CLocalTraderApi::initInstrMap();
-        std::string tradingDay = CLocalTraderApi::StaticGetTradingDay();//it can work!
+        std::string tradingDay = CLocalTraderApi::StaticGetTradingDay();
         m_nextSettlementTime.SetDateTime(
-            std::stoi(tradingDay.substr(0, 4)),
+            std::stoi(tradingDay.substr(0, 4)), // "20250408"
             std::stoi(tradingDay.substr(4, 2)),
             std::stoi(tradingDay.substr(6, 2)),
-            m_settlementStartHour,
-            0,
-            0);
+            std::stoi(CLocalTraderApi::m_settlementTime.substr(0, 2)), // "17:00:00"
+            std::stoi(CLocalTraderApi::m_settlementTime.substr(3, 2)),
+            std::stoi(CLocalTraderApi::m_settlementTime.substr(6, 2)));
         std::cout << "[LocalCTP] next Settlement Time is " << m_nextSettlementTime.Format() << std::endl;
         if (checkSettlement())//启动后先判断结算一次
         {
@@ -611,6 +610,7 @@ ACCUMULATE_WITH_SAME_NAME(FrozenCash) ";"
                 doSettlement();
                 if (CLocalTraderApi::m_exitAfterSettlement)
                 {
+                    std::cout << "It should exit the program after settlement!" << std::endl;
 #ifdef _WIN32
                     std::exit(1);
 #else
@@ -1164,12 +1164,12 @@ void CSettlementHandler::doSettlement()
     doWorkAfterSettlement(TradingDay, newTradingDay);//结算后的工作
 
     m_nextSettlementTime.SetDateTime(
-        std::stoi(newTradingDay.substr(0, 4)),
+        std::stoi(newTradingDay.substr(0, 4)), // "20250408"
         std::stoi(newTradingDay.substr(4, 2)),
         std::stoi(newTradingDay.substr(6, 2)),
-        m_settlementStartHour,
-        0,
-        0);
+        std::stoi(CLocalTraderApi::m_settlementTime.substr(0, 2)), // "17:00:00"
+        std::stoi(CLocalTraderApi::m_settlementTime.substr(3, 2)),
+        std::stoi(CLocalTraderApi::m_settlementTime.substr(6, 2)));
     return;
 }
 

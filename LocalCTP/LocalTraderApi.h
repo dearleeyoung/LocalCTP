@@ -28,7 +28,6 @@ class CSettlementHandler
     const std::string m_tradingAccountUpdateFromPositionSql2;
     const std::string m_tradingAccountUpdateFromPositionSql3;
     const int m_sleepSecond;
-    const int m_settlementStartHour;
     CLeeDateTime m_nextSettlementTime;
     int m_count;
     std::thread m_timerThread;
@@ -323,10 +322,11 @@ public:
     static MarketDataMap m_mdData; // 行情数据
     static const long long initStartTime;
     static std::string tradingDay;
-    static RUNNING_MODE m_runningMode;//运行的模式
-    static bool m_exitAfterSettlement;//是否在结算后退出程序
+    static const RUNNING_MODE m_runningMode;//运行的模式
+    static const bool m_exitAfterSettlement;//是否在结算后退出程序
+    static const std::string m_settlementTime;//结算的时间
+    static const CLeeDateTime m_defaultTimeInBackTestMode;//(回测模式中)(当未接收到行情时)默认的初始时间
     static CLeeDateTime m_latestMarketTime;//行情中最新的时间
-    static CLeeDateTime m_defaultTimeInBackTestMode;//(回测模式中)(当未接收到行情时)默认的初始时间
     static CSqliteHandler sqlHandler; // SQL管理器
     static CSettlementHandler& settlementHandler; // 结算管理器
     static CLeeDateTime getNowTime();//根据运行的模式, 获取"当前"的时间
