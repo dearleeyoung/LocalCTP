@@ -274,7 +274,7 @@ Windows中可使用 [DB Browser for SQLite](https://sqlitebrowser.org/) 等软�
 
 
 ### 友情链接
-1. [OpenCTP](http://www.openctp.cn/)
+1. [openctp](http://www.openctp.cn/)
 2. [景色CTP系列文章](https://blog.csdn.net/pjjing/category_6523357.html)
 3. [SimNow模拟/CTP API 下载](https://www.simnow.com.cn/)
 
