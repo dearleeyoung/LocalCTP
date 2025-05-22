@@ -272,5 +272,9 @@ Windows中可使用 [DB Browser for SQLite](https://sqlitebrowser.org/) 等软�
 
 1. `Properties.h/cpp` is from [quantcast/qfs](https://github.com/quantcast/qfs), and add some comments and other changes
 
-**制作不容易，请一定要多多支持！欢迎打赏投食鼓励！~**
+
+### 友情链接
+1. [OpenCTP](http://www.openctp.cn/)
+2. [景色CTP系列文章](https://blog.csdn.net/pjjing/category_6523357.html)
+3. [SimNow模拟/CTP API 下载](https://www.simnow.com.cn/)
 
