@@ -466,6 +466,18 @@ struct OnRspQryDepthMarketDataMsg {
 	bool m_bIsLast;
 };
 
+struct OnRspQryTraderOfferMsg {
+	OnRspQryTraderOfferMsg(CThostFtdcTraderOfferField *pTraderOffer, CThostFtdcRspInfoField *pRspInfo, int nRequestID, bool bIsLast)
+	: m_pTraderOfferIsNull(pTraderOffer==nullptr), m_pTraderOffer(m_pTraderOfferIsNull ? CThostFtdcTraderOfferField() : *pTraderOffer), m_pRspInfoIsNull(pRspInfo==nullptr), m_pRspInfo(m_pRspInfoIsNull ? CThostFtdcRspInfoField() : *pRspInfo), m_nRequestID(nRequestID), m_bIsLast(bIsLast) 
+	{}
+	bool m_pTraderOfferIsNull;
+	CThostFtdcTraderOfferField m_pTraderOffer;
+	bool m_pRspInfoIsNull;
+	CThostFtdcRspInfoField m_pRspInfo;
+	int m_nRequestID;
+	bool m_bIsLast;
+};
+
 struct OnRspQrySettlementInfoMsg {
 	OnRspQrySettlementInfoMsg(CThostFtdcSettlementInfoField *pSettlementInfo, CThostFtdcRspInfoField *pRspInfo, int nRequestID, bool bIsLast)
 	: m_pSettlementInfoIsNull(pSettlementInfo==nullptr), m_pSettlementInfo(m_pSettlementInfoIsNull ? CThostFtdcSettlementInfoField() : *pSettlementInfo), m_pRspInfoIsNull(pRspInfo==nullptr), m_pRspInfo(m_pRspInfoIsNull ? CThostFtdcRspInfoField() : *pRspInfo), m_nRequestID(nRequestID), m_bIsLast(bIsLast) 
@@ -1372,6 +1384,318 @@ struct OnRspQryCombPromotionParamMsg {
 	bool m_bIsLast;
 };
 
+struct OnRspQryRiskSettleInvstPositionMsg {
+	OnRspQryRiskSettleInvstPositionMsg(CThostFtdcRiskSettleInvstPositionField *pRiskSettleInvstPosition, CThostFtdcRspInfoField *pRspInfo, int nRequestID, bool bIsLast)
+	: m_pRiskSettleInvstPositionIsNull(pRiskSettleInvstPosition==nullptr), m_pRiskSettleInvstPosition(m_pRiskSettleInvstPositionIsNull ? CThostFtdcRiskSettleInvstPositionField() : *pRiskSettleInvstPosition), m_pRspInfoIsNull(pRspInfo==nullptr), m_pRspInfo(m_pRspInfoIsNull ? CThostFtdcRspInfoField() : *pRspInfo), m_nRequestID(nRequestID), m_bIsLast(bIsLast) 
+	{}
+	bool m_pRiskSettleInvstPositionIsNull;
+	CThostFtdcRiskSettleInvstPositionField m_pRiskSettleInvstPosition;
+	bool m_pRspInfoIsNull;
+	CThostFtdcRspInfoField m_pRspInfo;
+	int m_nRequestID;
+	bool m_bIsLast;
+};
+
+struct OnRspQryRiskSettleProductStatusMsg {
+	OnRspQryRiskSettleProductStatusMsg(CThostFtdcRiskSettleProductStatusField *pRiskSettleProductStatus, CThostFtdcRspInfoField *pRspInfo, int nRequestID, bool bIsLast)
+	: m_pRiskSettleProductStatusIsNull(pRiskSettleProductStatus==nullptr), m_pRiskSettleProductStatus(m_pRiskSettleProductStatusIsNull ? CThostFtdcRiskSettleProductStatusField() : *pRiskSettleProductStatus), m_pRspInfoIsNull(pRspInfo==nullptr), m_pRspInfo(m_pRspInfoIsNull ? CThostFtdcRspInfoField() : *pRspInfo), m_nRequestID(nRequestID), m_bIsLast(bIsLast) 
+	{}
+	bool m_pRiskSettleProductStatusIsNull;
+	CThostFtdcRiskSettleProductStatusField m_pRiskSettleProductStatus;
+	bool m_pRspInfoIsNull;
+	CThostFtdcRspInfoField m_pRspInfo;
+	int m_nRequestID;
+	bool m_bIsLast;
+};
+
+struct OnRspQrySPBMFutureParameterMsg {
+	OnRspQrySPBMFutureParameterMsg(CThostFtdcSPBMFutureParameterField *pSPBMFutureParameter, CThostFtdcRspInfoField *pRspInfo, int nRequestID, bool bIsLast)
+	: m_pSPBMFutureParameterIsNull(pSPBMFutureParameter==nullptr), m_pSPBMFutureParameter(m_pSPBMFutureParameterIsNull ? CThostFtdcSPBMFutureParameterField() : *pSPBMFutureParameter), m_pRspInfoIsNull(pRspInfo==nullptr), m_pRspInfo(m_pRspInfoIsNull ? CThostFtdcRspInfoField() : *pRspInfo), m_nRequestID(nRequestID), m_bIsLast(bIsLast) 
+	{}
+	bool m_pSPBMFutureParameterIsNull;
+	CThostFtdcSPBMFutureParameterField m_pSPBMFutureParameter;
+	bool m_pRspInfoIsNull;
+	CThostFtdcRspInfoField m_pRspInfo;
+	int m_nRequestID;
+	bool m_bIsLast;
+};
+
+struct OnRspQrySPBMOptionParameterMsg {
+	OnRspQrySPBMOptionParameterMsg(CThostFtdcSPBMOptionParameterField *pSPBMOptionParameter, CThostFtdcRspInfoField *pRspInfo, int nRequestID, bool bIsLast)
+	: m_pSPBMOptionParameterIsNull(pSPBMOptionParameter==nullptr), m_pSPBMOptionParameter(m_pSPBMOptionParameterIsNull ? CThostFtdcSPBMOptionParameterField() : *pSPBMOptionParameter), m_pRspInfoIsNull(pRspInfo==nullptr), m_pRspInfo(m_pRspInfoIsNull ? CThostFtdcRspInfoField() : *pRspInfo), m_nRequestID(nRequestID), m_bIsLast(bIsLast) 
+	{}
+	bool m_pSPBMOptionParameterIsNull;
+	CThostFtdcSPBMOptionParameterField m_pSPBMOptionParameter;
+	bool m_pRspInfoIsNull;
+	CThostFtdcRspInfoField m_pRspInfo;
+	int m_nRequestID;
+	bool m_bIsLast;
+};
+
+struct OnRspQrySPBMIntraParameterMsg {
+	OnRspQrySPBMIntraParameterMsg(CThostFtdcSPBMIntraParameterField *pSPBMIntraParameter, CThostFtdcRspInfoField *pRspInfo, int nRequestID, bool bIsLast)
+	: m_pSPBMIntraParameterIsNull(pSPBMIntraParameter==nullptr), m_pSPBMIntraParameter(m_pSPBMIntraParameterIsNull ? CThostFtdcSPBMIntraParameterField() : *pSPBMIntraParameter), m_pRspInfoIsNull(pRspInfo==nullptr), m_pRspInfo(m_pRspInfoIsNull ? CThostFtdcRspInfoField() : *pRspInfo), m_nRequestID(nRequestID), m_bIsLast(bIsLast) 
+	{}
+	bool m_pSPBMIntraParameterIsNull;
+	CThostFtdcSPBMIntraParameterField m_pSPBMIntraParameter;
+	bool m_pRspInfoIsNull;
+	CThostFtdcRspInfoField m_pRspInfo;
+	int m_nRequestID;
+	bool m_bIsLast;
+};
+
+struct OnRspQrySPBMInterParameterMsg {
+	OnRspQrySPBMInterParameterMsg(CThostFtdcSPBMInterParameterField *pSPBMInterParameter, CThostFtdcRspInfoField *pRspInfo, int nRequestID, bool bIsLast)
+	: m_pSPBMInterParameterIsNull(pSPBMInterParameter==nullptr), m_pSPBMInterParameter(m_pSPBMInterParameterIsNull ? CThostFtdcSPBMInterParameterField() : *pSPBMInterParameter), m_pRspInfoIsNull(pRspInfo==nullptr), m_pRspInfo(m_pRspInfoIsNull ? CThostFtdcRspInfoField() : *pRspInfo), m_nRequestID(nRequestID), m_bIsLast(bIsLast) 
+	{}
+	bool m_pSPBMInterParameterIsNull;
+	CThostFtdcSPBMInterParameterField m_pSPBMInterParameter;
+	bool m_pRspInfoIsNull;
+	CThostFtdcRspInfoField m_pRspInfo;
+	int m_nRequestID;
+	bool m_bIsLast;
+};
+
+struct OnRspQrySPBMPortfDefinitionMsg {
+	OnRspQrySPBMPortfDefinitionMsg(CThostFtdcSPBMPortfDefinitionField *pSPBMPortfDefinition, CThostFtdcRspInfoField *pRspInfo, int nRequestID, bool bIsLast)
+	: m_pSPBMPortfDefinitionIsNull(pSPBMPortfDefinition==nullptr), m_pSPBMPortfDefinition(m_pSPBMPortfDefinitionIsNull ? CThostFtdcSPBMPortfDefinitionField() : *pSPBMPortfDefinition), m_pRspInfoIsNull(pRspInfo==nullptr), m_pRspInfo(m_pRspInfoIsNull ? CThostFtdcRspInfoField() : *pRspInfo), m_nRequestID(nRequestID), m_bIsLast(bIsLast) 
+	{}
+	bool m_pSPBMPortfDefinitionIsNull;
+	CThostFtdcSPBMPortfDefinitionField m_pSPBMPortfDefinition;
+	bool m_pRspInfoIsNull;
+	CThostFtdcRspInfoField m_pRspInfo;
+	int m_nRequestID;
+	bool m_bIsLast;
+};
+
+struct OnRspQrySPBMInvestorPortfDefMsg {
+	OnRspQrySPBMInvestorPortfDefMsg(CThostFtdcSPBMInvestorPortfDefField *pSPBMInvestorPortfDef, CThostFtdcRspInfoField *pRspInfo, int nRequestID, bool bIsLast)
+	: m_pSPBMInvestorPortfDefIsNull(pSPBMInvestorPortfDef==nullptr), m_pSPBMInvestorPortfDef(m_pSPBMInvestorPortfDefIsNull ? CThostFtdcSPBMInvestorPortfDefField() : *pSPBMInvestorPortfDef), m_pRspInfoIsNull(pRspInfo==nullptr), m_pRspInfo(m_pRspInfoIsNull ? CThostFtdcRspInfoField() : *pRspInfo), m_nRequestID(nRequestID), m_bIsLast(bIsLast) 
+	{}
+	bool m_pSPBMInvestorPortfDefIsNull;
+	CThostFtdcSPBMInvestorPortfDefField m_pSPBMInvestorPortfDef;
+	bool m_pRspInfoIsNull;
+	CThostFtdcRspInfoField m_pRspInfo;
+	int m_nRequestID;
+	bool m_bIsLast;
+};
+
+struct OnRspQryInvestorPortfMarginRatioMsg {
+	OnRspQryInvestorPortfMarginRatioMsg(CThostFtdcInvestorPortfMarginRatioField *pInvestorPortfMarginRatio, CThostFtdcRspInfoField *pRspInfo, int nRequestID, bool bIsLast)
+	: m_pInvestorPortfMarginRatioIsNull(pInvestorPortfMarginRatio==nullptr), m_pInvestorPortfMarginRatio(m_pInvestorPortfMarginRatioIsNull ? CThostFtdcInvestorPortfMarginRatioField() : *pInvestorPortfMarginRatio), m_pRspInfoIsNull(pRspInfo==nullptr), m_pRspInfo(m_pRspInfoIsNull ? CThostFtdcRspInfoField() : *pRspInfo), m_nRequestID(nRequestID), m_bIsLast(bIsLast) 
+	{}
+	bool m_pInvestorPortfMarginRatioIsNull;
+	CThostFtdcInvestorPortfMarginRatioField m_pInvestorPortfMarginRatio;
+	bool m_pRspInfoIsNull;
+	CThostFtdcRspInfoField m_pRspInfo;
+	int m_nRequestID;
+	bool m_bIsLast;
+};
+
+struct OnRspQryInvestorProdSPBMDetailMsg {
+	OnRspQryInvestorProdSPBMDetailMsg(CThostFtdcInvestorProdSPBMDetailField *pInvestorProdSPBMDetail, CThostFtdcRspInfoField *pRspInfo, int nRequestID, bool bIsLast)
+	: m_pInvestorProdSPBMDetailIsNull(pInvestorProdSPBMDetail==nullptr), m_pInvestorProdSPBMDetail(m_pInvestorProdSPBMDetailIsNull ? CThostFtdcInvestorProdSPBMDetailField() : *pInvestorProdSPBMDetail), m_pRspInfoIsNull(pRspInfo==nullptr), m_pRspInfo(m_pRspInfoIsNull ? CThostFtdcRspInfoField() : *pRspInfo), m_nRequestID(nRequestID), m_bIsLast(bIsLast) 
+	{}
+	bool m_pInvestorProdSPBMDetailIsNull;
+	CThostFtdcInvestorProdSPBMDetailField m_pInvestorProdSPBMDetail;
+	bool m_pRspInfoIsNull;
+	CThostFtdcRspInfoField m_pRspInfo;
+	int m_nRequestID;
+	bool m_bIsLast;
+};
+
+struct OnRspQryInvestorCommoditySPMMMarginMsg {
+	OnRspQryInvestorCommoditySPMMMarginMsg(CThostFtdcInvestorCommoditySPMMMarginField *pInvestorCommoditySPMMMargin, CThostFtdcRspInfoField *pRspInfo, int nRequestID, bool bIsLast)
+	: m_pInvestorCommoditySPMMMarginIsNull(pInvestorCommoditySPMMMargin==nullptr), m_pInvestorCommoditySPMMMargin(m_pInvestorCommoditySPMMMarginIsNull ? CThostFtdcInvestorCommoditySPMMMarginField() : *pInvestorCommoditySPMMMargin), m_pRspInfoIsNull(pRspInfo==nullptr), m_pRspInfo(m_pRspInfoIsNull ? CThostFtdcRspInfoField() : *pRspInfo), m_nRequestID(nRequestID), m_bIsLast(bIsLast) 
+	{}
+	bool m_pInvestorCommoditySPMMMarginIsNull;
+	CThostFtdcInvestorCommoditySPMMMarginField m_pInvestorCommoditySPMMMargin;
+	bool m_pRspInfoIsNull;
+	CThostFtdcRspInfoField m_pRspInfo;
+	int m_nRequestID;
+	bool m_bIsLast;
+};
+
+struct OnRspQryInvestorCommodityGroupSPMMMarginMsg {
+	OnRspQryInvestorCommodityGroupSPMMMarginMsg(CThostFtdcInvestorCommodityGroupSPMMMarginField *pInvestorCommodityGroupSPMMMargin, CThostFtdcRspInfoField *pRspInfo, int nRequestID, bool bIsLast)
+	: m_pInvestorCommodityGroupSPMMMarginIsNull(pInvestorCommodityGroupSPMMMargin==nullptr), m_pInvestorCommodityGroupSPMMMargin(m_pInvestorCommodityGroupSPMMMarginIsNull ? CThostFtdcInvestorCommodityGroupSPMMMarginField() : *pInvestorCommodityGroupSPMMMargin), m_pRspInfoIsNull(pRspInfo==nullptr), m_pRspInfo(m_pRspInfoIsNull ? CThostFtdcRspInfoField() : *pRspInfo), m_nRequestID(nRequestID), m_bIsLast(bIsLast) 
+	{}
+	bool m_pInvestorCommodityGroupSPMMMarginIsNull;
+	CThostFtdcInvestorCommodityGroupSPMMMarginField m_pInvestorCommodityGroupSPMMMargin;
+	bool m_pRspInfoIsNull;
+	CThostFtdcRspInfoField m_pRspInfo;
+	int m_nRequestID;
+	bool m_bIsLast;
+};
+
+struct OnRspQrySPMMInstParamMsg {
+	OnRspQrySPMMInstParamMsg(CThostFtdcSPMMInstParamField *pSPMMInstParam, CThostFtdcRspInfoField *pRspInfo, int nRequestID, bool bIsLast)
+	: m_pSPMMInstParamIsNull(pSPMMInstParam==nullptr), m_pSPMMInstParam(m_pSPMMInstParamIsNull ? CThostFtdcSPMMInstParamField() : *pSPMMInstParam), m_pRspInfoIsNull(pRspInfo==nullptr), m_pRspInfo(m_pRspInfoIsNull ? CThostFtdcRspInfoField() : *pRspInfo), m_nRequestID(nRequestID), m_bIsLast(bIsLast) 
+	{}
+	bool m_pSPMMInstParamIsNull;
+	CThostFtdcSPMMInstParamField m_pSPMMInstParam;
+	bool m_pRspInfoIsNull;
+	CThostFtdcRspInfoField m_pRspInfo;
+	int m_nRequestID;
+	bool m_bIsLast;
+};
+
+struct OnRspQrySPMMProductParamMsg {
+	OnRspQrySPMMProductParamMsg(CThostFtdcSPMMProductParamField *pSPMMProductParam, CThostFtdcRspInfoField *pRspInfo, int nRequestID, bool bIsLast)
+	: m_pSPMMProductParamIsNull(pSPMMProductParam==nullptr), m_pSPMMProductParam(m_pSPMMProductParamIsNull ? CThostFtdcSPMMProductParamField() : *pSPMMProductParam), m_pRspInfoIsNull(pRspInfo==nullptr), m_pRspInfo(m_pRspInfoIsNull ? CThostFtdcRspInfoField() : *pRspInfo), m_nRequestID(nRequestID), m_bIsLast(bIsLast) 
+	{}
+	bool m_pSPMMProductParamIsNull;
+	CThostFtdcSPMMProductParamField m_pSPMMProductParam;
+	bool m_pRspInfoIsNull;
+	CThostFtdcRspInfoField m_pRspInfo;
+	int m_nRequestID;
+	bool m_bIsLast;
+};
+
+struct OnRspQrySPBMAddOnInterParameterMsg {
+	OnRspQrySPBMAddOnInterParameterMsg(CThostFtdcSPBMAddOnInterParameterField *pSPBMAddOnInterParameter, CThostFtdcRspInfoField *pRspInfo, int nRequestID, bool bIsLast)
+	: m_pSPBMAddOnInterParameterIsNull(pSPBMAddOnInterParameter==nullptr), m_pSPBMAddOnInterParameter(m_pSPBMAddOnInterParameterIsNull ? CThostFtdcSPBMAddOnInterParameterField() : *pSPBMAddOnInterParameter), m_pRspInfoIsNull(pRspInfo==nullptr), m_pRspInfo(m_pRspInfoIsNull ? CThostFtdcRspInfoField() : *pRspInfo), m_nRequestID(nRequestID), m_bIsLast(bIsLast) 
+	{}
+	bool m_pSPBMAddOnInterParameterIsNull;
+	CThostFtdcSPBMAddOnInterParameterField m_pSPBMAddOnInterParameter;
+	bool m_pRspInfoIsNull;
+	CThostFtdcRspInfoField m_pRspInfo;
+	int m_nRequestID;
+	bool m_bIsLast;
+};
+
+struct OnRspQryRCAMSCombProductInfoMsg {
+	OnRspQryRCAMSCombProductInfoMsg(CThostFtdcRCAMSCombProductInfoField *pRCAMSCombProductInfo, CThostFtdcRspInfoField *pRspInfo, int nRequestID, bool bIsLast)
+	: m_pRCAMSCombProductInfoIsNull(pRCAMSCombProductInfo==nullptr), m_pRCAMSCombProductInfo(m_pRCAMSCombProductInfoIsNull ? CThostFtdcRCAMSCombProductInfoField() : *pRCAMSCombProductInfo), m_pRspInfoIsNull(pRspInfo==nullptr), m_pRspInfo(m_pRspInfoIsNull ? CThostFtdcRspInfoField() : *pRspInfo), m_nRequestID(nRequestID), m_bIsLast(bIsLast) 
+	{}
+	bool m_pRCAMSCombProductInfoIsNull;
+	CThostFtdcRCAMSCombProductInfoField m_pRCAMSCombProductInfo;
+	bool m_pRspInfoIsNull;
+	CThostFtdcRspInfoField m_pRspInfo;
+	int m_nRequestID;
+	bool m_bIsLast;
+};
+
+struct OnRspQryRCAMSInstrParameterMsg {
+	OnRspQryRCAMSInstrParameterMsg(CThostFtdcRCAMSInstrParameterField *pRCAMSInstrParameter, CThostFtdcRspInfoField *pRspInfo, int nRequestID, bool bIsLast)
+	: m_pRCAMSInstrParameterIsNull(pRCAMSInstrParameter==nullptr), m_pRCAMSInstrParameter(m_pRCAMSInstrParameterIsNull ? CThostFtdcRCAMSInstrParameterField() : *pRCAMSInstrParameter), m_pRspInfoIsNull(pRspInfo==nullptr), m_pRspInfo(m_pRspInfoIsNull ? CThostFtdcRspInfoField() : *pRspInfo), m_nRequestID(nRequestID), m_bIsLast(bIsLast) 
+	{}
+	bool m_pRCAMSInstrParameterIsNull;
+	CThostFtdcRCAMSInstrParameterField m_pRCAMSInstrParameter;
+	bool m_pRspInfoIsNull;
+	CThostFtdcRspInfoField m_pRspInfo;
+	int m_nRequestID;
+	bool m_bIsLast;
+};
+
+struct OnRspQryRCAMSIntraParameterMsg {
+	OnRspQryRCAMSIntraParameterMsg(CThostFtdcRCAMSIntraParameterField *pRCAMSIntraParameter, CThostFtdcRspInfoField *pRspInfo, int nRequestID, bool bIsLast)
+	: m_pRCAMSIntraParameterIsNull(pRCAMSIntraParameter==nullptr), m_pRCAMSIntraParameter(m_pRCAMSIntraParameterIsNull ? CThostFtdcRCAMSIntraParameterField() : *pRCAMSIntraParameter), m_pRspInfoIsNull(pRspInfo==nullptr), m_pRspInfo(m_pRspInfoIsNull ? CThostFtdcRspInfoField() : *pRspInfo), m_nRequestID(nRequestID), m_bIsLast(bIsLast) 
+	{}
+	bool m_pRCAMSIntraParameterIsNull;
+	CThostFtdcRCAMSIntraParameterField m_pRCAMSIntraParameter;
+	bool m_pRspInfoIsNull;
+	CThostFtdcRspInfoField m_pRspInfo;
+	int m_nRequestID;
+	bool m_bIsLast;
+};
+
+struct OnRspQryRCAMSInterParameterMsg {
+	OnRspQryRCAMSInterParameterMsg(CThostFtdcRCAMSInterParameterField *pRCAMSInterParameter, CThostFtdcRspInfoField *pRspInfo, int nRequestID, bool bIsLast)
+	: m_pRCAMSInterParameterIsNull(pRCAMSInterParameter==nullptr), m_pRCAMSInterParameter(m_pRCAMSInterParameterIsNull ? CThostFtdcRCAMSInterParameterField() : *pRCAMSInterParameter), m_pRspInfoIsNull(pRspInfo==nullptr), m_pRspInfo(m_pRspInfoIsNull ? CThostFtdcRspInfoField() : *pRspInfo), m_nRequestID(nRequestID), m_bIsLast(bIsLast) 
+	{}
+	bool m_pRCAMSInterParameterIsNull;
+	CThostFtdcRCAMSInterParameterField m_pRCAMSInterParameter;
+	bool m_pRspInfoIsNull;
+	CThostFtdcRspInfoField m_pRspInfo;
+	int m_nRequestID;
+	bool m_bIsLast;
+};
+
+struct OnRspQryRCAMSShortOptAdjustParamMsg {
+	OnRspQryRCAMSShortOptAdjustParamMsg(CThostFtdcRCAMSShortOptAdjustParamField *pRCAMSShortOptAdjustParam, CThostFtdcRspInfoField *pRspInfo, int nRequestID, bool bIsLast)
+	: m_pRCAMSShortOptAdjustParamIsNull(pRCAMSShortOptAdjustParam==nullptr), m_pRCAMSShortOptAdjustParam(m_pRCAMSShortOptAdjustParamIsNull ? CThostFtdcRCAMSShortOptAdjustParamField() : *pRCAMSShortOptAdjustParam), m_pRspInfoIsNull(pRspInfo==nullptr), m_pRspInfo(m_pRspInfoIsNull ? CThostFtdcRspInfoField() : *pRspInfo), m_nRequestID(nRequestID), m_bIsLast(bIsLast) 
+	{}
+	bool m_pRCAMSShortOptAdjustParamIsNull;
+	CThostFtdcRCAMSShortOptAdjustParamField m_pRCAMSShortOptAdjustParam;
+	bool m_pRspInfoIsNull;
+	CThostFtdcRspInfoField m_pRspInfo;
+	int m_nRequestID;
+	bool m_bIsLast;
+};
+
+struct OnRspQryRCAMSInvestorCombPositionMsg {
+	OnRspQryRCAMSInvestorCombPositionMsg(CThostFtdcRCAMSInvestorCombPositionField *pRCAMSInvestorCombPosition, CThostFtdcRspInfoField *pRspInfo, int nRequestID, bool bIsLast)
+	: m_pRCAMSInvestorCombPositionIsNull(pRCAMSInvestorCombPosition==nullptr), m_pRCAMSInvestorCombPosition(m_pRCAMSInvestorCombPositionIsNull ? CThostFtdcRCAMSInvestorCombPositionField() : *pRCAMSInvestorCombPosition), m_pRspInfoIsNull(pRspInfo==nullptr), m_pRspInfo(m_pRspInfoIsNull ? CThostFtdcRspInfoField() : *pRspInfo), m_nRequestID(nRequestID), m_bIsLast(bIsLast) 
+	{}
+	bool m_pRCAMSInvestorCombPositionIsNull;
+	CThostFtdcRCAMSInvestorCombPositionField m_pRCAMSInvestorCombPosition;
+	bool m_pRspInfoIsNull;
+	CThostFtdcRspInfoField m_pRspInfo;
+	int m_nRequestID;
+	bool m_bIsLast;
+};
+
+struct OnRspQryInvestorProdRCAMSMarginMsg {
+	OnRspQryInvestorProdRCAMSMarginMsg(CThostFtdcInvestorProdRCAMSMarginField *pInvestorProdRCAMSMargin, CThostFtdcRspInfoField *pRspInfo, int nRequestID, bool bIsLast)
+	: m_pInvestorProdRCAMSMarginIsNull(pInvestorProdRCAMSMargin==nullptr), m_pInvestorProdRCAMSMargin(m_pInvestorProdRCAMSMarginIsNull ? CThostFtdcInvestorProdRCAMSMarginField() : *pInvestorProdRCAMSMargin), m_pRspInfoIsNull(pRspInfo==nullptr), m_pRspInfo(m_pRspInfoIsNull ? CThostFtdcRspInfoField() : *pRspInfo), m_nRequestID(nRequestID), m_bIsLast(bIsLast) 
+	{}
+	bool m_pInvestorProdRCAMSMarginIsNull;
+	CThostFtdcInvestorProdRCAMSMarginField m_pInvestorProdRCAMSMargin;
+	bool m_pRspInfoIsNull;
+	CThostFtdcRspInfoField m_pRspInfo;
+	int m_nRequestID;
+	bool m_bIsLast;
+};
+
+struct OnRspQryRULEInstrParameterMsg {
+	OnRspQryRULEInstrParameterMsg(CThostFtdcRULEInstrParameterField *pRULEInstrParameter, CThostFtdcRspInfoField *pRspInfo, int nRequestID, bool bIsLast)
+	: m_pRULEInstrParameterIsNull(pRULEInstrParameter==nullptr), m_pRULEInstrParameter(m_pRULEInstrParameterIsNull ? CThostFtdcRULEInstrParameterField() : *pRULEInstrParameter), m_pRspInfoIsNull(pRspInfo==nullptr), m_pRspInfo(m_pRspInfoIsNull ? CThostFtdcRspInfoField() : *pRspInfo), m_nRequestID(nRequestID), m_bIsLast(bIsLast) 
+	{}
+	bool m_pRULEInstrParameterIsNull;
+	CThostFtdcRULEInstrParameterField m_pRULEInstrParameter;
+	bool m_pRspInfoIsNull;
+	CThostFtdcRspInfoField m_pRspInfo;
+	int m_nRequestID;
+	bool m_bIsLast;
+};
+
+struct OnRspQryRULEIntraParameterMsg {
+	OnRspQryRULEIntraParameterMsg(CThostFtdcRULEIntraParameterField *pRULEIntraParameter, CThostFtdcRspInfoField *pRspInfo, int nRequestID, bool bIsLast)
+	: m_pRULEIntraParameterIsNull(pRULEIntraParameter==nullptr), m_pRULEIntraParameter(m_pRULEIntraParameterIsNull ? CThostFtdcRULEIntraParameterField() : *pRULEIntraParameter), m_pRspInfoIsNull(pRspInfo==nullptr), m_pRspInfo(m_pRspInfoIsNull ? CThostFtdcRspInfoField() : *pRspInfo), m_nRequestID(nRequestID), m_bIsLast(bIsLast) 
+	{}
+	bool m_pRULEIntraParameterIsNull;
+	CThostFtdcRULEIntraParameterField m_pRULEIntraParameter;
+	bool m_pRspInfoIsNull;
+	CThostFtdcRspInfoField m_pRspInfo;
+	int m_nRequestID;
+	bool m_bIsLast;
+};
+
+struct OnRspQryRULEInterParameterMsg {
+	OnRspQryRULEInterParameterMsg(CThostFtdcRULEInterParameterField *pRULEInterParameter, CThostFtdcRspInfoField *pRspInfo, int nRequestID, bool bIsLast)
+	: m_pRULEInterParameterIsNull(pRULEInterParameter==nullptr), m_pRULEInterParameter(m_pRULEInterParameterIsNull ? CThostFtdcRULEInterParameterField() : *pRULEInterParameter), m_pRspInfoIsNull(pRspInfo==nullptr), m_pRspInfo(m_pRspInfoIsNull ? CThostFtdcRspInfoField() : *pRspInfo), m_nRequestID(nRequestID), m_bIsLast(bIsLast) 
+	{}
+	bool m_pRULEInterParameterIsNull;
+	CThostFtdcRULEInterParameterField m_pRULEInterParameter;
+	bool m_pRspInfoIsNull;
+	CThostFtdcRspInfoField m_pRspInfo;
+	int m_nRequestID;
+	bool m_bIsLast;
+};
+
+struct OnRspQryInvestorProdRULEMarginMsg {
+	OnRspQryInvestorProdRULEMarginMsg(CThostFtdcInvestorProdRULEMarginField *pInvestorProdRULEMargin, CThostFtdcRspInfoField *pRspInfo, int nRequestID, bool bIsLast)
+	: m_pInvestorProdRULEMarginIsNull(pInvestorProdRULEMargin==nullptr), m_pInvestorProdRULEMargin(m_pInvestorProdRULEMarginIsNull ? CThostFtdcInvestorProdRULEMarginField() : *pInvestorProdRULEMargin), m_pRspInfoIsNull(pRspInfo==nullptr), m_pRspInfo(m_pRspInfoIsNull ? CThostFtdcRspInfoField() : *pRspInfo), m_nRequestID(nRequestID), m_bIsLast(bIsLast) 
+	{}
+	bool m_pInvestorProdRULEMarginIsNull;
+	CThostFtdcInvestorProdRULEMarginField m_pInvestorProdRULEMargin;
+	bool m_pRspInfoIsNull;
+	CThostFtdcRspInfoField m_pRspInfo;
+	int m_nRequestID;
+	bool m_bIsLast;
+};
+
 
 #define VARIANT_MSG_TYPE_MACRO Variant< \
 	OnFrontConnectedMsg, \
@@ -1414,6 +1738,7 @@ struct OnRspQryCombPromotionParamMsg {
 	OnRspQryProductMsg, \
 	OnRspQryInstrumentMsg, \
 	OnRspQryDepthMarketDataMsg, \
+	OnRspQryTraderOfferMsg, \
 	OnRspQrySettlementInfoMsg, \
 	OnRspQryTransferBankMsg, \
 	OnRspQryInvestorPositionDetailMsg, \
@@ -1500,7 +1825,33 @@ struct OnRspQryCombPromotionParamMsg {
 	OnRtnCancelAccountByBankMsg, \
 	OnRtnChangeAccountByBankMsg, \
 	OnRspQryClassifiedInstrumentMsg, \
-	OnRspQryCombPromotionParamMsg \
+	OnRspQryCombPromotionParamMsg, \
+	OnRspQryRiskSettleInvstPositionMsg, \
+	OnRspQryRiskSettleProductStatusMsg, \
+	OnRspQrySPBMFutureParameterMsg, \
+	OnRspQrySPBMOptionParameterMsg, \
+	OnRspQrySPBMIntraParameterMsg, \
+	OnRspQrySPBMInterParameterMsg, \
+	OnRspQrySPBMPortfDefinitionMsg, \
+	OnRspQrySPBMInvestorPortfDefMsg, \
+	OnRspQryInvestorPortfMarginRatioMsg, \
+	OnRspQryInvestorProdSPBMDetailMsg, \
+	OnRspQryInvestorCommoditySPMMMarginMsg, \
+	OnRspQryInvestorCommodityGroupSPMMMarginMsg, \
+	OnRspQrySPMMInstParamMsg, \
+	OnRspQrySPMMProductParamMsg, \
+	OnRspQrySPBMAddOnInterParameterMsg, \
+	OnRspQryRCAMSCombProductInfoMsg, \
+	OnRspQryRCAMSInstrParameterMsg, \
+	OnRspQryRCAMSIntraParameterMsg, \
+	OnRspQryRCAMSInterParameterMsg, \
+	OnRspQryRCAMSShortOptAdjustParamMsg, \
+	OnRspQryRCAMSInvestorCombPositionMsg, \
+	OnRspQryInvestorProdRCAMSMarginMsg, \
+	OnRspQryRULEInstrParameterMsg, \
+	OnRspQryRULEIntraParameterMsg, \
+	OnRspQryRULEInterParameterMsg, \
+	OnRspQryInvestorProdRULEMarginMsg \
 >
 
 #define MESSAGE_HANDLE_MACRO msg.Visit( \
@@ -1544,6 +1895,7 @@ struct OnRspQryCombPromotionParamMsg {
 	[&](OnRspQryProductMsg& i) { if(m_pSpi) m_pSpi->OnRspQryProduct(i.m_pProductIsNull ? nullptr : &i.m_pProduct, i.m_pRspInfoIsNull ? nullptr : &i.m_pRspInfo, i.m_nRequestID, i.m_bIsLast); }, \
 	[&](OnRspQryInstrumentMsg& i) { if(m_pSpi) m_pSpi->OnRspQryInstrument(i.m_pInstrumentIsNull ? nullptr : &i.m_pInstrument, i.m_pRspInfoIsNull ? nullptr : &i.m_pRspInfo, i.m_nRequestID, i.m_bIsLast); }, \
 	[&](OnRspQryDepthMarketDataMsg& i) { if(m_pSpi) m_pSpi->OnRspQryDepthMarketData(i.m_pDepthMarketDataIsNull ? nullptr : &i.m_pDepthMarketData, i.m_pRspInfoIsNull ? nullptr : &i.m_pRspInfo, i.m_nRequestID, i.m_bIsLast); }, \
+	[&](OnRspQryTraderOfferMsg& i) { if(m_pSpi) m_pSpi->OnRspQryTraderOffer(i.m_pTraderOfferIsNull ? nullptr : &i.m_pTraderOffer, i.m_pRspInfoIsNull ? nullptr : &i.m_pRspInfo, i.m_nRequestID, i.m_bIsLast); }, \
 	[&](OnRspQrySettlementInfoMsg& i) { if(m_pSpi) m_pSpi->OnRspQrySettlementInfo(i.m_pSettlementInfoIsNull ? nullptr : &i.m_pSettlementInfo, i.m_pRspInfoIsNull ? nullptr : &i.m_pRspInfo, i.m_nRequestID, i.m_bIsLast); }, \
 	[&](OnRspQryTransferBankMsg& i) { if(m_pSpi) m_pSpi->OnRspQryTransferBank(i.m_pTransferBankIsNull ? nullptr : &i.m_pTransferBank, i.m_pRspInfoIsNull ? nullptr : &i.m_pRspInfo, i.m_nRequestID, i.m_bIsLast); }, \
 	[&](OnRspQryInvestorPositionDetailMsg& i) { if(m_pSpi) m_pSpi->OnRspQryInvestorPositionDetail(i.m_pInvestorPositionDetailIsNull ? nullptr : &i.m_pInvestorPositionDetail, i.m_pRspInfoIsNull ? nullptr : &i.m_pRspInfo, i.m_nRequestID, i.m_bIsLast); }, \
@@ -1630,7 +1982,33 @@ struct OnRspQryCombPromotionParamMsg {
 	[&](OnRtnCancelAccountByBankMsg& i) { if(m_pSpi) m_pSpi->OnRtnCancelAccountByBank(i.m_pCancelAccountIsNull ? nullptr : &i.m_pCancelAccount); }, \
 	[&](OnRtnChangeAccountByBankMsg& i) { if(m_pSpi) m_pSpi->OnRtnChangeAccountByBank(i.m_pChangeAccountIsNull ? nullptr : &i.m_pChangeAccount); }, \
 	[&](OnRspQryClassifiedInstrumentMsg& i) { if(m_pSpi) m_pSpi->OnRspQryClassifiedInstrument(i.m_pInstrumentIsNull ? nullptr : &i.m_pInstrument, i.m_pRspInfoIsNull ? nullptr : &i.m_pRspInfo, i.m_nRequestID, i.m_bIsLast); }, \
-	[&](OnRspQryCombPromotionParamMsg& i) { if(m_pSpi) m_pSpi->OnRspQryCombPromotionParam(i.m_pCombPromotionParamIsNull ? nullptr : &i.m_pCombPromotionParam, i.m_pRspInfoIsNull ? nullptr : &i.m_pRspInfo, i.m_nRequestID, i.m_bIsLast); } \
+	[&](OnRspQryCombPromotionParamMsg& i) { if(m_pSpi) m_pSpi->OnRspQryCombPromotionParam(i.m_pCombPromotionParamIsNull ? nullptr : &i.m_pCombPromotionParam, i.m_pRspInfoIsNull ? nullptr : &i.m_pRspInfo, i.m_nRequestID, i.m_bIsLast); }, \
+	[&](OnRspQryRiskSettleInvstPositionMsg& i) { if(m_pSpi) m_pSpi->OnRspQryRiskSettleInvstPosition(i.m_pRiskSettleInvstPositionIsNull ? nullptr : &i.m_pRiskSettleInvstPosition, i.m_pRspInfoIsNull ? nullptr : &i.m_pRspInfo, i.m_nRequestID, i.m_bIsLast); }, \
+	[&](OnRspQryRiskSettleProductStatusMsg& i) { if(m_pSpi) m_pSpi->OnRspQryRiskSettleProductStatus(i.m_pRiskSettleProductStatusIsNull ? nullptr : &i.m_pRiskSettleProductStatus, i.m_pRspInfoIsNull ? nullptr : &i.m_pRspInfo, i.m_nRequestID, i.m_bIsLast); }, \
+	[&](OnRspQrySPBMFutureParameterMsg& i) { if(m_pSpi) m_pSpi->OnRspQrySPBMFutureParameter(i.m_pSPBMFutureParameterIsNull ? nullptr : &i.m_pSPBMFutureParameter, i.m_pRspInfoIsNull ? nullptr : &i.m_pRspInfo, i.m_nRequestID, i.m_bIsLast); }, \
+	[&](OnRspQrySPBMOptionParameterMsg& i) { if(m_pSpi) m_pSpi->OnRspQrySPBMOptionParameter(i.m_pSPBMOptionParameterIsNull ? nullptr : &i.m_pSPBMOptionParameter, i.m_pRspInfoIsNull ? nullptr : &i.m_pRspInfo, i.m_nRequestID, i.m_bIsLast); }, \
+	[&](OnRspQrySPBMIntraParameterMsg& i) { if(m_pSpi) m_pSpi->OnRspQrySPBMIntraParameter(i.m_pSPBMIntraParameterIsNull ? nullptr : &i.m_pSPBMIntraParameter, i.m_pRspInfoIsNull ? nullptr : &i.m_pRspInfo, i.m_nRequestID, i.m_bIsLast); }, \
+	[&](OnRspQrySPBMInterParameterMsg& i) { if(m_pSpi) m_pSpi->OnRspQrySPBMInterParameter(i.m_pSPBMInterParameterIsNull ? nullptr : &i.m_pSPBMInterParameter, i.m_pRspInfoIsNull ? nullptr : &i.m_pRspInfo, i.m_nRequestID, i.m_bIsLast); }, \
+	[&](OnRspQrySPBMPortfDefinitionMsg& i) { if(m_pSpi) m_pSpi->OnRspQrySPBMPortfDefinition(i.m_pSPBMPortfDefinitionIsNull ? nullptr : &i.m_pSPBMPortfDefinition, i.m_pRspInfoIsNull ? nullptr : &i.m_pRspInfo, i.m_nRequestID, i.m_bIsLast); }, \
+	[&](OnRspQrySPBMInvestorPortfDefMsg& i) { if(m_pSpi) m_pSpi->OnRspQrySPBMInvestorPortfDef(i.m_pSPBMInvestorPortfDefIsNull ? nullptr : &i.m_pSPBMInvestorPortfDef, i.m_pRspInfoIsNull ? nullptr : &i.m_pRspInfo, i.m_nRequestID, i.m_bIsLast); }, \
+	[&](OnRspQryInvestorPortfMarginRatioMsg& i) { if(m_pSpi) m_pSpi->OnRspQryInvestorPortfMarginRatio(i.m_pInvestorPortfMarginRatioIsNull ? nullptr : &i.m_pInvestorPortfMarginRatio, i.m_pRspInfoIsNull ? nullptr : &i.m_pRspInfo, i.m_nRequestID, i.m_bIsLast); }, \
+	[&](OnRspQryInvestorProdSPBMDetailMsg& i) { if(m_pSpi) m_pSpi->OnRspQryInvestorProdSPBMDetail(i.m_pInvestorProdSPBMDetailIsNull ? nullptr : &i.m_pInvestorProdSPBMDetail, i.m_pRspInfoIsNull ? nullptr : &i.m_pRspInfo, i.m_nRequestID, i.m_bIsLast); }, \
+	[&](OnRspQryInvestorCommoditySPMMMarginMsg& i) { if(m_pSpi) m_pSpi->OnRspQryInvestorCommoditySPMMMargin(i.m_pInvestorCommoditySPMMMarginIsNull ? nullptr : &i.m_pInvestorCommoditySPMMMargin, i.m_pRspInfoIsNull ? nullptr : &i.m_pRspInfo, i.m_nRequestID, i.m_bIsLast); }, \
+	[&](OnRspQryInvestorCommodityGroupSPMMMarginMsg& i) { if(m_pSpi) m_pSpi->OnRspQryInvestorCommodityGroupSPMMMargin(i.m_pInvestorCommodityGroupSPMMMarginIsNull ? nullptr : &i.m_pInvestorCommodityGroupSPMMMargin, i.m_pRspInfoIsNull ? nullptr : &i.m_pRspInfo, i.m_nRequestID, i.m_bIsLast); }, \
+	[&](OnRspQrySPMMInstParamMsg& i) { if(m_pSpi) m_pSpi->OnRspQrySPMMInstParam(i.m_pSPMMInstParamIsNull ? nullptr : &i.m_pSPMMInstParam, i.m_pRspInfoIsNull ? nullptr : &i.m_pRspInfo, i.m_nRequestID, i.m_bIsLast); }, \
+	[&](OnRspQrySPMMProductParamMsg& i) { if(m_pSpi) m_pSpi->OnRspQrySPMMProductParam(i.m_pSPMMProductParamIsNull ? nullptr : &i.m_pSPMMProductParam, i.m_pRspInfoIsNull ? nullptr : &i.m_pRspInfo, i.m_nRequestID, i.m_bIsLast); }, \
+	[&](OnRspQrySPBMAddOnInterParameterMsg& i) { if(m_pSpi) m_pSpi->OnRspQrySPBMAddOnInterParameter(i.m_pSPBMAddOnInterParameterIsNull ? nullptr : &i.m_pSPBMAddOnInterParameter, i.m_pRspInfoIsNull ? nullptr : &i.m_pRspInfo, i.m_nRequestID, i.m_bIsLast); }, \
+	[&](OnRspQryRCAMSCombProductInfoMsg& i) { if(m_pSpi) m_pSpi->OnRspQryRCAMSCombProductInfo(i.m_pRCAMSCombProductInfoIsNull ? nullptr : &i.m_pRCAMSCombProductInfo, i.m_pRspInfoIsNull ? nullptr : &i.m_pRspInfo, i.m_nRequestID, i.m_bIsLast); }, \
+	[&](OnRspQryRCAMSInstrParameterMsg& i) { if(m_pSpi) m_pSpi->OnRspQryRCAMSInstrParameter(i.m_pRCAMSInstrParameterIsNull ? nullptr : &i.m_pRCAMSInstrParameter, i.m_pRspInfoIsNull ? nullptr : &i.m_pRspInfo, i.m_nRequestID, i.m_bIsLast); }, \
+	[&](OnRspQryRCAMSIntraParameterMsg& i) { if(m_pSpi) m_pSpi->OnRspQryRCAMSIntraParameter(i.m_pRCAMSIntraParameterIsNull ? nullptr : &i.m_pRCAMSIntraParameter, i.m_pRspInfoIsNull ? nullptr : &i.m_pRspInfo, i.m_nRequestID, i.m_bIsLast); }, \
+	[&](OnRspQryRCAMSInterParameterMsg& i) { if(m_pSpi) m_pSpi->OnRspQryRCAMSInterParameter(i.m_pRCAMSInterParameterIsNull ? nullptr : &i.m_pRCAMSInterParameter, i.m_pRspInfoIsNull ? nullptr : &i.m_pRspInfo, i.m_nRequestID, i.m_bIsLast); }, \
+	[&](OnRspQryRCAMSShortOptAdjustParamMsg& i) { if(m_pSpi) m_pSpi->OnRspQryRCAMSShortOptAdjustParam(i.m_pRCAMSShortOptAdjustParamIsNull ? nullptr : &i.m_pRCAMSShortOptAdjustParam, i.m_pRspInfoIsNull ? nullptr : &i.m_pRspInfo, i.m_nRequestID, i.m_bIsLast); }, \
+	[&](OnRspQryRCAMSInvestorCombPositionMsg& i) { if(m_pSpi) m_pSpi->OnRspQryRCAMSInvestorCombPosition(i.m_pRCAMSInvestorCombPositionIsNull ? nullptr : &i.m_pRCAMSInvestorCombPosition, i.m_pRspInfoIsNull ? nullptr : &i.m_pRspInfo, i.m_nRequestID, i.m_bIsLast); }, \
+	[&](OnRspQryInvestorProdRCAMSMarginMsg& i) { if(m_pSpi) m_pSpi->OnRspQryInvestorProdRCAMSMargin(i.m_pInvestorProdRCAMSMarginIsNull ? nullptr : &i.m_pInvestorProdRCAMSMargin, i.m_pRspInfoIsNull ? nullptr : &i.m_pRspInfo, i.m_nRequestID, i.m_bIsLast); }, \
+	[&](OnRspQryRULEInstrParameterMsg& i) { if(m_pSpi) m_pSpi->OnRspQryRULEInstrParameter(i.m_pRULEInstrParameterIsNull ? nullptr : &i.m_pRULEInstrParameter, i.m_pRspInfoIsNull ? nullptr : &i.m_pRspInfo, i.m_nRequestID, i.m_bIsLast); }, \
+	[&](OnRspQryRULEIntraParameterMsg& i) { if(m_pSpi) m_pSpi->OnRspQryRULEIntraParameter(i.m_pRULEIntraParameterIsNull ? nullptr : &i.m_pRULEIntraParameter, i.m_pRspInfoIsNull ? nullptr : &i.m_pRspInfo, i.m_nRequestID, i.m_bIsLast); }, \
+	[&](OnRspQryRULEInterParameterMsg& i) { if(m_pSpi) m_pSpi->OnRspQryRULEInterParameter(i.m_pRULEInterParameterIsNull ? nullptr : &i.m_pRULEInterParameter, i.m_pRspInfoIsNull ? nullptr : &i.m_pRspInfo, i.m_nRequestID, i.m_bIsLast); }, \
+	[&](OnRspQryInvestorProdRULEMarginMsg& i) { if(m_pSpi) m_pSpi->OnRspQryInvestorProdRULEMargin(i.m_pInvestorProdRULEMarginIsNull ? nullptr : &i.m_pInvestorProdRULEMargin, i.m_pRspInfoIsNull ? nullptr : &i.m_pRspInfo, i.m_nRequestID, i.m_bIsLast); } \
 );
 
 #ifndef UNSUPPORTED_CTP_API_FUNC
@@ -1690,6 +2068,9 @@ struct OnRspQryCombPromotionParamMsg {
  \
     /*///请求查询交易编码*/ \
     virtual int ReqQryTradingCode(CThostFtdcQryTradingCodeField *pQryTradingCode, int nRequestID) override { return -1; } \
+ \
+    /*///请求查询交易员报盘机*/ \
+    virtual int ReqQryTraderOffer(CThostFtdcQryTraderOfferField *pQryTraderOffer, int nRequestID) override { return -1; } \
  \
     /*///请求查询转帐银行*/ \
     virtual int ReqQryTransferBank(CThostFtdcQryTransferBankField *pQryTransferBank, int nRequestID) override { return -1; } \
@@ -1855,7 +2236,85 @@ virtual int ReqQryClassifiedInstrument(CThostFtdcQryClassifiedInstrumentField* p
     return 0; \
 } \
     /*///请求组合优惠比例*/ \
-    virtual int ReqQryCombPromotionParam(CThostFtdcQryCombPromotionParamField *pQryCombPromotionParam, int nRequestID) override { return -1; }
+    virtual int ReqQryCombPromotionParam(CThostFtdcQryCombPromotionParamField *pQryCombPromotionParam, int nRequestID) override { return -1; } \
+ \
+    /*///投资者风险结算持仓查询*/ \
+    virtual int ReqQryRiskSettleInvstPosition(CThostFtdcQryRiskSettleInvstPositionField *pQryRiskSettleInvstPosition, int nRequestID) override { return -1; } \
+ \
+    /*///风险结算产品查询*/ \
+    virtual int ReqQryRiskSettleProductStatus(CThostFtdcQryRiskSettleProductStatusField *pQryRiskSettleProductStatus, int nRequestID) override { return -1; } \
+ \
+    /*///SPBM期货合约参数查询*/ \
+    virtual int ReqQrySPBMFutureParameter(CThostFtdcQrySPBMFutureParameterField *pQrySPBMFutureParameter, int nRequestID) override { return -1; } \
+ \
+    /*///SPBM期权合约参数查询*/ \
+    virtual int ReqQrySPBMOptionParameter(CThostFtdcQrySPBMOptionParameterField *pQrySPBMOptionParameter, int nRequestID) override { return -1; } \
+ \
+    /*///SPBM品种内对锁仓折扣参数查询*/ \
+    virtual int ReqQrySPBMIntraParameter(CThostFtdcQrySPBMIntraParameterField *pQrySPBMIntraParameter, int nRequestID) override { return -1; } \
+ \
+    /*///SPBM跨品种抵扣参数查询*/ \
+    virtual int ReqQrySPBMInterParameter(CThostFtdcQrySPBMInterParameterField *pQrySPBMInterParameter, int nRequestID) override { return -1; } \
+ \
+    /*///SPBM组合保证金套餐查询*/ \
+    virtual int ReqQrySPBMPortfDefinition(CThostFtdcQrySPBMPortfDefinitionField *pQrySPBMPortfDefinition, int nRequestID) override { return -1; } \
+ \
+    /*///投资者SPBM套餐选择查询*/ \
+    virtual int ReqQrySPBMInvestorPortfDef(CThostFtdcQrySPBMInvestorPortfDefField *pQrySPBMInvestorPortfDef, int nRequestID) override { return -1; } \
+ \
+    /*///投资者新型组合保证金系数查询*/ \
+    virtual int ReqQryInvestorPortfMarginRatio(CThostFtdcQryInvestorPortfMarginRatioField *pQryInvestorPortfMarginRatio, int nRequestID) override { return -1; } \
+ \
+    /*///投资者产品SPBM明细查询*/ \
+    virtual int ReqQryInvestorProdSPBMDetail(CThostFtdcQryInvestorProdSPBMDetailField *pQryInvestorProdSPBMDetail, int nRequestID) override { return -1; } \
+ \
+    /*///投资者商品组SPMM记录查询*/ \
+    virtual int ReqQryInvestorCommoditySPMMMargin(CThostFtdcQryInvestorCommoditySPMMMarginField *pQryInvestorCommoditySPMMMargin, int nRequestID) override { return -1; } \
+ \
+    /*///投资者商品群SPMM记录查询*/ \
+    virtual int ReqQryInvestorCommodityGroupSPMMMargin(CThostFtdcQryInvestorCommodityGroupSPMMMarginField *pQryInvestorCommodityGroupSPMMMargin, int nRequestID) override { return -1; } \
+ \
+    /*///SPMM合约参数查询*/ \
+    virtual int ReqQrySPMMInstParam(CThostFtdcQrySPMMInstParamField *pQrySPMMInstParam, int nRequestID) override { return -1; } \
+ \
+    /*///SPMM产品参数查询*/ \
+    virtual int ReqQrySPMMProductParam(CThostFtdcQrySPMMProductParamField *pQrySPMMProductParam, int nRequestID) override { return -1; } \
+ \
+    /*///SPBM附加跨品种抵扣参数查询*/ \
+    virtual int ReqQrySPBMAddOnInterParameter(CThostFtdcQrySPBMAddOnInterParameterField *pQrySPBMAddOnInterParameter, int nRequestID) override { return -1; } \
+ \
+    /*///RCAMS产品组合信息查询*/ \
+    virtual int ReqQryRCAMSCombProductInfo(CThostFtdcQryRCAMSCombProductInfoField *pQryRCAMSCombProductInfo, int nRequestID) override { return -1; } \
+ \
+    /*///RCAMS同合约风险对冲参数查询*/ \
+    virtual int ReqQryRCAMSInstrParameter(CThostFtdcQryRCAMSInstrParameterField *pQryRCAMSInstrParameter, int nRequestID) override { return -1; } \
+ \
+    /*///RCAMS品种内风险对冲参数查询*/ \
+    virtual int ReqQryRCAMSIntraParameter(CThostFtdcQryRCAMSIntraParameterField *pQryRCAMSIntraParameter, int nRequestID) override { return -1; } \
+ \
+    /*///RCAMS跨品种风险折抵参数查询*/ \
+    virtual int ReqQryRCAMSInterParameter(CThostFtdcQryRCAMSInterParameterField *pQryRCAMSInterParameter, int nRequestID) override { return -1; } \
+ \
+    /*///RCAMS空头期权风险调整参数查询*/ \
+    virtual int ReqQryRCAMSShortOptAdjustParam(CThostFtdcQryRCAMSShortOptAdjustParamField *pQryRCAMSShortOptAdjustParam, int nRequestID) override { return -1; } \
+ \
+    /*///RCAMS策略组合持仓查询*/ \
+    virtual int ReqQryRCAMSInvestorCombPosition(CThostFtdcQryRCAMSInvestorCombPositionField *pQryRCAMSInvestorCombPosition, int nRequestID) override { return -1; } \
+ \
+    /*///投资者品种RCAMS保证金查询*/ \
+    virtual int ReqQryInvestorProdRCAMSMargin(CThostFtdcQryInvestorProdRCAMSMarginField *pQryInvestorProdRCAMSMargin, int nRequestID) override { return -1; } \
+ \
+    /*///RULE合约保证金参数查询*/ \
+    virtual int ReqQryRULEInstrParameter(CThostFtdcQryRULEInstrParameterField *pQryRULEInstrParameter, int nRequestID) override { return -1; } \
+ \
+    /*///RULE品种内对锁仓折扣参数查询*/ \
+    virtual int ReqQryRULEIntraParameter(CThostFtdcQryRULEIntraParameterField *pQryRULEIntraParameter, int nRequestID) override { return -1; } \
+ \
+    /*///RULE跨品种抵扣参数查询*/ \
+    virtual int ReqQryRULEInterParameter(CThostFtdcQryRULEInterParameterField *pQryRULEInterParameter, int nRequestID) override { return -1; } \
+ \
+    /*///投资者产品RULE保证金查询*/ \
+    virtual int ReqQryInvestorProdRULEMargin(CThostFtdcQryInvestorProdRULEMarginField *pQryInvestorProdRULEMargin, int nRequestID) override { return -1; }
 
 
 #endif

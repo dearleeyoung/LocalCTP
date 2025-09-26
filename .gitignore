@@ -5,6 +5,10 @@
 *.log
 *.db
 libthosttraderapi_se_v*.so
+libthosttraderapi_se_v*.dylib
+
 
 # Debug folder
 Debug
+.DS_Store
+*.con

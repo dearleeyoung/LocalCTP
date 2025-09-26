@@ -41,7 +41,7 @@ buildDemoFunc(){
 #buildFunc 6.7.0
 
 # v6.7.2
-#buildFunc 6.7.2
+buildFunc 6.7.2
 
 # v6.7.7
 #buildFunc 6.7.7
@@ -50,9 +50,10 @@ buildDemoFunc(){
 #buildFunc 6.7.8
 
 # v6.5.1, put it at last, because we want the code to be set as v6.5.1 finally
-buildFunc 6.5.1
+#buildFunc 6.5.1
 
-cp ${INSTALL_PATH}/libthosttraderapi_se_v6.5.1.so ${INSTALL_PATH}/libthosttraderapi_se.so
+# cp ${INSTALL_PATH}/libthosttraderapi_se_v6.5.1.so ${INSTALL_PATH}/libthosttraderapi_se.so
+cp ${INSTALL_PATH}/libthosttraderapi_se_v6.7.2.so ${INSTALL_PATH}/libthosttraderapi_se.so
 
 buildDemoFunc
 
